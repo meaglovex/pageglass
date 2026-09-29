@@ -84,7 +84,7 @@ F12 / ⌥⌘I 切换检查器，⌥⌘J 直接打开 Console，开发菜单和�
 
 ## 扩展宿主（0.8 开发预览）
 
-macOS 15.4+ 使用公开 WKWebExtension API；旧系统入口说明不可用原因。`ExtensionPackage` / `ExtensionZIP` 在受限暂存目录验证和复制，`ExtensionRepository` 单独存储身份、程序版本及站点授权，`ExtensionRuntime` 负责控制器、事务与权限，`ExtensionBridge` / `ExtensionEvents` 桥接普通窗口与标签，`ExtensionManagement` 提供原生管理界面，`ExtensionToolbar` 将可选 action 按窗口宽度展示并接收 WebKit 状态更新；选择单独持久化，不授予网站权限。捕获桥仍只存在于独立 WKContentWorld，扩展设置和 action 使用扩展自己的配置。
+macOS 15.4+ 使用公开 WKWebExtension API；旧系统入口说明不可用原因。`ExtensionPackage` / `ExtensionZIP` 在受限暂存目录验证和复制，`ExtensionRepository` 单独存储身份、程序版本及站点授权，`ExtensionRuntime` 负责控制器、事务与权限，`ExtensionBridge` / `ExtensionEvents` 桥接普通窗口与标签，`ExtensionManagement` 提供原生管理界面，`ExtensionToolbar` 将可选 action 按窗口宽度展示并接收 WebKit 状态更新；选择单独持久化，不授予网站权限。仅已加载且声明 action 的扩展可修改工具栏偏好；停用保留选择，管理控件与运行时写入均检查可用性。捕获桥仍只存在于独立 WKContentWorld，扩展设置和 action 使用扩展自己的配置。
 
 不向扩展返回受保护页面作为活动页的窗口，避免违反 WebKit 标签列表必须包含活动标签的约束；返回普通网页后恢复事件。无痕不附加控制器，网站访问逐站保存。稳定 UUID 保持 storage 数据；更新先校验新副本再切换，登记失败尝试恢复旧上下文。可安装能力、包上限及尚未验收项见 [extensions-0.8.md](extensions-0.8.md)，不得以原生 API 存在或自有样本成功推断任意第三方插件兼容。
 

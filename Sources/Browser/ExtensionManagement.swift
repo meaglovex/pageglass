@@ -45,7 +45,7 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
     private let feedback = NSTextField(wrappingLabelWithString:"")
     private let installButton = NSButton(), updateButton = NSButton(), enableButton = NSButton(), removeButton = NSButton(), actionButton = NSButton(), optionsButton = NSButton()
     private let allowButton = NSButton(), revokeButton = NSButton(), reloadButton = NSButton(), sites = NSPopUpButton()
-    private let toolbarCheck = NSButton(checkboxWithTitle:"显示在工具栏（窄窗口自动收入扩展菜单）",target:nil,action:nil)
+    let toolbarCheck = NSButton(checkboxWithTitle:"显示在工具栏（窄窗口自动收入扩展菜单）",target:nil,action:nil)
     private var rows:[InstalledExtension] = [], observer:NSObjectProtocol?, importing = false, refreshingSelection = false
     var selected:InstalledExtension? { rows.indices.contains(table.selectedRow) ? rows[table.selectedRow] : nil }
     var feedbackText:String { feedback.stringValue }
@@ -114,13 +114,15 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
         actionButton.title = loaded != nil && action == nil ? "无工具栏动作" : "打开扩展"
         actionButton.isEnabled = usable && action?.isEnabled == true; optionsButton.isEnabled = usable && loaded?.optionsPageURL != nil
         toolbarCheck.state = record?.toolbarVisible == true ? .on : .off
-        toolbarCheck.isEnabled = usable && record?.package != nil && (action != nil || loaded == nil)
+        toolbarCheck.isEnabled = usable && action != nil
+        toolbarCheck.toolTip = record?.package == nil ? "请先导入可用的扩展。" : action != nil ? "只更改入口位置，不改变网站权限。" : loaded?.isLoaded == true ? "此扩展没有工具栏动作，可从扩展菜单管理网站权限。" : "启用后可查看是否提供工具栏入口；原有选择会保留。"
         allowButton.isEnabled = usable && loaded != nil && ExtensionRuntime.sitePattern(browser?.activeWebView?.url) != nil
         sites.removeAllItems(); sites.addItems(withTitles:record?.sites.keys.sorted().map { (record?.sites[$0] == true ? "已允许 · " : "已拒绝 · ")+$0 } ?? [])
         revokeButton.isEnabled = usable && sites.numberOfItems > 0
         guard let record else { details.stringValue = runtime.repository.readError ?? "尚未安装扩展。Pageglass 不预装第三方扩展，也不默认授予全站访问。"; return }
         details.stringValue = "来源：\(record.sourceName)\n请求权限：\(record.permissions.isEmpty ? "无额外 API 权限" : record.permissions.joined(separator:", "))\n网站范围：\(record.hosts.isEmpty ? "未声明" : record.hosts.joined(separator:", "))\n\(runtime.errors[record.id] ?? "停用或撤权后，刷新网页才能清除已经改变的页面内容。")"
         if loaded != nil && action == nil { details.stringValue += "\n此扩展没有工具栏动作；授权后在匹配的网站自动运行。" }
+        else if record.package != nil && loaded?.isLoaded != true { details.stringValue += "\n启用后可查看是否提供工具栏入口；原有选择已保留。" }
     }
     @objc private func importNew() { importPackage(replacing:nil) }
     @objc private func toggleToolbar() {

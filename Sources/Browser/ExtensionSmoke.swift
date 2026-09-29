@@ -235,6 +235,17 @@ enum ExtensionSmoke {
             try await runtime.install(ExtensionPackage.prepare(source:source,in:runtime.repository.staging),replacing:id)
             let retained = try await popup(runtime.contexts[id]!)
             try require((try await retained.evaluateJavaScript("JSON.parse(document.querySelector('output').textContent).count") as? Int ?? 0) >= 4,"reinstall can reuse explicitly retained extension data")
+            let manager = ExtensionManagementController(browser:browser); browser.extensionManager = manager
+            manager.selectExtension(id)
+            try require(manager.toolbarCheck.isEnabled && manager.toolbarCheck.state == .on,"loaded action extension exposes its saved toolbar choice")
+            runtime.closeViews(id)
+            try await runtime.setEnabled(false,id:id)
+            try require(!manager.toolbarCheck.isEnabled && manager.toolbarCheck.state == .on && browser.extensionActionButtons[id] == nil,"disabled action extension preserves its choice without offering an ineffective toolbar control")
+            var disabledChoiceRejected = false
+            do { try runtime.setToolbarVisible(false,id:id) } catch { disabledChoiceRejected = true }
+            try require(disabledChoiceRejected && manager.selected?.toolbarVisible == true,"stale toolbar requests cannot change a disabled extension preference")
+            try await runtime.setEnabled(true,id:id)
+            try require(manager.toolbarCheck.isEnabled && manager.toolbarCheck.state == .on && browser.extensionActionButtons[id] != nil,"reenabling an action extension restores its saved toolbar choice and button")
             try runtime.setToolbarVisible(false,id:id)
             try require(browser.extensionActionButtons[id] == nil && runtime.contexts[id]?.isLoaded == true,"hiding toolbar action leaves the extension enabled")
             runtime.closeViews(id)
@@ -243,7 +254,6 @@ enum ExtensionSmoke {
             let contentManifest:[String:Any] = ["manifest_version":3,"name":"Content-only fixture","description":"Owned static content extension without an action","version":"1.0","content_scripts":[["matches":["http://127.0.0.1/*"],"js":["content.js"]]]]
             try JSONSerialization.data(withJSONObject:contentManifest).write(to:contentSource.appendingPathComponent("manifest.json"))
             try "document.documentElement.dataset.contentOnly='1';".write(to:contentSource.appendingPathComponent("content.js"),atomically:true,encoding:.utf8)
-            let manager = ExtensionManagementController(browser:browser); browser.extensionManager = manager
             manager.selectExtension(id)
             try await manager.installReviewed(ExtensionPackage.prepare(source:contentSource,in:runtime.repository.staging))
             guard let contentID = runtime.repository.state.items.first(where:{$0.name == "Content-only fixture"})?.id else { throw CaptureService.Failure.message("content-only install missing") }
@@ -253,8 +263,14 @@ enum ExtensionSmoke {
             try require(installFeedback.contains("Content-only fixture") && manager.feedbackText == installFeedback,"same extension refresh preserves the current install result")
             try runtime.setSite(site,allowed:false,id:contentID)
             try require(manager.feedbackText.isEmpty && manager.selected?.sites[site] == false,"external permission change clears obsolete management feedback and refreshes the site state")
-            try runtime.setToolbarVisible(true,id:contentID)
+            var contentChoiceRejected = false
+            do { try runtime.setToolbarVisible(true,id:contentID) } catch { contentChoiceRejected = true }
+            try require(contentChoiceRejected && !manager.toolbarCheck.isEnabled && manager.selected?.toolbarVisible != true,"content-only extensions reject toolbar choices and disable the unavailable setting")
             try require(runtime.action(contentID,browser:browser) == nil && browser.extensionActionButtons[contentID] == nil,"content-only extension has no synthetic runnable toolbar action")
+            try await runtime.setEnabled(false,id:contentID)
+            try require(!manager.toolbarCheck.isEnabled && manager.toolbarCheck.state == .off,"disabling a content-only extension does not enable the unavailable toolbar setting")
+            try await runtime.setEnabled(true,id:contentID)
+            try require(!manager.toolbarCheck.isEnabled && runtime.action(contentID,browser:browser) == nil,"reenabling content-only extensions keeps toolbar settings unavailable")
             let contentItem = browser.extensionMenu().items.first { $0.representedObject as? String == contentID.uuidString }
             guard let contentItem,let menuAction = contentItem.action else { throw CaptureService.Failure.message("content-only management entry missing") }
             manager.selectExtension(id)

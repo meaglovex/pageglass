@@ -39,6 +39,8 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
     func setToolbarVisible(_ visible:Bool,id:UUID) throws {
         try begin(); defer { end() }
         guard var record = repository.state.items.first(where:{$0.id == id}),record.package != nil else { throw ExtensionPackage.Failure(message:"扩展程序已移除") }
+        guard let context = contexts[id],context.isLoaded else { throw ExtensionPackage.Failure(message:"请先启用扩展，再设置工具栏入口。原有选择已保留。") }
+        guard context.webExtension.manifest["action"] is [String:Any] else { throw ExtensionPackage.Failure(message:"此扩展没有工具栏动作；请从扩展菜单管理网站权限。") }
         record.toolbarVisible = visible; try repository.replace(record)
     }
     func begin() throws {
