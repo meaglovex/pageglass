@@ -43,7 +43,7 @@ enum SmokeTest {
             try require(count > 50,"full DOM export")
             try require(page.image.size.height > view.bounds.height,"full page screenshot exceeds viewport")
             page.copyForCodex()
-            try require(NSPasteboard.general.string(forType:.string)?.contains(page.directory.path) == true,"clipboard contains screenshot and code bundle path")
+            try require(CaptureClipboard.current.string(forType:.string)?.contains(page.directory.path) == true,"clipboard contains screenshot and code bundle path")
             let gpu = try await view.evaluateJavaScript("(()=>{const c=document.createElement('canvas');const gl=c.getContext('webgl2')||c.getContext('webgl');if(!gl)return {available:false};const e=gl.getExtension('WEBGL_debug_renderer_info');return {available:true,renderer:e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),vendor:e?gl.getParameter(e.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR)}})()")
             try require((gpu as? [String:Any])?["available"] as? Bool == true,"WebGL context available")
             // 重开实际导出的 HTML，验证计算样式仍保持所选卡片几何。
@@ -66,12 +66,12 @@ enum SmokeTest {
             browser.latest = page; browser.status.stringValue = "实机自动检查通过：\(checks.count) 项"
             print("SMOKE PASS \(checks.count) \(output.path)")
             if CommandLine.arguments.contains("--review-capture") { browser.performCapture(mode:"page") }
-            if CommandLine.arguments.contains("--exit") { NSApp.terminate(nil) }
+            if CommandLine.arguments.contains("--exit") { CaptureClipboard.finishTesting(); NSApp.terminate(nil) }
         } catch {
             let report: [String:Any] = ["passed":checks,"error":error.localizedDescription,"status":"failed"]
             if let data = try? JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted]) { try? data.write(to:output.appendingPathComponent("report.json")) }
             print("SMOKE FAIL \(error)")
-            if CommandLine.arguments.contains("--exit") { exit(1) }
+            if CommandLine.arguments.contains("--exit") { CaptureClipboard.finishTesting(); exit(1) }
         }
     }
 }

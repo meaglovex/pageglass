@@ -38,7 +38,7 @@ enum CaptureLibrarySmoke {
         controller.search.stringValue = "example.test/history/199"; controller.filter()
         try require(controller.filtered.count == 1 && controller.filtered[0].directory == packages[199],"history searches source URLs and selects the matching capture")
         try CaptureCatalog.copyPrompt(packages[199])
-        try require(NSPasteboard.general.string(forType:.string)?.contains(packages[199].path) == true,"legacy capture is reusable after reopening history")
+        try require(CaptureClipboard.current.string(forType:.string)?.contains(packages[199].path) == true,"legacy capture is reusable after reopening history")
         controller.search.stringValue = ""; controller.filter()
         controller.table.scrollRowToVisible(expected-1)
         try await Task.sleep(for:.milliseconds(300))

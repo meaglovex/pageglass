@@ -6,7 +6,7 @@
 
 给产品经理的轻量 macOS 浏览器。浏览网页，选取一个元素或捕获整个已加载页面，把视觉、结构与交互状态交给本机 Codex。
 
-**已发布 0.6.0；当前开发分支为 0.7.0-beta.1，macOS 14+ / Apple Silicon。** 原生 Swift + AppKit + 系统 WebKit，零第三方包依赖。尚未证明 Chrome 级性能、全站兼容性或更低的整组进程内存占用，不作为 Chrome 的完整替代品宣传。
+**已发布 0.6.0；当前分支进入 0.8.0-alpha.1 技术验证，macOS 14+ / Apple Silicon。** 原生 Swift + AppKit + 系统 WebKit，零第三方包依赖。尚未证明 Chrome 级性能、全站兼容性或更低的整组进程内存占用，不作为 Chrome 的完整替代品宣传。
 
 ## 打开
 
@@ -81,7 +81,7 @@ open dist/Pageglass.app
 
 技术决定见 [architecture.md](docs/architecture.md)，当前开发版验收进度见 [validation-0.7.md](docs/validation-0.7.md)，旧版验证记录见 [validation.md](docs/validation.md)，可复跑的性能对照方法见 [performance.md](docs/performance.md)。本版范围和验收标准见 [0.7 产品体验优化计划](docs/plan-0.7.md)（实施中）。
 
-后续版本见 [0.8 视觉、操作与扩展计划](docs/plan-0.8.md)（计划中，尚未实施）。
+当前开发范围见 [0.8 视觉、操作与扩展计划](docs/plan-0.8.md)，实施状态见 [0.8 验收记录](docs/validation-0.8.md)。扩展仍是独立技术样机，未作为可用产品功能交付。
 
 ## 开发与开源
 

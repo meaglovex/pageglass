@@ -84,18 +84,18 @@ enum CaptureCatalog {
         let screenshot = try file("screenshot.png",in:directory)
         guard let source = CGImageSourceCreateWithURL(screenshot as CFURL,nil),validDimensions(source),CGImageSourceGetStatus(source) == .statusComplete else { throw CaptureService.Failure.message("截图已损坏或尺寸超出限制，请重新捕获") }
     }
-    static func copyPrompt(_ directory:URL) throws {
+    static func copyPrompt(_ directory:URL,pasteboard:NSPasteboard = CaptureClipboard.current) throws {
         try validate(directory)
         let prompt = try String(contentsOf:file("PROMPT.txt",in:directory,limit:2*1024*1024),encoding:.utf8)
-        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(prompt,forType:.string)
-        NSPasteboard.general.setString(directory.path,forType:CaptureRetention.clipboardType)
+        pasteboard.clearContents(); pasteboard.setString(prompt,forType:.string)
+        pasteboard.setString(directory.path,forType:CaptureRetention.clipboardType)
     }
-    static func copyImage(_ directory:URL) throws {
+    static func copyImage(_ directory:URL,pasteboard:NSPasteboard = CaptureClipboard.current) throws {
         try validate(directory)
         let path = try file("screenshot.png",in:directory)
         guard let source = CGImageSourceCreateWithURL(path as CFURL,nil),validDimensions(source),let raster = CGImageSourceCreateImageAtIndex(source,0,nil) else { throw CaptureService.Failure.message("截图无法读取或尺寸超出限制") }
         let image = NSImage(cgImage:raster,size:NSSize(width:raster.width,height:raster.height))
-        NSPasteboard.general.clearContents(); NSPasteboard.general.writeObjects([image])
-        NSPasteboard.general.setString(directory.path,forType:CaptureRetention.clipboardType)
+        pasteboard.clearContents(); pasteboard.writeObjects([image])
+        pasteboard.setString(directory.path,forType:CaptureRetention.clipboardType)
     }
 }

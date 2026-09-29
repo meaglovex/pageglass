@@ -13,6 +13,10 @@ class Handler(SimpleHTTPRequestHandler):
     def send_fixture(self,data,mime):
         self.send_response(200); self.send_header('Content-Type',mime); self.send_header('Content-Length',str(len(data))); self.end_headers(); self.wfile.write(data)
     def do_GET(self):
+        if self.path.startswith('/extension-page'):
+            self.send_fixture(b'<!doctype html><meta charset=utf-8><title>Extension fixture</title><h1>Site permissions probe</h1><p>Owned local fixture.</p>','text/html'); return
+        if self.path.startswith(('/extension-allowed','/extension-blocked')):
+            self.send_fixture(b'fixture request','text/plain'); return
         if self.path.startswith('/slow-state/'):
             with slow_lock: active = self.path.removeprefix('/slow-state/') in slow_requests
             self.send_fixture(json.dumps({'active':active}).encode(),'application/json'); return

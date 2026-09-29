@@ -1,0 +1,40 @@
+{
+  "checks": [
+    "popup-storage: manifest parsed without errors",
+    "popup storage writes and reads",
+    "popup messages reach MV3 worker",
+    "extension popup has no capture native bridge",
+    "unsupported programmatic script API is unavailable",
+    "host presents real extension popup",
+    "extension storage survives unload and reload",
+    "site-content: manifest parsed without errors",
+    "declared host access is not granted automatically",
+    "approved site content script executes",
+    "capture bridge exists in its own isolated world",
+    "content script cannot reach capture native bridge",
+    "revoking site access stops injection after reload",
+    "disabling extension stops later injection",
+    "re-enabling extension restores approved content scripts",
+    "request-rules: manifest parsed without errors",
+    "request succeeds before rule extension is loaded",
+    "request rules preserve unmatched requests",
+    "declared request rule blocks matching fetch",
+    "request-rule context reports revoked host access",
+    "unloaded rules no longer block requests",
+    "all probe extensions deny private data",
+    "local-file access is never granted",
+    "all extension contexts unload"
+  ],
+  "error": "DNR site revocation leaves matching requests blocked; Reloaded DNR rules still block a denied site",
+  "failedChecks": [
+    "DNR site revocation leaves matching requests blocked",
+    "Reloaded DNR rules still block a denied site"
+  ],
+  "scope": "Three owned fixtures; API integration only, not browser UI or real extension compatibility acceptance",
+  "status": "failed",
+  "system": "Version 27.0 (Build 26A428)",
+  "sourceSHA256": "17790bfe4f20157bb46b924a7a91c53bb22fd0bc1bf960bbec2ddccf4905b723",
+  "binarySHA256": "4858b278b3158e1873ea1d61dbed433dbfa4e66e9b078f5c9d99917b4b944c38",
+  "date": "2026-09-30",
+  "exitCode": 1
+}

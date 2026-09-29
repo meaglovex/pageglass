@@ -8,9 +8,8 @@ struct CaptureResult {
     let prompt: String
     let metadata: [String: Any]
 
-    func copyForCodex() {
+    func copyForCodex(pasteboard:NSPasteboard = CaptureClipboard.current) {
         // 只写文本，避免接收端优先消费 PNG 后丢弃代码。文本引用同机的完整捕获包。
-        let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(prompt, forType:.string)
         pasteboard.setString(directory.path,forType:CaptureRetention.clipboardType)

@@ -20,14 +20,14 @@ enum CaptureFlowSmoke {
             try require(cancelled && (try FileManager.default.contentsOfDirectory(atPath:root.path)).isEmpty,"cancel during \(phase) leaves no completed or pending package")
         }
         let sentinel = "pageglass-cancel-keeps-clipboard"
-        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(sentinel,forType:.string)
+        CaptureClipboard.current.clearContents(); CaptureClipboard.current.setString(sentinel,forType:.string)
         _ = try await view.evaluateJavaScript("window.scrollTo(0,120)")
         let before = try await view.evaluateJavaScript("scrollY") as? Double ?? 0
         browser.performCapture(mode:"page"); let task = browser.captureTask
         try await Task.sleep(for:.milliseconds(50)); browser.cancelCapture(); await task?.value
         let after = try await view.evaluateJavaScript("scrollY") as? Double ?? -1
         try require(!browser.capturing && browser.captureTask == nil && abs(before-after)<1,"cancelled page capture restores scrolling and browser controls")
-        try require(NSPasteboard.general.string(forType:.string) == sentinel,"cancelled capture preserves previous clipboard")
+        try require(CaptureClipboard.current.string(forType:.string) == sentinel,"cancelled capture preserves previous clipboard")
         let overlays = try await service.js(view,"document.querySelectorAll('[data-pageglass-overlay]').length") as? Int
         try require(overlays == 0,"cancelled capture removes temporary styles and overlays")
         let blocked = output.appendingPathComponent("not-a-directory")
@@ -41,7 +41,7 @@ enum CaptureFlowSmoke {
         let record = CaptureCatalog.record(result.directory)
         try require(record.problem == nil && CaptureCatalog.thumbnail(result.directory) != nil,"saved capture is discoverable with a decoded preview")
         try CaptureCatalog.copyPrompt(result.directory)
-        try require(NSPasteboard.general.string(forType:.string) == result.prompt,"capture history can recopy original local handoff")
+        try require(CaptureClipboard.current.string(forType:.string) == result.prompt,"capture history can recopy original local handoff")
         let reference = result.directory.appendingPathComponent("reference.html")
         try "<!doctype html><title>Script-free preview test</title><body>Preview<script>document.body.dataset.executed='yes'</script>".write(to:reference,atomically:true,encoding:.utf8)
         let preview = try CaptureReferenceController(directory:result.directory); preview.showWindow(nil)
@@ -69,7 +69,7 @@ enum CaptureFlowSmoke {
         _ = try await view.evaluateJavaScript("document.querySelector('#metric-card').style.cssText='background-image:url(/slow-image/\(token))'")
         _ = try await service.js(view,"globalThis.__pageglass.selectForTest('#metric-card')")
         let existing = Set((try? FileManager.default.contentsOfDirectory(atPath:browser.captureRoot.path)) ?? [])
-        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(sentinel,forType:.string)
+        CaptureClipboard.current.clearContents(); CaptureClipboard.current.setString(sentinel,forType:.string)
         browser.performCapture(mode:"element"); let inFlight = browser.captureTask
         var fetching = false
         for _ in 0..<300 {
@@ -86,7 +86,7 @@ enum CaptureFlowSmoke {
         try require(fetching,"cancel check reaches an actual resource response still in flight (phase: \(phaseAtCancel))")
         try require(Date().timeIntervalSince(cancelledAt)<4 && !browser.capturing,"cancelling aborts the resource stream without waiting for its five-second response")
         try require((try await service.js(view,"typeof globalThis.__pageglassAbortAssets")) as? String == "undefined","resource cancellation removes its isolated abort hook")
-        try require(Set((try? FileManager.default.contentsOfDirectory(atPath:browser.captureRoot.path)) ?? []) == existing && NSPasteboard.general.string(forType:.string) == sentinel,"in-flight cancellation leaves no package and preserves clipboard")
+        try require(Set((try? FileManager.default.contentsOfDirectory(atPath:browser.captureRoot.path)) ?? []) == existing && CaptureClipboard.current.string(forType:.string) == sentinel,"in-flight cancellation leaves no package and preserves clipboard")
         return checks
     }
 }
