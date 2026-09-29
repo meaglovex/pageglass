@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Capture assets QA</title><link rel="icon" href="/fixture.png?favicon=1"><style>
+@font-face{font-family:CaptureFixture;src:url('/fixture.ttf') format('truetype')}
+body{margin:40px;background:#fff;font-family:CaptureFixture,Arial,sans-serif;color:#18212d}
+#card{width:460px;box-sizing:border-box;background:#eef1f8;border:1px solid #bdc9db;border-radius:12px;padding:24px}
+h2{font-size:26px;margin:0 0 18px}.row{display:flex;gap:16px;align-items:center}.tile{width:64px;height:48px}#background{background:url('/fixture.png?color=blue&version=1') center/cover}#pseudo::before{content:'';display:block;width:32px;height:24px;background:url('/fixture.png?pseudo=1') center/cover}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute;overflow:hidden"><defs><linearGradient id="qa-gradient"><stop offset="0" stop-color="#00b383"/><stop offset="1" stop-color="#255edc"/></linearGradient><symbol id="qa-symbol" viewBox="0 0 64 48"><rect width="64" height="48" rx="6" fill="url(#qa-gradient)"/></symbol></defs></svg>
+<section id="card"><h2>Offline capture ABC 123</h2><div class="row"><img id="raster" class="tile" src="/fixture.png"><img id="vector" class="tile" src="/fixture.svg"><div id="background" class="tile"></div><svg id="inline-vector" class="tile" viewBox="0 0 64 48"><use href="#qa-symbol" width="64" height="48"/></svg></div><div id="pseudo"></div><p><label><input id="checked" type="checkbox">Keep selected state</label></p><details id="details"><summary>Details</summary><p>Observed expanded state</p></details></section>
+<script>document.querySelector('#checked').checked=true;document.querySelector('#details').open=true;</script>
+</body></html>

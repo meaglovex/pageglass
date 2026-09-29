@@ -1,0 +1,20 @@
+name: macOS build
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Unit tests
+        run: swift test
+      - name: Build ARM64 app
+        run: scripts/build.sh
+      - name: Verify signature and architecture
+        run: |
+          codesign --verify --deep --strict dist/Pageglass.app
+          file dist/Pageglass.app/Contents/MacOS/Pageglass
