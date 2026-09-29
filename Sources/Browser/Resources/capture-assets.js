@@ -3,6 +3,8 @@ const maxFile = 2 * 1024 * 1024, maxTotal = 20 * 1024 * 1024;
 const unique = [...new Set(urls)].filter(u => !u.startsWith('data:'));
 const results = [], controllers = new Set();
 let index = 0, consumed = 0, expired = false;
+const abort = () => { expired = true; for (const c of controllers) c.abort(); };
+globalThis.__pageglassAbortAssets = abort;
 const deadline = setTimeout(() => { expired = true; for (const c of controllers) c.abort(); }, 12000);
 const encode = bytes => {
   let raw = '';
@@ -61,4 +63,4 @@ async function worker() {
   }
 }
 try { await Promise.all(Array.from({length:4},worker)); return results; }
-finally { clearTimeout(deadline); for (const c of controllers) c.abort(); }
+finally { clearTimeout(deadline); for (const c of controllers) c.abort(); if (globalThis.__pageglassAbortAssets === abort) delete globalThis.__pageglassAbortAssets; }

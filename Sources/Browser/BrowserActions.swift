@@ -31,11 +31,11 @@ extension BrowserWindow {
     @objc func nextTab() { activate((activeIndex+1)%tabs.count) }
     @objc func previousTab() { activate((activeIndex+tabs.count-1)%tabs.count) }
     @objc func numberedTab(_ item:NSMenuItem) { activate(item.tag == 9 ? tabs.count-1 : min(item.tag-1,tabs.count-1)) }
-    func moveTab(_ source:UUID,before target:UUID) {
+    func moveTab(_ source:UUID,relativeTo target:UUID,after:Bool = false) {
         guard !capturing,source != target,let from = tabs.firstIndex(where:{$0.id == source}),let to = tabs.firstIndex(where:{$0.id == target}) else { return }
         let active = tabs[activeIndex].id, tab = tabs.remove(at:from)
-        tabs.insert(tab,at:min(to - (from < to ? 1 : 0),tabs.count)); activeIndex = tabs.firstIndex(where:{$0.id == active}) ?? 0
-        renderTabs(); saveSession()
+        tabs.insert(tab,at:min(to + (after ? 1 : 0) - (from < to ? 1 : 0),tabs.count)); activeIndex = tabs.firstIndex(where:{$0.id == active}) ?? 0
+        renderTabs(revealActive:true); saveSession()
     }
     func tabMenu(_ id:UUID)->NSMenu {
         let menu = NSMenu()
@@ -66,7 +66,7 @@ extension BrowserWindow {
     }
     @objc func showMore(_ sender:NSButton) {
         let menu = NSMenu()
-        let actions: [(String,Selector)] = [("新建标签页",#selector(newTab)),("重新打开关闭的标签页",#selector(reopenTab)),("书签",#selector(showBookmarks)),("历史记录",#selector(showHistory)),("下载",#selector(showDownloads)),("显示 / 隐藏书签栏",#selector(toggleBookmarksBar)),("在页面中查找",#selector(findInPage)),("放大",#selector(zoomIn)),("缩小",#selector(zoomOut)),("实际大小",#selector(resetZoom)),("保存网页…",#selector(savePage)),("打印…",#selector(printPage)),(interactionRecording?.isRecording == true ? "停止交互记录" : "开始交互记录",#selector(toggleInteractionRecording)),("复制给 Codex",#selector(copyLatest)),("复制截图",#selector(copyImage)),("打开捕获文件夹",#selector(revealCapture)),("开发者工具",#selector(showDeveloperTools)),("设置",#selector(showSettings))]
+        let actions: [(String,Selector)] = [("主页",#selector(goHome)),("新建标签页",#selector(newTab)),("重新打开关闭的标签页",#selector(reopenTab)),("书签",#selector(showBookmarks)),("历史记录",#selector(showHistory)),("下载",#selector(showDownloads)),("显示 / 隐藏书签栏",#selector(toggleBookmarksBar)),("在页面中查找",#selector(findInPage)),("放大",#selector(zoomIn)),("缩小",#selector(zoomOut)),("实际大小",#selector(resetZoom)),("保存网页…",#selector(savePage)),("打印…",#selector(printPage)),(interactionRecording?.isRecording == true ? "停止交互记录" : "开始交互记录",#selector(toggleInteractionRecording)),("捕获历史",#selector(showCaptureHistory)),("复制给 Codex",#selector(copyLatest)),("复制截图",#selector(copyImage)),("打开捕获文件夹",#selector(revealCapture)),("开发者工具",#selector(showDeveloperTools)),("设置",#selector(showSettings))]
         for (title,action) in actions { let item = NSMenuItem(title:title,action:action,keyEquivalent:""); item.target = self; menu.addItem(item) }
         menu.popUp(positioning:nil,at:NSPoint(x:0,y:sender.bounds.minY),in:sender)
     }

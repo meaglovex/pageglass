@@ -58,10 +58,14 @@ enum SmokeTest {
             checks += try await BrowserFeatureSmoke.run(browser)
             if let index = CommandLine.arguments.firstIndex(of:"--asset-test-url"),CommandLine.arguments.count > index+1,let base = URL(string:CommandLine.arguments[index+1]) { checks += try await CaptureAssetSmoke.run(browser,base:base,output:output); checks += try await InteractionSmoke.run(browser,base:base,output:output) }
             checks += try await DeveloperToolsSmoke.run(browser)
+            checks += try await ExperienceSmoke.run(output:output)
+            checks += try await CaptureFlowSmoke.run(browser,output:output)
+            checks += try await CaptureLibrarySmoke.run(browser,output:output)
             let report: [String:Any] = ["passed":checks,"gpu":gpu ?? NSNull(),"element":element.directory.path,"page":page.directory.path,"cleanPage":cleanPage.directory.path,"viewport":["width":view.bounds.width,"height":view.bounds.height],"status":"passed"]
             try JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]).write(to:output.appendingPathComponent("report.json"))
             browser.latest = page; browser.status.stringValue = "实机自动检查通过：\(checks.count) 项"
             print("SMOKE PASS \(checks.count) \(output.path)")
+            if CommandLine.arguments.contains("--review-capture") { browser.performCapture(mode:"page") }
             if CommandLine.arguments.contains("--exit") { NSApp.terminate(nil) }
         } catch {
             let report: [String:Any] = ["passed":checks,"error":error.localizedDescription,"status":"failed"]

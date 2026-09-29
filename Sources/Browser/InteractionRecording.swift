@@ -89,6 +89,7 @@ extension BrowserWindow {
     var interactionRecording:InteractionRecording? { tabs.indices.contains(activeIndex) ? tabs[activeIndex].recording : nil }
     @objc func toggleInteractionRecording() {
         guard !capturing,!selecting,let view = activeWebView,let recorder = interactionRecording else { return }
+        recordingBarHidden = false
         recorder.onChange = { [weak self] in self?.syncChrome() }
         Task { @MainActor in
             if recorder.isRecording { _ = await recorder.finish(view);status.stringValue = "已停止交互记录 · 下次捕获会一起复制" }

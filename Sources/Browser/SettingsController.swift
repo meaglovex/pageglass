@@ -10,6 +10,7 @@ final class SettingsController:NSWindowController {
     let restore = NSButton(checkboxWithTitle:"启动时恢复上次的标签页",target:nil,action:nil)
     let bookmarks = NSButton(checkboxWithTitle:"显示书签栏",target:nil,action:nil)
     let message = NSTextField(labelWithString:"")
+    private var summaryGeneration = UUID()
     init(browser:BrowserWindow) {
         self.browser = browser
         let window = NSWindow(contentRect:NSRect(x:0,y:0,width:600,height:540),styleMask:[.titled,.closable],backing:.buffered,defer:false)
@@ -60,19 +61,39 @@ final class SettingsController:NSWindowController {
         settings.restoreSession = restore.state == .on; settings.showBookmarksBar = bookmarks.state == .on
         settings.defaultZoom = (Double((zoom.titleOfSelectedItem ?? "100%").dropLast()) ?? 100)/100
         settings.captureRetentionDays = retentionDays[max(0,retention.indexOfSelectedItem)]
+        if settings.captureRetentionDays != browser.store.state.settings.captureRetentionDays,let days = settings.captureRetentionDays,days > 0 {
+            let expired = (try? CaptureRetention(root:browser.captureRoot).packages().filter { Date().timeIntervalSince($0.date) >= Double(days)*86400 }.count) ?? 0
+            if expired > 0 {
+                let alert = NSAlert(); alert.messageText = "保存后将清理 \(expired) 个已到期捕获"
+                alert.informativeText = "保留时间改为 \(days) 天。到期捕获将移入废纸篓，原复制路径会失效。"
+                alert.addButton(withTitle:"取消"); alert.addButton(withTitle:"保存并清理")
+                guard alert.runModal() == .alertSecondButtonReturn else { return }
+            }
+        }
         browser.store.updateSettings(settings); browser.store.flush()
         let cleaned = browser.cleanCaptures();refreshCaptureSummary()
         message.stringValue = browser.store.error ?? (cleaned.removed.isEmpty && cleaned.failures == 0 ? "已保存。默认缩放用于新打开的页面。" : cleaned.message)
     }
     func refreshCaptureSummary() {
         guard let browser else { return }
-        do { captureSummary.stringValue = "本机保存 \(try CaptureRetention(root:browser.captureRoot).packages().count) 个捕获包" }
-        catch { captureSummary.stringValue = "无法读取捕获目录" }
+        summaryGeneration = UUID(); let token = summaryGeneration,root = browser.captureRoot
+        captureSummary.stringValue = "正在统计本机捕获…"
+        Task { @MainActor [weak self] in
+            let result = await Task.detached(priority:.utility) { Result { () throws -> (Int,Int64) in
+                let packages = try CaptureRetention(root:root).packages()
+                return (packages.count,packages.reduce(0) { $0+CaptureCatalog.size(of:$1.url) })
+            } }.value
+            guard let self,summaryGeneration == token else { return }
+            switch result {
+            case .success(let value): captureSummary.stringValue = "\(value.0) 个捕获 · \(ByteCountFormatter.string(fromByteCount:value.1,countStyle:.file))"
+            case .failure: captureSummary.stringValue = "无法读取捕获目录"
+            }
+        }
     }
     @objc func clearCapturedContent() {
         guard let browser else { return }
         let alert = NSAlert();alert.messageText = "清除全部捕获？"
-        alert.informativeText = "捕获的截图、参考代码和交互记录将移入废纸篓，可从废纸篓恢复。原复制路径会失效；如果剪贴板仍是这些捕获，也会清空。其他应用中已经粘贴的内容不会被删除。"
+        alert.informativeText = "\(captureSummary.stringValue)。全部捕获的截图、参考代码和交互记录将移入废纸篓，可从废纸篓恢复。原复制路径会失效；如果剪贴板仍是这些捕获，也会清空。其他应用中已经粘贴的内容不会被删除。"
         alert.addButton(withTitle:"取消");alert.addButton(withTitle:"移入废纸篓")
         guard alert.runModal() == .alertSecondButtonReturn else { return }
         message.stringValue = browser.cleanCaptures(all:true).message;refreshCaptureSummary()

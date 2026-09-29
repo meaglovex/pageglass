@@ -12,6 +12,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Unit tests
         run: swift test
+      - name: Verify benchmark CPU counter
+        run: python3 scripts/benchmark/test_cpu_time.py
       - name: Build ARM64 app
         run: scripts/build.sh
       - name: Verify signature and architecture

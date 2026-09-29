@@ -86,7 +86,7 @@ extension BrowserWindow {
             let raw = try? await captureService.js(view,"Array.from(document.querySelectorAll('link[rel]')).filter(l=>l.rel.toLowerCase().split(/\\s+/).includes('icon')).slice(0,3).map(l=>l.href)") as? [String]
             let icon = await favicons.image(for:page,candidates:(raw ?? []).compactMap(URL.init(string:)))
             guard !Task.isCancelled,view.url == page,tab.webView === view else { return }
-            tab.favicon = icon;renderTabs();renderBookmarks()
+            tab.favicon = icon;updateTabAppearance(tab);renderBookmarks(force:true)
         }
     }
 }

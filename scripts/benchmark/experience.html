@@ -1,0 +1,13 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Pageglass experience fixture</title>
+<style>
+*{box-sizing:border-box}body{margin:0;width:1280px;background:#f5f6f8;color:#263341;font:14px -apple-system,sans-serif}
+header{height:80px;padding:24px 32px;background:white;border-bottom:1px solid #dde3e8}h1{margin:0;font-size:24px}
+main{padding:24px 32px}.card{width:360px;height:180px;padding:24px;background:white;border:1px solid #dde3e8;border-radius:12px}
+.number{font-size:32px;margin:12px 0}button{font:inherit;background:#275e49;color:white;border:0;border-radius:8px;padding:10px 16px}
+#rows{margin-top:24px}.row{height:54px;display:grid;grid-template-columns:2fr 1fr 1fr;align-items:center;padding:0 20px;background:white;border-bottom:1px solid #e6eaee}.row:nth-child(even){background:#f0f4f8}
+</style><header><h1>产品体验测量页</h1></header><main><section class="card" id="metric-card"><div>本月活跃用户</div><div class="number">12,840</div><button>查看详情</button></section><div id="rows"></div></main>
+<script>
+const fragment=document.createDocumentFragment();
+for(let index=0;index<150;index++){const row=document.createElement('div');row.className='row';for(const text of ['需求 '+index,'产品设计','等待评审']){const span=document.createElement('span');span.textContent=text;row.append(span)}fragment.append(row)}
+document.querySelector('#rows').append(fragment);
+</script></html>

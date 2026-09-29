@@ -16,6 +16,7 @@ enum BenchmarkMode {
             let session = CGSessionCopyCurrentDictionary() as? [String:Any]
             guard session != nil,session?["CGSSessionScreenIsLocked"] as? Bool != true else { throw CaptureService.Failure.message("benchmark requires an unlocked desktop") }
             let store = BrowserStore(directory:plan.output.appendingPathComponent("browser-data"))
+            delegate.isolatedStore = store
             let tabs = SavedWindow(tabs:plan.urls.map{SavedTab(url:$0.absoluteString,title:"Benchmark")},active:0)
             let window = BrowserWindow(store:store,session:tabs,dataStore:WKWebsiteDataStore(forIdentifier:plan.websiteDataID))
             delegate.windows.append(window); window.showWindow(nil); window.window?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps:true)

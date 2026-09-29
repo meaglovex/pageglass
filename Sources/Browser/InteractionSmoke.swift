@@ -87,6 +87,15 @@ enum InteractionSmoke {
         for _ in 0..<100 { try await Task.sleep(for:.milliseconds(100));if !view.isLoading { break } }
         let afterFailure = try await browser.captureService.js(view,"globalThis.__pageglassRecorder.revision()") as? [String:Any]
         try require(view.url == url && !view.isLoading && !recorder.isRecording && afterFailure?["enabled"] as? Bool == false,"failed navigation stops recorder even when previous document survives")
+        browser.selectElement()
+        let beforeNavigation = try await browser.captureService.js(view,"document.querySelectorAll('[data-pageglass-overlay]').length") as? Int
+        try require(browser.selecting && beforeNavigation == 2,"element picker is active before failed-navigation recovery test")
+        browser.load(base.appendingPathComponent("broken-navigation"))
+        for _ in 0..<100 { try await Task.sleep(for:.milliseconds(100));if !view.isLoading { break } }
+        let overlays = try await browser.captureService.js(view,"document.querySelectorAll('[data-pageglass-overlay]').length") as? Int
+        try require(view.url == url && !browser.selecting && overlays == 0,"failed navigation removes the old document's element picker")
+        let canInteract = try await view.evaluateJavaScript("(()=>{const before=document.querySelector('#details').open;document.querySelector('summary').click();return document.querySelector('#details').open!==before})()") as? Bool
+        try require(canInteract == true && !browser.capturing,"failed navigation leaves the previous page interactive without starting capture")
         return checks
     }
 }

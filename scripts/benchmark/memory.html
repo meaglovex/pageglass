@@ -5,6 +5,8 @@ const run='%%RUN%%',tab=%%TAB%%,rows=document.querySelector('#rows'),fragment=do
 for(let i=0;i<1000;i++){const row=document.createElement('tr');for(const text of ['需求 '+i,'产品经理','设计评审','2026-09-29']){const td=document.createElement('td');td.textContent=text;row.append(td);}fragment.append(row);}rows.append(fragment);
 const svg=document.querySelector('#chart');for(let i=0;i<200;i++){const bar=document.createElementNS('http://www.w3.org/2000/svg','rect');bar.setAttribute('x',i*5);bar.setAttribute('y',150-(i*17%120+20));bar.setAttribute('width',3);bar.setAttribute('height',i*17%120+20);bar.setAttribute('fill','#5789f4');svg.append(bar);}
 document.querySelector('#document').value=('产品需求与交互说明：保留页面状态和输入内容。\n').repeat(400);
-function report(){fetch('/__bench/result/'+run,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'memory',tab,ready:true,rows:rows.rows.length,nodes:document.querySelectorAll('*').length,viewport:{width:innerWidth,height:innerHeight},visible:!document.hidden,userAgent:navigator.userAgent})});}
+let seenVisible=!document.hidden;
+function report(){seenVisible ||= !document.hidden;fetch('/__bench/result/'+run,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'memory',tab,ready:true,seenVisible,rows:rows.rows.length,nodes:document.querySelectorAll('*').length,viewport:{width:innerWidth,height:innerHeight},containerViewport:{width:parent.innerWidth,height:parent.innerHeight},visible:!document.hidden,userAgent:navigator.userAgent})});}
 window.addEventListener('load',()=>setTimeout(report,100));document.addEventListener('visibilitychange',report);
+let resizeReport;window.addEventListener('resize',()=>{clearTimeout(resizeReport);resizeReport=setTimeout(report,150);});
 </script>
