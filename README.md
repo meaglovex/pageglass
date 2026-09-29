@@ -85,7 +85,7 @@ open dist/Pageglass.app
 - 恢复会话时只加载当前标签，其余按需加载；「标签页 → 释放其他标签页」可释放内存，会先提示页面未保存状态可能丢失。
 - 默认粘贴是本地文件引用，不会自动附上图片缩略图。云端或远程 Codex 无法直接访问这些本地路径，需要附加捕获文件。
 
-技术决定见 [architecture.md](docs/architecture.md)，上一开发版验收进度见 [validation-0.7.md](docs/validation-0.7.md)，旧版验证记录见 [validation.md](docs/validation.md)，可复跑的性能对照方法见 [performance.md](docs/performance.md)。本版范围和验收标准见 [0.7 产品体验优化计划](docs/plan-0.7.md)（实施中）。
+技术决定见 [architecture.md](docs/architecture.md)，上一开发版范围见 [0.7 产品体验优化计划](docs/plan-0.7.md)，其验收进度见 [validation-0.7.md](docs/validation-0.7.md)，旧版验证记录见 [validation.md](docs/validation.md)，可复跑的性能对照方法见 [performance.md](docs/performance.md)。
 
 当前开发范围见 [0.8 视觉、操作与扩展计划](docs/plan-0.8.md)，实施状态见 [0.8 验收记录](docs/validation-0.8.md)。扩展宿主已接入开发预览并通过自有样本测试，实际 UI 与第三方插件兼容性仍未完整验收。
 
