@@ -25,7 +25,7 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
         tabs.first(where:{$0.webView === webView})?.failure = nil
         tabs.first(where:{$0.webView === webView})?.iconTask?.cancel()
         // A failed or cancelled navigation can leave the old document alive.
-        webView.evaluateJavaScript("globalThis.__pageglassRecorder?.stop(false)",in:nil,in:CaptureService.world)
+        webView.evaluateJavaScript("globalThis.__pageglass?.stop();globalThis.__pageglassRecorder?.stop(false)",in:nil,in:CaptureService.world)
         tabs.first(where:{$0.webView === webView})?.recording.reset()
         if webView === self.activeWebView { selecting = false; status.stringValue = "正在加载…"; syncChrome() }
     }
