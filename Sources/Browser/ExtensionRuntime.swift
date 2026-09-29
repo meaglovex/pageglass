@@ -76,7 +76,8 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
         return context
     }
     /// Called only after the install/update review; website grants are retained separately.
-    func install(_ prepared:ExtensionPackage,replacing id:UUID? = nil) async throws {
+    @discardableResult
+    func install(_ prepared:ExtensionPackage,replacing id:UUID? = nil) async throws->UUID {
         try begin(); defer { end() }
         let old = repository.state.items.first { $0.id == id }
         guard id == nil || old != nil else { throw ExtensionPackage.Failure(message:"待更新的扩展已移除，请重新选择") }
@@ -106,6 +107,7 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
             throw failure
         }
         if let oldDirectory = old.flatMap(repository.directory(for:)) { try? FileManager.default.trashItem(at:oldDirectory,resultingItemURL:nil) }
+        return record.id
     }
     func setEnabled(_ enabled:Bool,id:UUID) async throws {
         try begin(); defer { end() }

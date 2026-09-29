@@ -217,7 +217,9 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         if captureSidebar?.isHidden == false { dismissCaptureSidebar() }
         else if captureIntro != nil { dismissCaptureIntro() }
         else if selecting || capturing { cancelCapture() }
-        else { super.cancelOperation(sender) }
+        // NSResponder declares this text action, but NSWindowController does not
+        // implement it. Calling super here raises an Objective-C exception.
+        else if let view = activeWebView,view.isLoading { view.stopLoading() }
     }
     func windowDidUpdate(_ notification:Notification) {
         let editor = address.currentEditor()

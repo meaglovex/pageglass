@@ -227,6 +227,29 @@ enum ExtensionSmoke {
             try require((try await retained.evaluateJavaScript("JSON.parse(document.querySelector('output').textContent).count") as? Int ?? 0) >= 4,"reinstall can reuse explicitly retained extension data")
             try runtime.setToolbarVisible(false,id:id)
             try require(browser.extensionActionButtons[id] == nil && runtime.contexts[id]?.isLoaded == true,"hiding toolbar action leaves the extension enabled")
+            runtime.closeViews(id)
+            let contentSource = root.appendingPathComponent("content-only-fixture")
+            try FileManager.default.createDirectory(at:contentSource,withIntermediateDirectories:true)
+            let contentManifest:[String:Any] = ["manifest_version":3,"name":"Content-only fixture","description":"Owned static content extension without an action","version":"1.0","content_scripts":[["matches":["http://127.0.0.1/*"],"js":["content.js"]]]]
+            try JSONSerialization.data(withJSONObject:contentManifest).write(to:contentSource.appendingPathComponent("manifest.json"))
+            try "document.documentElement.dataset.contentOnly='1';".write(to:contentSource.appendingPathComponent("content.js"),atomically:true,encoding:.utf8)
+            let manager = ExtensionManagementController(browser:browser); browser.extensionManager = manager
+            manager.selectExtension(id)
+            try await manager.installReviewed(ExtensionPackage.prepare(source:contentSource,in:runtime.repository.staging))
+            guard let contentID = runtime.repository.state.items.first(where:{$0.name == "Content-only fixture"})?.id else { throw CaptureService.Failure.message("content-only install missing") }
+            try require(manager.selected?.id == contentID,"install selects the newly installed extension instead of the previous row")
+            try runtime.setToolbarVisible(true,id:contentID)
+            try require(runtime.action(contentID,browser:browser) == nil && browser.extensionActionButtons[contentID] == nil,"content-only extension has no synthetic runnable toolbar action")
+            let contentItem = browser.extensionMenu().items.first { $0.representedObject as? String == contentID.uuidString }
+            guard let contentItem,let menuAction = contentItem.action else { throw CaptureService.Failure.message("content-only management entry missing") }
+            manager.selectExtension(id)
+            _ = NSApp.sendAction(menuAction,to:contentItem.target,from:contentItem)
+            try require(contentItem.title.hasSuffix("网站权限…") && manager.selected?.id == contentID && runtime.popup == nil,"content-only menu opens the matching permission details without a fake popup")
+            manager.close()
+            try runtime.setSite(site,allowed:true,id:contentID); try await load()
+            try await wait("content-only injection") { try await browser.webView.evaluateJavaScript("document.documentElement.dataset.contentOnly") as? String == "1" }
+            try require(runtime.contexts[contentID]?.hasAccess(to:page) == true,"content-only extension still runs its granted static script without an action")
+            try await runtime.remove(id:contentID,includingData:true)
             runtime.closeViews(id); try await runtime.remove(id:id,includingData:true)
             try require(runtime.repository.state.items.isEmpty && runtime.contexts.isEmpty,"remove including data clears installed record and context")
             await cleanup(); return checks

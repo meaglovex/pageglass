@@ -3,6 +3,24 @@ import WebKit
 
 @MainActor
 enum WorkflowSmoke {
+    static func loadingEscape(_ browser:BrowserWindow,base:URL) async throws->[String] {
+        let url = base.appendingPathComponent("escape-page/\(UUID().uuidString)")
+        browser.load(url)
+        let view = browser.webView
+        for _ in 0..<80 {
+            if view.title == "Escape loading fixture",view.isLoading { break }
+            try await Task.sleep(for:.milliseconds(25))
+        }
+        guard view.title == "Escape loading fixture",view.isLoading else { throw CaptureService.Failure.message("Escape fixture was not observed loading") }
+        browser.window?.makeFirstResponder(view)
+        _ = browser.tryToPerform(#selector(NSResponder.cancelOperation(_:)),with:nil)
+        for _ in 0..<40 { if !view.isLoading { break }; try await Task.sleep(for:.milliseconds(25)) }
+        guard !view.isLoading else { throw CaptureService.Failure.message("Escape did not stop the pending page load") }
+        let draft = try await browser.captureService.js(view,"document.querySelector('#draft').value") as? String
+        guard draft == "loading-draft",view.url == url,browser.window?.firstResponder === view else { throw CaptureService.Failure.message("Escape discarded the loaded document or focus") }
+        return ["Escape stops a pending page load without discarding its document, draft or focus"]
+    }
+
     static func run(_ browser:BrowserWindow,output:URL) async throws->[String] {
         var checks:[String] = []
         func require(_ value:Bool,_ message:String) throws { if !value { throw CaptureService.Failure.message(message) }; checks.append(message) }
@@ -13,6 +31,11 @@ enum WorkflowSmoke {
         browser.window?.makeKeyAndOrderFront(nil); browser.window?.makeFirstResponder(view)
         browser.window?.contentView?.layoutSubtreeIfNeeded()
         let introViewport = view.bounds.size, originalTab = browser.tabs[browser.activeIndex], originalCount = browser.tabs.count
+        _ = try await browser.captureService.js(view,"document.body.insertAdjacentHTML('beforeend','<input id=escape-draft value=unsaved-draft>')")
+        for _ in 0..<2 { _ = browser.tryToPerform(#selector(NSResponder.cancelOperation(_:)),with:nil) }
+        let draft = try await browser.captureService.js(view,"document.querySelector('#escape-draft').value") as? String
+        try require(draft == "unsaved-draft" && browser.tabs.count == originalCount && browser.tabs[browser.activeIndex] === originalTab && browser.window?.firstResponder === view,"Escape on an ordinary page preserves its draft, tab and focus without an exception")
+        _ = try await browser.captureService.js(view,"document.querySelector('#escape-draft').remove()")
         browser.showCaptureIntro(); browser.window?.contentView?.layoutSubtreeIfNeeded()
         try require(browser.captureIntro != nil && view.bounds.size == introViewport && browser.window?.firstResponder === view,"capture introduction neither resizes the page nor steals typing focus")
         try require(browser.store.state.settings.captureIntroSeen == true && !browser.canOfferCaptureIntro,"displayed introduction is not offered automatically again")

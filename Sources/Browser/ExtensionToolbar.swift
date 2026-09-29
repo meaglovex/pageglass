@@ -42,7 +42,10 @@ extension BrowserWindow {
 @available(macOS 15.4,*)
 extension ExtensionRuntime {
     func action(_ id:UUID,browser:BrowserWindow)->WKWebExtension.Action? {
-        guard !browser.privateBrowsing,let context = contexts[id],context.isLoaded else { return nil }
+        // WebKit also supplies a default Action for content-only extensions.
+        // Only expose a runnable control when the extension declares one.
+        guard !browser.privateBrowsing,let context = contexts[id],context.isLoaded,
+              context.webExtension.manifest["action"] is [String:Any] else { return nil }
         let tab = browser.tabs.indices.contains(browser.activeIndex) ? browser.tabs[browser.activeIndex] : nil
         return context.action(for:tab?.extensionVisible == true ? tab : nil)
     }

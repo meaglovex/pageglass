@@ -9,16 +9,27 @@ extension BrowserWindow {
         } else { status.show("扩展需要 macOS 15.4 或更高版本；当前系统可继续浏览和捕获。",persistent:true) }
     }
     @objc func showExtensionMenu(_ sender:NSButton) {
-        let menu = NSMenu()
+        extensionMenu().popUp(positioning:nil,at:NSPoint(x:0,y:sender.bounds.minY),in:sender)
+    }
+    func extensionMenu()->NSMenu {
+        let menu = NSMenu(); menu.autoenablesItems = false
         if #available(macOS 15.4,*),let runtime = extensions {
             for record in runtime.repository.state.items where runtime.contexts[record.id]?.isLoaded == true {
-                let item = NSMenuItem(title:record.name,action:#selector(runExtension(_:)),keyEquivalent:""); item.target = self; item.representedObject = record.id.uuidString
+                let action = runtime.action(record.id,browser:self)
+                let item = NSMenuItem(title:record.name+(action == nil ? " · 网站权限…" : ""),action:action == nil ? #selector(manageExtension(_:)) : #selector(runExtension(_:)),keyEquivalent:"")
+                item.target = self; item.representedObject = record.id.uuidString
+                item.isEnabled = !runtime.busy && !capturing && (action?.isEnabled ?? true)
                 menu.addItem(item)
             }
             if !menu.items.isEmpty { menu.addItem(.separator()) }
         }
         let manage = NSMenuItem(title:"管理扩展…",action:#selector(showExtensions),keyEquivalent:""); manage.target = self; menu.addItem(manage)
-        menu.popUp(positioning:nil,at:NSPoint(x:0,y:sender.bounds.minY),in:sender)
+        return menu
+    }
+    @objc private func manageExtension(_ sender:NSMenuItem) {
+        guard let string = sender.representedObject as? String,let id = UUID(uuidString:string) else { return }
+        showExtensions()
+        if #available(macOS 15.4,*) { (extensionManager as? ExtensionManagementController)?.selectExtension(id) }
     }
     @objc private func runExtension(_ sender:NSMenuItem) {
         guard let string = sender.representedObject as? String,let id = UUID(uuidString:string) else { return }
@@ -36,7 +47,7 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
     private let allowButton = NSButton(), revokeButton = NSButton(), reloadButton = NSButton(), sites = NSPopUpButton()
     private let toolbarCheck = NSButton(checkboxWithTitle:"显示在工具栏（窄窗口自动收入扩展菜单）",target:nil,action:nil)
     private var rows:[InstalledExtension] = [], observer:NSObjectProtocol?, importing = false
-    private var selected:InstalledExtension? { rows.indices.contains(table.selectedRow) ? rows[table.selectedRow] : nil }
+    var selected:InstalledExtension? { rows.indices.contains(table.selectedRow) ? rows[table.selectedRow] : nil }
     init(browser:BrowserWindow) {
         self.browser = browser; runtime = browser.extensions!
         let window = NSWindow(contentRect:NSRect(x:0,y:0,width:760,height:740),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
@@ -64,8 +75,9 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
     required init?(coder:NSCoder) { fatalError() }
     deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
     @objc func closeTab() { close() }
-    private func refresh() {
-        let id = selected?.id; rows = runtime.repository.state.items
+    func selectExtension(_ id:UUID) { refresh(selecting:id) }
+    private func refresh(selecting preferredID:UUID? = nil) {
+        let id = preferredID ?? selected?.id; rows = runtime.repository.state.items
         table.reloadData()
         if let index = rows.firstIndex(where:{$0.id == id}) ?? (rows.isEmpty ? nil : 0) { table.selectRowIndexes(IndexSet(integer:index),byExtendingSelection:false) }
         updateDetail()
@@ -86,6 +98,7 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
         let loaded = record.flatMap { runtime.contexts[$0.id] }
         enableButton.title = loaded?.isLoaded == true ? "停用" : "启用"
         let action = record.flatMap { record in browser.flatMap { runtime.action(record.id,browser:$0) } }
+        actionButton.title = loaded != nil && action == nil ? "无工具栏动作" : "打开扩展"
         actionButton.isEnabled = usable && action?.isEnabled == true; optionsButton.isEnabled = usable && loaded?.optionsPageURL != nil
         toolbarCheck.state = record?.toolbarVisible == true ? .on : .off
         toolbarCheck.isEnabled = usable && record?.package != nil && (action != nil || loaded == nil)
@@ -94,6 +107,7 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
         revokeButton.isEnabled = usable && sites.numberOfItems > 0
         guard let record else { details.stringValue = runtime.repository.readError ?? "尚未安装扩展。Pageglass 不预装第三方扩展，也不默认授予全站访问。"; return }
         details.stringValue = "来源：\(record.sourceName)\n请求权限：\(record.permissions.isEmpty ? "无额外 API 权限" : record.permissions.joined(separator:", "))\n网站范围：\(record.hosts.isEmpty ? "未声明" : record.hosts.joined(separator:", "))\n\(runtime.errors[record.id] ?? "停用或撤权后，刷新网页才能清除已经改变的页面内容。")"
+        if loaded != nil && action == nil { details.stringValue += "\n此扩展没有工具栏动作；授权后在匹配的网站自动运行。" }
     }
     @objc private func importNew() { importPackage(replacing:nil) }
     @objc private func toggleToolbar() {
@@ -120,10 +134,14 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
                 review.documentView = text; alert.accessoryView = review
                 alert.addButton(withTitle:"取消"); alert.addButton(withTitle:id == nil ? "安装" : "更新")
                 guard alert.runModal() == .alertSecondButtonReturn else { feedback.stringValue = "已取消导入"; return }
-                try await runtime.install(package,replacing:id)
-                feedback.stringValue = "扩展已启用。请按需要授权当前网站，再刷新页面。"
+                try await installReviewed(package,replacing:id)
             } catch { feedback.stringValue = error.localizedDescription }
         }
+    }
+    func installReviewed(_ package:ExtensionPackage,replacing id:UUID? = nil) async throws {
+        let installedID = try await runtime.install(package,replacing:id)
+        refresh(selecting:installedID)
+        feedback.stringValue = "已启用“\(package.name)”。请检查网站权限，再按需要刷新页面。"
     }
     @objc private func toggle() {
         guard let record = selected else { return }
