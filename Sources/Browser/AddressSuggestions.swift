@@ -1,7 +1,11 @@
 import AppKit
 
 extension BrowserWindow {
-    func controlTextDidBeginEditing(_ notification:Notification) { if notification.object as? NSTextField === address { omnibox?.showsFocus = true } }
+    func controlTextDidBeginEditing(_ notification:Notification) {
+        if notification.object as? NSTextField === address {
+            tabPopover?.close(); bookmarkPopover?.close(); omnibox?.showsFocus = true
+        }
+    }
     func controlTextDidChange(_ notification:Notification) {
         guard notification.object as? NSTextField === address else { return }
         guard (address.currentEditor() as? NSTextView)?.hasMarkedText() != true else { dismissSuggestions(); return }

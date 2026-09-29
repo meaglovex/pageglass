@@ -62,8 +62,8 @@ enum ExperienceSmoke {
         for _ in 0..<20 { if overflowTable.window?.firstResponder === overflowTable { break }; try await Task.sleep(for:.milliseconds(50)) }
         try require(overflowTable.visibleRect.contains(overflowTable.rect(ofRow:0)) && overflowTable.selectedRow == 0,"bookmark overflow opens at its first record: visible=\(overflowTable.visibleRect), row=\(overflowTable.rect(ofRow:0)), selected=\(overflowTable.selectedRow)")
         try require(overflowTable.window?.firstResponder === overflowTable,"bookmark overflow receives keyboard focus: shown=\(browser.bookmarkPopover?.isShown ?? false), responder=\(String(describing:overflowTable.window?.firstResponder))")
-        func key(_ code:UInt16)->NSEvent {
-            NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:[],timestamp:0,windowNumber:overflowTable.window?.windowNumber ?? 0,context:nil,characters:code == 125 ? "\u{F701}" : "\r",charactersIgnoringModifiers:code == 125 ? "\u{F701}" : "\r",isARepeat:false,keyCode:code)!
+        func key(_ code:UInt16,in table:NSTableView? = nil)->NSEvent {
+            NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:[],timestamp:0,windowNumber:(table ?? overflowTable).window?.windowNumber ?? 0,context:nil,characters:code == 125 ? "\u{F701}" : "\r",charactersIgnoringModifiers:code == 125 ? "\u{F701}" : "\r",isARepeat:false,keyCode:code)!
         }
         overflowTable.keyDown(with:key(125))
         try require(overflowTable.selectedRow == 1 && browser.bookmarkPopover?.isShown == true,"bookmark arrow key selects without navigating")
@@ -86,6 +86,56 @@ enum ExperienceSmoke {
         browser.showBookmarkOverflow(overflowButton); browser.activate(0)
         try await waitClosed()
         try require(browser.bookmarkPopover?.isShown == false,"switching tabs closes bookmark overflow")
+        browser.showBookmarkOverflow(overflowButton); browser.focusAddress()
+        try await waitClosed()
+        try require(browser.bookmarkPopover?.isShown == false && browser.window?.firstResponder === browser.address.currentEditor(),"address shortcut dismisses bookmark overflow and focuses its editor")
+        guard let searchButton = browser.window?.contentView?.subviews.flatMap({ $0.subviews }).compactMap({ $0 as? NSButton }).first(where:{$0.action == #selector(BrowserWindow.showTabList(_:))}) else { throw CaptureService.Failure.message("tab search button missing") }
+        browser.showTabList(searchButton)
+        guard let tabList = browser.tabPopover?.contentViewController as? TabListController else { throw CaptureService.Failure.message("tab search missing") }
+        tabList.view.layoutSubtreeIfNeeded()
+        guard let firstCell = tabList.table.view(atColumn:0,row:0,makeIfNecessary:true) else { throw CaptureService.Failure.message("tab search first row missing") }
+        let listWidth = tabList.table.enclosingScrollView?.contentSize.width ?? 0
+        try require(listWidth > 300 && firstCell.bounds.width >= listWidth-4 && firstCell.subviews.allSatisfy({ $0.frame.maxX <= firstCell.bounds.width }),"tab search titles fill the visible list without clipping: cell=\(firstCell.bounds.width), content=\(listWidth), table=\(tabList.table.bounds.width)")
+        let originalID = browser.tabs[browser.activeIndex].id
+        tabList.search.stringValue = "no-match-\(UUID())"; tabList.refresh(); tabList.openSelected()
+        try require(tabList.matches.isEmpty && !tabList.emptyLabel.isHidden && browser.tabs[browser.activeIndex].id == originalID,"empty tab search explains no results and cannot navigate")
+        browser.address.stringValue = "unfinished-address-draft"; browser.focusAddress()
+        for _ in 0..<20 { if browser.tabPopover?.isShown != true { break }; try await Task.sleep(for:.milliseconds(50)) }
+        try require(browser.tabPopover?.isShown == false && browser.window?.firstResponder === browser.address.currentEditor() && browser.address.stringValue == "unfinished-address-draft","address shortcut closes tab search and preserves the input draft")
+        browser.showCommandPalette()
+        let routed = NSApp.sendAction(#selector(BrowserWindow.focusAddress),to:nil,from:nil)
+        try require(routed && browser.commandPalette?.window?.isVisible == false && browser.window?.isKeyWindow == true && browser.window?.firstResponder === browser.address.currentEditor() && browser.address.stringValue == "unfinished-address-draft","address menu action routes out of quick actions without discarding the draft")
+        browser.address.stringValue = "书签"; browser.controlTextDidChange(Notification(name:NSControl.textDidChangeNotification,object:browser.address))
+        try require(browser.suggestionPanel?.isVisible == true,"address fixture produces a real suggestion panel before switching search")
+        browser.showTabList(searchButton)
+        try require(browser.suggestionPanel == nil,"opening tab search removes stale address suggestions")
+        browser.dismissTabList()
+        for _ in 0..<20 { if browser.tabPopover?.isShown != true { break }; try await Task.sleep(for:.milliseconds(50)) }
+        try require(browser.tabPopover?.isShown == false && browser.window?.firstResponder === browser.activeWebView,"dismissing tab search restores webpage focus")
+        browser.showTabList(searchButton)
+        guard let keyboardList = browser.tabPopover?.contentViewController as? TabListController else { throw CaptureService.Failure.message("tab search missing for table keyboard checks") }
+        keyboardList.table.window?.makeFirstResponder(keyboardList.table)
+        let previousTabID = browser.tabs[browser.activeIndex].id
+        keyboardList.table.keyDown(with:key(125,in:keyboardList.table))
+        try require(keyboardList.table.window?.firstResponder === keyboardList.table && keyboardList.table.selectedRow == 1 && browser.tabs[browser.activeIndex].id == previousTabID,"arrow selection in the focused tab table does not navigate prematurely")
+        keyboardList.table.keyDown(with:key(36,in:keyboardList.table))
+        for _ in 0..<20 { if browser.tabPopover?.isShown != true { break }; try await Task.sleep(for:.milliseconds(50)) }
+        try require(browser.activeIndex == 1 && browser.tabPopover?.isShown == false,"Return from the tab table opens the selected tab")
+        browser.showTabList(searchButton)
+        let escapeTable = (browser.tabPopover?.contentViewController as? TabListController)?.table
+        escapeTable?.window?.makeFirstResponder(escapeTable); escapeTable?.cancelOperation(nil)
+        for _ in 0..<20 { if browser.tabPopover?.isShown != true { break }; try await Task.sleep(for:.milliseconds(50)) }
+        try require(browser.tabPopover?.isShown == false && browser.window?.firstResponder === browser.activeWebView,"Escape from the tab table restores webpage focus")
+        browser.activate(29); browser.showCommandPalette()
+        guard let keyboardPalette = browser.commandPalette else { throw CaptureService.Failure.message("quick actions missing for table keyboard checks") }
+        keyboardPalette.window?.makeFirstResponder(keyboardPalette.table)
+        keyboardPalette.table.keyDown(with:key(125,in:keyboardPalette.table))
+        try require(keyboardPalette.window?.firstResponder === keyboardPalette.table && keyboardPalette.table.selectedRow == 2 && browser.activeIndex == 29,"arrow selection in quick action results does not execute a command")
+        keyboardPalette.table.keyDown(with:key(36,in:keyboardPalette.table))
+        try require(browser.activeIndex == 1 && keyboardPalette.window?.isVisible == false,"Return from the quick action table opens the selected tab")
+        browser.showCommandPalette()
+        if let palette = browser.commandPalette { palette.window?.makeFirstResponder(palette.table); palette.table.cancelOperation(nil) }
+        try require(browser.commandPalette?.window?.isVisible == false && browser.window?.firstResponder === browser.activeWebView,"Escape from quick action results restores webpage focus")
         browser.activate(29)
         let text = NSTextView(); text.setMarkedText("中",selectedRange:NSRange(location:1,length:0),replacementRange:NSRange(location:NSNotFound,length:0))
         try require(!browser.control(browser.address,textView:text,doCommandBy:#selector(NSResponder.insertNewline(_:))),"IME composition confirmation does not navigate")

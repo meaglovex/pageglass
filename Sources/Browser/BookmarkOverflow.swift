@@ -3,7 +3,7 @@ import AppKit
 final class BookmarkListController:NSViewController,NSTableViewDataSource,NSTableViewDelegate {
     weak var browser:BrowserWindow?
     let records:[PageRecord]
-    let table = BookmarkListTable()
+    let table = BrowserListTable()
     init(browser:BrowserWindow,records:[PageRecord]) {
         self.browser = browser; self.records = records; super.init(nibName:nil,bundle:nil)
     }
@@ -58,28 +58,5 @@ final class BookmarkListController:NSViewController,NSTableViewDataSource,NSTabl
               let record = browser.store.state.bookmarks.first(where:{$0.id == records[table.selectedRow].id}),
               let url = URL(string:record.url) else { return }
         browser.dismissBookmarkOverflow(); browser.load(url)
-    }
-}
-
-final class BookmarkListTable:NSTableView {
-    var openSelection:(()->Void)?
-    var dismiss:(()->Void)?
-    var contextMenu:((Int)->NSMenu?)?
-    override func keyDown(with event:NSEvent) {
-        switch event.keyCode {
-        case 36,76: openSelection?()
-        case 53: dismiss?()
-        default: super.keyDown(with:event)
-        }
-    }
-    override func cancelOperation(_ sender:Any?) { dismiss?() }
-    override func menu(for event:NSEvent)->NSMenu? {
-        let row = row(at:convert(event.locationInWindow,from:nil))
-        guard row >= 0 else { return nil }
-        selectRowIndexes(IndexSet(integer:row),byExtendingSelection:false)
-        return contextMenu?(row)
-    }
-    override func rightMouseDown(with event:NSEvent) {
-        if let menu = menu(for:event) { NSMenu.popUpContextMenu(menu,with:event,for:self) }
     }
 }

@@ -59,7 +59,7 @@ extension BrowserWindow {
 final class CommandPaletteController:NSWindowController,NSWindowDelegate,NSSearchFieldDelegate,NSTableViewDataSource,NSTableViewDelegate {
     weak var browser:BrowserWindow?
     private weak var previousFocus:NSResponder?
-    let search = NSSearchField(), table = NSTableView()
+    let search = NSSearchField(), table = BrowserListTable()
     private(set) var results:[QuickAction] = []
     private var rows:[Int?] = [] // nil rows are section headers, never executable.
     private var closing = false
@@ -73,6 +73,8 @@ final class CommandPaletteController:NSWindowController,NSWindowDelegate,NSSearc
         search.placeholderString = "搜索标签、书签、历史或操作"; search.setAccessibilityLabel("快速操作搜索"); search.delegate = self
         table.addTableColumn(NSTableColumn(identifier:.init("result"))); table.headerView = nil; table.rowHeight = 48; table.intercellSpacing = .zero
         table.dataSource = self; table.delegate = self; table.target = self; table.action = #selector(choose); table.setAccessibilityLabel("快速操作结果")
+        table.openSelection = { [weak self] in self?.choose() }
+        table.dismiss = { [weak self] in self?.dismiss(restoreFocus:true) }
         let scroll = NSScrollView(); scroll.hasVerticalScroller = true; scroll.drawsBackground = false; scroll.documentView = table
         let hint = NSTextField(labelWithString:"↑↓ 选择   ↵ 打开   Esc 返回 · 仅搜索本机内容"); hint.font = BrowserStyle.caption; hint.textColor = BrowserStyle.supportingText
         for view in [search,scroll,hint] { root.addArrangedSubview(view); view.widthAnchor.constraint(equalTo:root.widthAnchor,constant:-32).isActive = true }
@@ -95,6 +97,7 @@ final class CommandPaletteController:NSWindowController,NSWindowDelegate,NSSearc
         }
     }
     @objc func showCommandPalette() { dismiss(restoreFocus:true) }
+    @objc func focusAddress() { browser?.focusAddress() }
     override func cancelOperation(_ sender:Any?) { dismiss(restoreFocus:true) }
     func windowDidResignKey(_ notification:Notification) { dismiss(restoreFocus:false) }
     func refresh() {

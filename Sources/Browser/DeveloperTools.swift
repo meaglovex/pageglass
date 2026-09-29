@@ -46,7 +46,11 @@ enum DeveloperTools {
     }
     static func open(_ view:WKWebView,console:Bool = false,toggle:Bool = true)->Bool {
         guard enable(view.configuration.preferences),let inspector = inspector(for:view),let shown = visible(inspector) else { return false }
-        if shown && toggle && !console { return call(inspector,"close") }
+        if shown && toggle && !console {
+            guard call(inspector,"close") else { return false }
+            view.window?.makeFirstResponder(view)
+            return true
+        }
         guard call(inspector,console ? "showConsole" : "show") else { return false }
         if !shown { _ = call(inspector,"attach") }
         return true

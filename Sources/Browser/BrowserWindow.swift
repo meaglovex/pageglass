@@ -216,7 +216,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     }
     override func cancelOperation(_ sender:Any?) {
         if bookmarkPopover?.isShown == true { dismissBookmarkOverflow() }
-        else if tabPopover?.isShown == true { tabPopover?.close(); if let view = activeWebView { window?.makeFirstResponder(view) } }
+        else if tabPopover?.isShown == true { dismissTabList() }
         else if captureSidebar?.isHidden == false { dismissCaptureSidebar() }
         else if captureIntro != nil { dismissCaptureIntro() }
         else if selecting || capturing { cancelCapture() }
@@ -258,7 +258,10 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         guard !capturing,let url = Navigation.url(for:input,searchEngine:store.state.settings.searchEngine) else { status.stringValue = "请输入有效的网址或搜索词"; return }
         window?.makeFirstResponder(webView); load(url)
     }
-    @objc func focusAddress() { window?.makeFirstResponder(address); address.selectText(nil) }
+    @objc func focusAddress() {
+        tabPopover?.close(); bookmarkPopover?.close(); commandPalette?.dismiss(restoreFocus:false)
+        window?.makeKeyAndOrderFront(nil); window?.makeFirstResponder(address); address.selectText(nil)
+    }
     @objc func goBack() { if !capturing { webView.goBack() } }
     @objc func goForward() { if !capturing { webView.goForward() } }
     @objc func reload() { if !capturing { if webView.isLoading { webView.stopLoading() } else { webView.reload() } } }

@@ -25,6 +25,7 @@ enum DeveloperToolsSmoke {
         try require(original.frame.height < host.bounds.height-50 || original.frame.width < host.bounds.width-50,"docked inspector has visible space after Auto Layout")
         try require(DeveloperTools.open(original),"developer tools toggles closed")
         try await wait(inspector,visible:false)
+        try require(original.window?.firstResponder === original,"closing developer tools through the toggle restores webpage keyboard focus")
         try require(DeveloperTools.open(original,console:true),"JavaScript console opens through native inspector")
         try await wait(inspector,visible:true)
         let previousCount = browser.tabs.count
