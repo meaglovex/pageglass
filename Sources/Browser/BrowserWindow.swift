@@ -16,6 +16,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     var tabWidths: [UUID:NSLayoutConstraint] = [:]
     var tabPopover: NSPopover?
     var commandPalette:CommandPaletteController?
+    var extensionManager:NSWindowController?
     var bookmarkPopover: NSPopover?
     var overflowBookmarks: [PageRecord] = []
     var renderedBookmarks: [PageRecord]?
@@ -23,7 +24,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     var renderedBookmarksVisible = false
     var toolbarTools:[ToolbarTool:NSView] = [:]
     var tabScrollWidth:NSLayoutConstraint?
-    let captureMenuButton = ChromeButton(), downloadButton = ChromeButton()
+    let captureMenuButton = ChromeButton(), downloadButton = ChromeButton(), extensionButton = ChromeButton()
     weak var omnibox:ChromeStackView?
     let errorBar = NSStackView(), errorLabel = NSTextField(labelWithString:"")
     let bookmarkRow = NSStackView()
@@ -80,6 +81,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         }
         if tabs.isEmpty { tabs = [BrowserTab()] }
         activate(max(0,min(session?.active ?? 0,tabs.count-1)))
+        if #available(macOS 15.4,*),let extensions { extensions.opened(self) }
         storeObserver = NotificationCenter.default.addObserver(forName:BrowserStore.changed,object:store,queue:.main) { [weak self] _ in
             self?.applyAppearance(); self?.renderBookmarks(); self?.updateToolbarLayout(); self?.syncChrome()
         }
@@ -88,8 +90,10 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     deinit { if let storeObserver { NotificationCenter.default.removeObserver(storeObserver) } }
 
     func createWebView(for tab:BrowserTab,configuration:WKWebViewConfiguration? = nil)->WKWebView {
+        tab.owner = self
         let config = configuration ?? WKWebViewConfiguration()
         if configuration == nil { config.websiteDataStore = websiteDataStore }
+        if #available(macOS 15.4,*) { config.webExtensionController = privateBrowsing ? nil : extensions?.controller }
         config.preferences.isElementFullscreenEnabled = true
         DeveloperTools.enable(config.preferences)
         let controller = WKUserContentController(); config.userContentController = controller
@@ -136,6 +140,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         renderTabs(revealActive:true); syncChrome(); saveSession()
     }
     func syncChrome() {
+        if #available(macOS 15.4,*) { extensions?.sync(self) }
         guard tabs.indices.contains(activeIndex),let view = tabs[activeIndex].webView else { return }
         if window?.firstResponder !== address.currentEditor() { address.stringValue = displayURL(view.url) }
         back.isEnabled = view.canGoBack && !capturing; forward.isEnabled = view.canGoForward && !capturing
@@ -195,10 +200,11 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     func windowWillClose(_ notification:Notification) {
         captureTask?.cancel(); cancelCapture()
         dismissSuggestions(); commandPalette?.dismiss(restoreFocus:false); saveSession()
-        libraryController?.close(); settingsController?.close(); tabPopover?.close(); bookmarkPopover?.close(); captureSidebar?.detail.closePreviews()
+        libraryController?.close(); settingsController?.close(); extensionManager?.close(); tabPopover?.close(); bookmarkPopover?.close(); captureSidebar?.detail.closePreviews()
         captureLibraryController?.close()
         for download in downloads.values { updateDownload(download,state:"已取消：窗口已关闭"); download.cancel { _ in } }
         downloadObservers.removeAll(); downloads.removeAll()
+        if #available(macOS 15.4,*) { extensions?.closed(self) }
         for tab in tabs { tab.release() }
         (NSApp.delegate as? AppDelegate)?.closed(self)
     }
@@ -212,7 +218,11 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         let focused = window?.isKeyWindow == true && editor != nil && window?.firstResponder === editor
         if omnibox?.showsFocus != focused { omnibox?.showsFocus = focused }
     }
-    func windowDidResignKey(_ notification:Notification) { dismissSuggestions(); omnibox?.showsFocus = false }
+    func windowDidBecomeKey(_ notification:Notification) { if #available(macOS 15.4,*) { extensions?.controller.didFocusWindow(extensionWindowVisible ? self : nil) } }
+    func windowDidResignKey(_ notification:Notification) {
+        dismissSuggestions(); omnibox?.showsFocus = false
+        if #available(macOS 15.4,*) { extensions?.controller.didFocusWindow(nil) }
+    }
     func windowDidResize(_ notification:Notification) { renderTabs(revealActive:true); renderBookmarks(); updateToolbarLayout(); dismissSuggestions(); tabPopover?.close(); bookmarkPopover?.close() }
     @objc func newTab() { guard !capturing else { return }; tabs.append(BrowserTab()); activate(tabs.count-1); address.stringValue = ""; focusAddress() }
     func openTab(_ url:URL,inBackground:Bool = false) {

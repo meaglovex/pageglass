@@ -2,7 +2,7 @@ import AppKit
 import WebKit
 
 final class SettingsController:NSWindowController {
-    enum Page:String,CaseIterable { case general = "通用",appearance = "外观与工具栏",browsing = "浏览",capture = "捕获",data = "数据" }
+    enum Page:String,CaseIterable { case general = "通用",appearance = "外观与工具栏",browsing = "浏览",capture = "捕获",extensions = "扩展",data = "数据" }
     weak var browser:BrowserWindow?
     let engine = NSPopUpButton(), zoom = NSPopUpButton(), retention = NSPopUpButton(), appearance = NSPopUpButton()
     let retentionDays = [0,1,7,30]
@@ -53,6 +53,7 @@ final class SettingsController:NSWindowController {
         reloadValues(); renderPage()
     }
     required init?(coder:NSCoder) { fatalError() }
+    @objc private func openExtensions() { browser?.showExtensions() }
     @objc private func selectPage(_ sender:NSButton) {
         guard Page.allCases.indices.contains(sender.tag) else { return }
         selected = Page.allCases[sender.tag]; renderPage()
@@ -96,6 +97,9 @@ final class SettingsController:NSWindowController {
             text("到期捕获包移入废纸篓，原复制路径会失效。启动时及运行期间每小时检查；退出期间不清理。已粘贴到其他应用的内容不受影响。")
             captureSummary.font = BrowserStyle.caption; captureSummary.textColor = BrowserStyle.supportingText; add(captureSummary)
             addAction(button("清除全部捕获…",#selector(clearCapturedContent)))
+        case .extensions:
+            text("从本地目录或 ZIP 导入扩展，并按网站管理权限。扩展需要 macOS 15.4 或更高版本，不在无痕窗口运行。")
+            addAction(button("管理扩展…",#selector(openExtensions)))
         case .data:
             text("清除网站 Cookie、缓存与本地存储后会退出网站登录。书签、捕获和下载文件保留。")
             addAction(button("清除网站数据…",#selector(clearData)))

@@ -37,6 +37,8 @@ extension BrowserWindow {
         omnibox.addArrangedSubview(siteButton); omnibox.addArrangedSubview(address); omnibox.addArrangedSubview(bookmarkButton)
         configure(recordInteraction,"record.circle","记录交互（⌘⇧I）",#selector(toggleInteractionRecording))
         configure(pick,"viewfinder","捕获元素（⌘⇧C）",#selector(selectElement),width:74); pick.title = "捕获"; pick.imagePosition = .imageLeading; pick.font = BrowserStyle.body; configure(captureAll,"rectangle.dashed","捕获全部（⌘⇧A）",#selector(capturePage))
+        configure(extensionButton,"puzzlepiece.extension","扩展",#selector(showExtensionMenu(_:)))
+        extensionButton.isEnabled = !privateBrowsing
         configure(downloadButton,"arrow.down.circle","下载（⌘J）",#selector(showDownloads))
         configure(captureMenuButton,"chevron.down","更多捕获操作",#selector(showCaptureMenu(_:)))
         let captureGroup = ChromeStackView(views:[pick,captureMenuButton]); captureGroup.spacing = 0
@@ -45,7 +47,7 @@ extension BrowserWindow {
         let more = tool("ellipsis","更多",#selector(showMore(_:)))
         toolbarTools = [.home:home,.downloads:downloadButton,.settings:profile,.recording:recordInteraction]
         address.widthAnchor.constraint(greaterThanOrEqualToConstant:180).isActive = true
-        for v in [back,forward,refresh,home,omnibox,captureGroup,recordInteraction,downloadButton,profile,more] { toolbar.addArrangedSubview(v) }
+        for v in [back,forward,refresh,home,omnibox,captureGroup,extensionButton,recordInteraction,downloadButton,profile,more] { toolbar.addArrangedSubview(v) }
         omnibox.heightAnchor.constraint(equalToConstant:32).isActive = true
         bookmarkRow.spacing = 12; bookmarkRow.edgeInsets = NSEdgeInsets(top:3,left:16,bottom:3,right:16)
         buildFindBar(); buildErrorBar(); buildCaptureBar()
@@ -95,6 +97,7 @@ extension BrowserWindow {
         let width = min(230,max(110,available/Double(max(1,tabs.count))))
         tabScrollWidth?.constant = min(available,width*Double(max(1,tabs.count)))
         for (index,tab) in tabs.enumerated() {
+            tab.owner = self
             let item:TabButton
             if let existing = tabButtons[tab.id] { item = existing }
             else {
@@ -125,6 +128,7 @@ extension BrowserWindow {
         if revealActive,tabs.indices.contains(activeIndex),let selected = tabButtons[tabs[activeIndex].id] {
             window?.contentView?.layoutSubtreeIfNeeded(); selected.scrollToVisible(selected.bounds)
         }
+        if #available(macOS 15.4,*) { extensions?.sync(self) }
     }
     func renderBookmarks(force:Bool = false) {
         let width = window?.frame.width ?? 1280, visible = store.state.settings.showBookmarksBar

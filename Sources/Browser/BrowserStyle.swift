@@ -50,7 +50,7 @@ final class ChromeButton:NSButton {
 extension BrowserWindow {
     func applyAppearance() {
         let appearance = QAProfile.current?.appearance.map { NSAppearance(named:$0 == "Aqua" ? .aqua : .darkAqua) } ?? BrowserStyle.appearance(store.state.settings.appearance)
-        for panel in [window,settingsController?.window,libraryController?.window,captureLibraryController?.window] { panel?.appearance = appearance }
+        for panel in [window,settingsController?.window,libraryController?.window,captureLibraryController?.window,extensionManager?.window] { panel?.appearance = appearance }
     }
     @objc func showCaptureMenu(_ sender:NSButton) {
         let menu = NSMenu()

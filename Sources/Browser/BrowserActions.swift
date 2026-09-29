@@ -34,7 +34,10 @@ extension BrowserWindow {
     func moveTab(_ source:UUID,relativeTo target:UUID,after:Bool = false) {
         guard !capturing,source != target,let from = tabs.firstIndex(where:{$0.id == source}),let to = tabs.firstIndex(where:{$0.id == target}) else { return }
         let active = tabs[activeIndex].id, tab = tabs.remove(at:from)
+        let oldVisibleIndex:Int?
+        if #available(macOS 15.4,*) { oldVisibleIndex = (Array(tabs.prefix(from))+[tab]).filter(\.extensionVisible).firstIndex(where:{$0 === tab}) } else { oldVisibleIndex = nil }
         tabs.insert(tab,at:min(to + (after ? 1 : 0) - (from < to ? 1 : 0),tabs.count)); activeIndex = tabs.firstIndex(where:{$0.id == active}) ?? 0
+        if #available(macOS 15.4,*),extensionWindowVisible,let oldVisibleIndex { extensions?.controller.didMoveTab(tab,from:oldVisibleIndex,in:self) }
         renderTabs(revealActive:true); saveSession()
     }
     func tabMenu(_ id:UUID)->NSMenu {

@@ -1,9 +1,13 @@
 import AppKit
+import WebKit
 
+@MainActor
 final class AppDelegate:NSObject,NSApplicationDelegate {
+    nonisolated override init() { super.init() }
     var windows: [BrowserWindow] = []
     var isolatedStore:BrowserStore?
     var restoring = false
+    private var starting = false
     var cleanupTimer: Timer?
     var browser:BrowserWindow? { windows.first }
     func applicationDidFinishLaunching(_ notification:Notification) {
@@ -13,18 +17,32 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
             isolatedStore = store
             let window = BrowserWindow(store:store); windows.append(window); window.showWindow(nil)
             NSApp.activate(ignoringOtherApps:true)
+            if #available(macOS 15.4,*),args.contains("--extension-only"),let urlIndex = args.firstIndex(of:"--asset-test-url"),args.count > urlIndex+1,let base = URL(string:args[urlIndex+1]) {
+                Task { @MainActor in await ExtensionSmoke.runStandalone(base:base,output:output) }; return
+            }
             Task { @MainActor in await SmokeTest.run(window,output:output) }; return
         }
         if let index = args.firstIndex(of:"--benchmark-plan"),args.count > index+1 {
             Task { @MainActor in await BenchmarkMode.run(path:args[index+1],delegate:self) }; return
         }
+        starting = true
+        Task { @MainActor [self] in
+            if #available(macOS 15.4,*) {
+                let dataStore = QAProfile.current.map { WKWebsiteDataStore(forIdentifier:$0.websiteDataID) } ?? .default()
+                await BrowserStore.shared.extensions(dataStore:dataStore).restore()
+            }
+            finishLaunching()
+        }
+    }
+    private func finishLaunching() {
+        starting = false
         restoring = true
         if BrowserStore.shared.state.settings.restoreSession {
             for session in BrowserStore.shared.state.windows where !session.tabs.isEmpty { createWindow(session:session) }
         }
         if windows.isEmpty { createWindow() }; restoring = false
         cleanExpiredCaptures()
-        cleanupTimer = Timer.scheduledTimer(withTimeInterval:3600,repeats:true) { [weak self] _ in self?.cleanExpiredCaptures() }
+        cleanupTimer = Timer.scheduledTimer(withTimeInterval:3600,repeats:true) { [weak self] _ in Task { @MainActor in self?.cleanExpiredCaptures() } }
         NSApp.activate(ignoringOtherApps:true)
     }
     func cleanExpiredCaptures() {
@@ -35,6 +53,7 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
     @objc func newWindow() { createWindow() }
     @objc func newPrivateWindow() { createWindow(privateBrowsing:true) }
     func createWindow(privateBrowsing:Bool = false,session:SavedWindow? = nil) {
+        guard !starting else { return }
         // Windows opened during explicit QA must keep using the isolated test profile.
         let window = BrowserWindow(privateBrowsing:privateBrowsing,store:isolatedStore ?? .shared,session:session)
         windows.append(window); window.showWindow(nil); window.window?.makeKeyAndOrderFront(nil); saveSessions()
@@ -45,7 +64,7 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
         let normal = windows.filter { !$0.privateBrowsing }
         if !normal.isEmpty { BrowserStore.shared.saveWindows(normal.map { $0.savedWindow() }) }
     }
-    func applicationShouldHandleReopen(_ sender:NSApplication,hasVisibleWindows:Bool)->Bool { if !hasVisibleWindows { createWindow() }; return true }
+    func applicationShouldHandleReopen(_ sender:NSApplication,hasVisibleWindows:Bool)->Bool { if !hasVisibleWindows && !starting { createWindow() }; return true }
     func applicationWillTerminate(_ notification:Notification) { saveSessions(); if !BenchmarkMode.enabled && !CommandLine.arguments.contains("--smoke") { BrowserStore.shared.flush() } }
 
     private func makeMenus() {

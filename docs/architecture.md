@@ -75,3 +75,10 @@ Chrome 级验收仍需要相同电脑、相同窗口尺寸/网络/页面集、�
 所有 WebView 开启公开的 isInspectable。用户于 2026-09-29 授权本地版使用私有接口打开真正的检查器，例外集中在 DeveloperTools.swift：配置 _setDeveloperExtrasEnabled:，取得 _inspector，再调用 show / showConsole / attach / close。每次调用都先检查方法存在、参数数量和返回/参数类型，接口不兼容则显示 Safari 备用路径。没有使用 KVC 盲发未知 key，也不调整 WebKit 沙箱、TLS 或页面捕获世界。检查器仅在用户主动打开时加载；关闭标签时关闭其检查器。每个标签使用独立 autoresizing 容器，让 WebKit 给页面和停靠面板分配空间，避免四边 Auto Layout 约束把面板覆盖；切换标签隐藏整个容器。
 
 F12 / ⌥⌘I 切换检查器，⌥⌘J 直接打开 Console，开发菜单和更多菜单也提供入口。WebKit 自带元素、样式、网络、源代码、控制台面板；没有自建仿制面板。实现参照官方 WebKit 的 [_WKInspector](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/_WKInspector.h) 和 [_WKInspectorIBActions](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/_WKInspectorIBActions.h) 方法声明，不复制上游实现。此例外仅适用于本地版，不作为 App Store API 合规保证。
+
+
+## 扩展宿主（0.8 开发预览）
+
+macOS 15.4+ 使用公开 WKWebExtension API；旧系统入口说明不可用原因。`ExtensionPackage` / `ExtensionZIP` 在受限暂存目录验证和复制，`ExtensionRepository` 单独存储身份、程序版本及站点授权，`ExtensionRuntime` 负责控制器、事务与权限，`ExtensionBridge` / `ExtensionEvents` 桥接普通窗口与标签，`ExtensionManagement` 提供原生管理界面。捕获桥仍只存在于独立 WKContentWorld，扩展设置和 action 使用扩展自己的配置。
+
+不向扩展返回受保护页面作为活动页的窗口，避免违反 WebKit 标签列表必须包含活动标签的约束；返回普通网页后恢复事件。无痕不附加控制器，网站访问逐站保存。稳定 UUID 保持 storage 数据；更新先校验新副本再切换，登记失败尝试恢复旧上下文。可安装能力、包上限及尚未验收项见 [extensions-0.8.md](extensions-0.8.md)，不得以原生 API 存在或自有样本成功推断任意第三方插件兼容。

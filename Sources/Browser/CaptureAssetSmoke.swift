@@ -13,7 +13,8 @@ enum CaptureAssetSmoke {
         let url = base.appendingPathComponent("capture-fixture.html")
         browser.load(url); try await loaded(browser.webView,url:url)
         let view = browser.webView
-        for _ in 0..<80 { if browser.tabs[browser.activeIndex].favicon != nil { break };try await Task.sleep(for:.milliseconds(100)) }
+        // A provisional navigation can still display the previous icon; wait for the new origin too.
+        for _ in 0..<80 { if browser.tabs[browser.activeIndex].favicon != nil && browser.favicons.cached(for:url) != nil { break };try await Task.sleep(for:.milliseconds(100)) }
         try require(browser.tabs[browser.activeIndex].favicon != nil,"declared site favicon loads into its actual browser tab")
         try require(browser.favicons.cached(for:url) != nil,"site favicon is reused by bookmark origin")
         let ready:Any? = try await withCheckedThrowingContinuation { continuation in

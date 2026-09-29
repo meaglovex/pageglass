@@ -1,0 +1,68 @@
+{
+  "status": "passed-owned-host-checks-ui-partial",
+  "date": "2026-09-30",
+  "system": "macOS 27.0 (26A428), arm64",
+  "version": "0.8.0-alpha.1",
+  "build": 13,
+  "sourceBaseCommit": "ef5238776aa7dc4a8691b9a1911d9d21e7728288",
+  "sourceState": "M3 host source committed together with this report",
+  "sourceDigestSHA256": "18c414a78d6901d3fbd1ded5a165e7141348af2ae4dd9c2de96f11e224dc1495",
+  "sourceDigestMethod": "SHA256 of sorted relative path, NUL, raw file SHA256 for Sources/Browser/**/* files and scripts/build.sh",
+  "binarySHA256": "a41479d26310a51fd8c13de27a48c15ccd06ba1a5d84dcd3b0120fc8dcfbdadc",
+  "qaBinarySHA256": "9dd0b50d1dadfc0f86e6faa68772e844eb21ca61c21ed35c9110808c3f1c363c",
+  "smokeChecksPassed": 207,
+  "unitTestsPassed": 27,
+  "unitTestsSkipped": 1,
+  "extensionHostChecks": [
+    "extension host: reviewed owned package loads",
+    "extension host: installation does not grant declared sites",
+    "extension host: unapproved site has no content injection",
+    "extension host: content script cannot reach native capture bridge",
+    "extension host: real action popup reads and writes storage",
+    "extension host: popup reaches MV3 worker",
+    "extension host: popup excludes capture bridge and programmatic injection",
+    "extension host: tabs create respects requested index without stealing activation",
+    "extension host: tabs remove closes only the requested background tab",
+    "extension host: options use a separate view without capture scripts or native bridge",
+    "extension host: private windows have no extension controller",
+    "extension host: worker receives tab lifecycle and property events",
+    "extension host: protected active page hides its window from extension tab queries",
+    "extension host: normal active page restores tab queries while excluding protected and private tabs",
+    "extension host: revocation removes future injection after reload",
+    "extension host: disable unloads context and prevents injection",
+    "extension host: storage survives disable and reenable",
+    "extension host: invalid update preserves previous version and running context",
+    "extension host: failed registry save reloads previous running version",
+    "extension host: update preserves identity and reviewed site grants",
+    "extension host: new host restores version permissions and persistent storage",
+    "extension host: remove program keeps an explicit data-only record",
+    "extension host: reinstall can reuse explicitly retained extension data",
+    "extension host: remove including data clears installed record and context"
+  ],
+  "packageValidation": [
+    "owned directory copy and digest",
+    "symbolic links and ancestor redirects rejected",
+    "stored/deflated ZIP including empty directory",
+    "traversal duplicate overlapping or conflicting paths rejected",
+    "CRC truncation and inflated size mismatch rejected",
+    "numeric manifest version and unsupported capabilities rejected",
+    "registry identity preserved and corrupt/dangling registry not overwritten"
+  ],
+  "uiObserved": [
+    "900 pt QA browser extension entry and manager empty-state controls",
+    "directory picker and installation review with explicit permissions",
+    "installation confirmation clicked; isolated registry subsequently contains installed enabled fixture"
+  ],
+  "uiPending": [
+    "installation result and remaining permission/action/disable interactions: CUA repeatedly returned error -10005 timeoutReached, including after rebinding and kernel reset",
+    "actual quit/relaunch UI acceptance, multi-window and both themes"
+  ],
+  "limits": [
+    "Only owned fixtures, not third-party extension compatibility",
+    "In-process controller recreation is not an actual application restart",
+    "At least two real open-source extensions and macOS 14/15.4 devices remain untested",
+    "DNR excluded; previous probe permission failures retained",
+    "Protected active pages hide their window from extension queries to honor WebKit active-tab invariants",
+    "Full visual/accessibility matrix, Codex actual paste, M4 and three-round performance gates remain open"
+  ]
+}

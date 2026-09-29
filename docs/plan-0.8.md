@@ -1,6 +1,6 @@
 # Pageglass 0.8：视觉、操作与扩展计划
 
-2026-09-30。状态：**实施中，M1 界面与 M2 操作首批已实现**。基于 0.7.0-beta.1 build 9（产品代码 `633745b`，验证记录 `87c2fd6`）。
+2026-09-30。状态：**实施中，M1 / M2 首批已实现，M3 扩展宿主正在接入和验证**。基于 0.7.0-beta.1 build 9（产品代码 `633745b`，验证记录 `87c2fd6`）。
 
 范围假设：“拓展功能”同时包含浏览器插件和产品经理工具。P0 为本版必须交付，P1 为本版第二批，P2 留待后续。不把兼容性试验当成已支持的功能。
 
@@ -12,15 +12,15 @@
 
 ## 起点与上一版遗留
 
-以下依据当前源码，不是本轮重新做过的 UI 验收。
+以下保留计划制定时的 0.7 源码基线，用于说明改进原因；不是 0.8 当前状态。已实现及实际验收结果单独记录在 [0.8 验收记录](validation-0.8.md)。
 
-| 当前实现 | 0.8 要解决的体验问题 |
+| 0.7 基线实现 | 0.8 要解决的体验问题 |
 |---|---|
 | [BrowserChrome.swift](../Sources/Browser/BrowserChrome.swift)：顶部约 80 pt，捕获、整页、交互记录并列为图标 | 图标含义需要猜，新增扩展后更拥挤；需要明确主次、统一状态 |
 | [SettingsController.swift](../Sources/Browser/SettingsController.swift)：单页设置与统一保存按钮 | 设置增多后难以定位；更改何时生效不够直观 |
 | [CapturePreview.swift](../Sources/Browser/CapturePreview.swift)、[CaptureFeedback.swift](../Sources/Browser/CaptureFeedback.swift)：每次结果新建独立面板、六项并列操作 | 捕获后焦点跳转，窗口增多，复制、检查与继续浏览的优先级不清楚 |
 | [CaptureLibrary.swift](../Sources/Browser/CaptureLibrary.swift)：可搜索与清理历史，保留完整捕获包 | 缺少备注、标注和可携带的交付包；本机路径不能直接用于另一台电脑 |
-| 当前没有 WebExtension 宿主及权限管理 | 无法安装实际插件；需要运行能力、权限与兼容性一起交付 |
+| 0.7 没有 WebExtension 宿主及权限管理 | 无法安装实际插件；需要运行能力、权限与兼容性一起交付 |
 
 0.7 尚未完成的溢出书签右键、本机 Codex 实际粘贴、Chrome 三轮多标签内存对照继续跟踪；启动与空闲 CPU 的回归调查也保留。详见 [0.7 验收记录](validation-0.7.md)及[性能报告](performance.md)。它们不阻止编写 0.8 计划和隔离开发，但不能因版本号变化而被标记完成；0.8 正式发布前必须关闭遗留阻断项并解释性能差异。
 

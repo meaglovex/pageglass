@@ -41,11 +41,14 @@ final class BrowserStore {
     }
     private(set) var state = State()
     private(set) var error: String?
+    let directory:URL
+    var extensionRuntime:AnyObject?
     private let file: URL
     private var saveWork: DispatchWorkItem?
     static let changed = Notification.Name("PageglassStoreChanged")
 
     init(directory:URL) {
+        self.directory = directory
         file = directory.appendingPathComponent("browser.json")
         if FileManager.default.fileExists(atPath:file.path) {
             do {
