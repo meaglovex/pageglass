@@ -32,7 +32,8 @@ class Handler(SimpleHTTPRequestHandler):
             run,relative = match.groups()
             if relative in ('','index.html'):
                 content = (self.server.source/'index.html').read_text()
-                content = content.replace('</head>',f'<script defer src="/__bench/adapter.js?run={run}"></script></head>')
+                # Install diagnostics before module loading; the benchmark still starts after load.
+                content = content.replace('<head>',f'<head><script src="/__bench/adapter.js?run={run}"></script>',1)
                 data=content.encode(); self.send_response(200);self.send_header('Content-Type','text/html');self.end_headers();self.wfile.write(data);return
             self.path = '/' + relative
         super().do_GET()

@@ -1,11 +1,42 @@
 #!/usr/bin/env python3
 """Read-only macOS process attribution + physical footprint. Never equate RSS with footprint."""
-import argparse, json, os, re, subprocess, tempfile
+import argparse, ctypes, json, os, re, subprocess, tempfile
 from pathlib import Path
 
 
 def command(*args):
     return subprocess.run(args, check=True, text=True, capture_output=True, timeout=20).stdout
+
+
+def cpu_time(pid):
+    """Public proc_pid_rusage/RUSAGE_INFO_V0; convert Mach ticks to seconds.
+
+    The layout is defined by the macOS SDK's sys/resource.h. XNU fills these
+    counters from task_power_info's Mach time, so Apple Silicon needs timebase
+    conversion (Intel's usual 1:1 timebase can mask that error). Do not use ps's
+    centisecond-formatted TIME for small idle CPU differences across many helpers.
+    """
+    class Usage(ctypes.Structure):
+        _fields_ = [('uuid', ctypes.c_uint8 * 16), ('user', ctypes.c_uint64),
+                    ('system', ctypes.c_uint64), ('remaining', ctypes.c_uint64 * 8)]
+    class Timebase(ctypes.Structure):
+        _fields_ = [('numer', ctypes.c_uint32), ('denom', ctypes.c_uint32)]
+    system = ctypes.CDLL('/usr/lib/libSystem.B.dylib')
+    system.mach_timebase_info.argtypes = [ctypes.POINTER(Timebase)]
+    system.mach_timebase_info.restype = ctypes.c_int
+    timebase = Timebase()
+    if system.mach_timebase_info(ctypes.byref(timebase)) != 0 or timebase.denom == 0:
+        raise RuntimeError('Mach clock timebase unavailable')
+    libproc = ctypes.CDLL('/usr/lib/libproc.dylib', use_errno=True)
+    libproc.proc_pid_rusage.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
+    libproc.proc_pid_rusage.restype = ctypes.c_int
+    usage = Usage()
+    if libproc.proc_pid_rusage(pid, 0, ctypes.byref(usage)) != 0:
+        error = ctypes.get_errno()
+        raise OSError(error, 'proc_pid_rusage failed for an attributed process: ' + os.strerror(error))
+    nanoseconds = (usage.user + usage.system) * timebase.numer // timebase.denom
+    return {'seconds': nanoseconds / 1_000_000_000, 'startTicks': usage.remaining[6],
+            'timebase': {'numer': timebase.numer, 'denom': timebase.denom}}
 
 
 def process_group(root, engine, profile=None):

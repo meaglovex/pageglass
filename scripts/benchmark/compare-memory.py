@@ -14,11 +14,12 @@ for label,directory in [('Pageglass 0.6',args.baseline),('Pageglass 0.7',args.ca
     summary=json.loads((directory/'summary.json').read_text())
     assert summary['status']=='completed','incomplete benchmark'
     source=summary['source'];fixture=source['memoryFixture']
-    assert fixture['version']==2 and fixture['viewport']=={'width':1280,'height':760}
+    assert fixture['version']==3 and fixture['viewport']=={'width':1280,'height':760}
     if reference_fixture is None:reference_fixture=fixture;hardware=source['hardwareModel']
     assert fixture==reference_fixture and source['hardwareModel']==hardware,'different workload or hardware'
     engine='chrome' if label=='Chrome' else 'pageglass'
     sources[label]=source['browsers'][engine]
+    if label!='Chrome':assert sources[label]['version'].startswith(label.split()[-1]+'.'),'browser version does not match report label'
     for tabs in [1,5,10]:
         selected=[r for r in summary['runs'] if r['engine']==engine and r['tabs']==tabs]
         assert len(selected)>=3,'at least three runs required'
@@ -26,7 +27,7 @@ for label,directory in [('Pageglass 0.6',args.baseline),('Pageglass 0.7',args.ca
         for run in selected:
             raw=json.loads((directory/run['run']/'result.json').read_text())
             assert raw['status']=='completed' and len(raw['tabs'])==tabs and len(raw['memorySamples'])==5
-            assert all(t['ready'] and t['rows']==1000 and t['viewport']==fixture['viewport'] for t in raw['tabs'].values())
+            assert all(t['ready'] and t.get('seenVisible') and t['rows']==1000 and t['viewport']==fixture['viewport'] for t in raw['tabs'].values())
             assert all(e['thermalState']=='nominal' and not e['screenLocked'] and not e['lowPowerMode'] for e in raw['environment'])
             samples=raw['memorySamples'];value=statistics.median(s['physicalFootprintBytes'] for s in samples)
             assert value>0 and value==run['physicalFootprintBytes']

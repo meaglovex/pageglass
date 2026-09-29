@@ -79,6 +79,7 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
         log=(folder/'chrome.log').open('w')
         process=subprocess.Popen([str(CHROME),'--user-data-dir='+str(profile),'--no-first-run','--no-default-browser-check','--new-window',f'--window-size=1280,{chrome_height}',*urls],stdout=log,stderr=log)
         log.close();pid=process.pid
+        if workload=='memory':print(json.dumps({'phase':'activate-chrome-tabs','run':run,'pid':pid,'tabs':tabs,'folder':str(folder),'instruction':'Visit every test tab, wait for its fixture to load, then return to the first tab; sampling waits for every page to report seenVisible.'}),flush=True)
     started=time.monotonic();states=[state]
     try:
         timeout=120 if workload=='memory' else 600
@@ -87,7 +88,7 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
             if engine=='pageglass' and time.monotonic()-started>60 and not (folder/'native-state.json').exists():raise RuntimeError('native startup not ready after 60 seconds; inspect startup or directory access prompts')
             with server.results_lock: result=json.loads(json.dumps(server.results.get(run)))
             if (folder/'native-error.json').exists():raise RuntimeError((folder/'native-error.json').read_text())
-            if result is not None and (workload=='speedometer' or len(result.get('tabs',{}))==tabs):break
+            if result is not None and (workload=='speedometer' or (len(result.get('tabs',{}))==tabs and all(t.get('seenVisible') for t in result['tabs'].values()))):break
             if process is not None and process.poll() is not None:raise RuntimeError('Chrome exited before a result')
             time.sleep(5);state=environment(helper);states.append(state)
             if blockers(state):raise RuntimeError('measurement invalidated: '+'; '.join(blockers(state)))
@@ -95,9 +96,10 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
         else:
             if workload=='memory':
                 loaded=sorted((result or {}).get('tabs',{}))
-                failure={'status':'incomplete','reason':'not all tabs reported loaded before sampling','reportedTabs':loaded,'expectedTabs':tabs,'timeoutSeconds':timeout}
+                unseen=[key for key,value in (result or {}).get('tabs',{}).items() if not value.get('seenVisible')]
+                failure={'status':'incomplete','reason':'not all tabs reported loaded and visited before sampling','reportedTabs':loaded,'unvisitedTabs':unseen,'expectedTabs':tabs,'timeoutSeconds':timeout}
                 (folder/'incomplete.json').write_text(json.dumps(failure,indent=2))
-                raise RuntimeError('memory fixture load timeout: reported tabs '+repr(loaded)+' of '+str(tabs))
+                raise RuntimeError('memory fixture readiness timeout: reported tabs '+repr(loaded)+' of '+str(tabs)+'; unvisited '+repr(unseen))
             raise RuntimeError('benchmark timeout (no completion report)')
         state=environment(helper);states.append(state)
         if blockers(state):raise RuntimeError('measurement invalidated at finish')
@@ -108,12 +110,13 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
         if pid is None:raise RuntimeError('native browser PID not reported')
         samples=[]
         if workload=='memory':
-            if any(t.get('rows')!=1000 or not t.get('ready') for t in result['tabs'].values()):raise RuntimeError('not all memory fixture tabs loaded')
+            if any(t.get('rows')!=1000 or not t.get('ready') or not t.get('seenVisible') for t in result['tabs'].values()):raise RuntimeError('not all memory fixture tabs loaded and visited')
             time.sleep(5)
             # Loading bars can resize the page after load; use settled viewport reports.
             with server.results_lock: result=json.loads(json.dumps(server.results[run]))
             visible=[t for t in result['tabs'].values() if t.get('visible')]
             if len(visible)!=1:raise RuntimeError('memory fixture must have exactly one visible tab')
+            if visible[0]['tab']!=0:raise RuntimeError('return to the first fixture tab before memory sampling')
             viewport=visible[0]['viewport']
             if any(t['viewport']!={'width':1280,'height':760} for t in result['tabs'].values()):raise RuntimeError('memory workload viewport must be fixed in every tab')
             if visible[0]['containerViewport']['width']<1280 or visible[0]['containerViewport']['height']<760:raise RuntimeError('memory workload is clipped by browser chrome')
@@ -163,7 +166,12 @@ def main():
         if plist.exists() and executable.exists():versions[name]={'version':plistlib.loads(plist.read_bytes()).get('CFBundleShortVersionString'),'executableSHA256':hashlib.sha256(executable.read_bytes()).hexdigest()}
     provenance['browsers']=versions
     provenance['engines']=engines
-    provenance['memoryFixture']={'version':2,'viewport':{'width':1280,'height':760},'sha256':hashlib.sha256(Path(__file__).with_name('memory.html').read_bytes()).hexdigest(),'containerSHA256':hashlib.sha256(Path(__file__).with_name('server.py').read_bytes()).hexdigest()}
+    provenance['runnerSHA256']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    provenance['adapterSHA256']=hashlib.sha256(Path(__file__).with_name('adapter.js').read_bytes()).hexdigest()
+    provenance['serverSHA256']=hashlib.sha256(Path(__file__).with_name('server.py').read_bytes()).hexdigest()
+    provenance['environmentHelperSHA256']=hashlib.sha256(helper.read_bytes()).hexdigest()
+    provenance['processMetricsSHA256']=hashlib.sha256(Path(__file__).with_name('process_metrics.py').read_bytes()).hexdigest()
+    provenance['memoryFixture']={'version':3,'viewport':{'width':1280,'height':760},'sha256':hashlib.sha256(Path(__file__).with_name('memory.html').read_bytes()).hexdigest(),'containerSHA256':hashlib.sha256(Path(__file__).with_name('server.py').read_bytes()).hexdigest()}
     provenance['chromeWindowHeight']=args.chrome_window_height
     provenance['hardwareModel']=subprocess.check_output(['sysctl','-n','hw.model'],text=True).strip()
     preflight={'environment':env,'blockers':blockers(env),'source':provenance,'mode':'run' if args.run else 'prepare-only'}
