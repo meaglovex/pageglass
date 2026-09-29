@@ -46,9 +46,15 @@ enum DeveloperTools {
         return view.perform(NSSelectorFromString("_inspector"))?.takeUnretainedValue() as? NSObject
     }
     static func visible(_ inspector:NSObject)->Bool? {
-        guard let imp = method(inspector,"isVisible",returns:"Bc") else { return nil }
+        flag(inspector,"isVisible")
+    }
+    static func front(_ inspector:NSObject)->Bool? {
+        flag(inspector,"isFront")
+    }
+    private static func flag(_ inspector:NSObject,_ name:String)->Bool? {
+        guard let imp = method(inspector,name,returns:"Bc") else { return nil }
         typealias Getter = @convention(c) (AnyObject,Selector)->Bool
-        return unsafeBitCast(imp,to:Getter.self)(inspector,NSSelectorFromString("isVisible"))
+        return unsafeBitCast(imp,to:Getter.self)(inspector,NSSelectorFromString(name))
     }
     @discardableResult
     static func call(_ inspector:NSObject,_ name:String)->Bool {
@@ -71,6 +77,38 @@ enum DeveloperTools {
     static func close(_ view:WKWebView) {
         guard let inspector = inspector(for:view),visible(inspector) == true else { return }
         _ = call(inspector,"close")
+    }
+}
+
+// A detached inspector does not include BrowserWindow in its responder chain.
+// AppKit falls back to the application delegate; resolve the actual front inspector
+// instead of acting on the first browser window or its currently selected tab.
+extension AppDelegate:NSMenuItemValidation {
+    func frontInspectedPage()->(browser:BrowserWindow,view:WKWebView)? {
+        guard let key = NSApp.keyWindow,key === NSApp.mainWindow,key.attachedSheet == nil,
+              !windows.contains(where:{$0.window === key}) else { return nil }
+        var result:(browser:BrowserWindow,view:WKWebView)?
+        for browser in windows {
+            for tab in browser.tabs {
+                guard let view = tab.webView,let inspector = DeveloperTools.inspector(for:view),
+                      DeveloperTools.visible(inspector) == true,DeveloperTools.front(inspector) == true else { continue }
+                guard result == nil else { return nil }
+                result = (browser,view)
+            }
+        }
+        return result
+    }
+    func validateMenuItem(_ item:NSMenuItem)->Bool {
+        switch item.action {
+        case #selector(showDeveloperTools),#selector(showJavaScriptConsole): return frontInspectedPage() != nil
+        default: return true
+        }
+    }
+    @objc func showDeveloperTools() { openFrontInspector(console:false) }
+    @objc func showJavaScriptConsole() { openFrontInspector(console:true) }
+    private func openFrontInspector(console:Bool) {
+        guard let page = frontInspectedPage() else { return }
+        if !DeveloperTools.open(page.view,console:console) { page.browser.showInspectorHelp() }
     }
 }
 

@@ -1,0 +1,94 @@
+{
+  "date": "2026-09-30",
+  "version": "0.8.0-alpha.1",
+  "build": 27,
+  "status": "detached-inspector-shortcuts-fixed-release-incomplete",
+  "sourceBaseCommit": "055ad38",
+  "sourceDigestSHA256": "fc9650ad6dd5d754576f64e51b389aaade02c0c59d54471cc6b2aa3cc4605aab",
+  "sourceDigestMethod": "Python pathlib Path-component sorting of Sources/Browser files, followed by scripts/build.sh: relative path, NUL, raw SHA256 for each file",
+  "binarySHA256": {
+    "release": "d2b7203bb81bfdb5cb6caa36e172baafe323f5a4109a7a8e2c13d749ccd1e363",
+    "qa": "b49e0ae8a2c1fa0a129cf892a04ea9131a5a43ed7a766729df0d02633670075a"
+  },
+  "smokeRun": "20260930-073545",
+  "smokePassed": 308,
+  "unitPassed": 37,
+  "defaultUnitSkipped": 1,
+  "newChecks": [
+    "visible inspector accepts explicit docking independent of its remembered layout",
+    "detached inspector commands resolve through the application responder chain",
+    "detached inspector accepts the Console menu shortcut",
+    "Console shortcut keeps the corresponding detached inspector open",
+    "front inspector ownership distinguishes two browser windows",
+    "detached inspector accepts the toggle menu shortcut",
+    "toggling the front inspector leaves the other browser inspector open",
+    "inspector fallback commands are disabled in unrelated settings windows",
+    "unrelated-window fallback cannot close or focus another inspector",
+    "inspected page may be a background tab",
+    "F12 menu shortcut resolves the front inspector of a background tab",
+    "F12 does not inspect or switch the foreground browser tab",
+    "normal browser inspector commands retain their window responder"
+  ],
+  "implementation": {
+    "scope": "Existing authorized DeveloperTools.swift adapter only",
+    "routing": "AppKit application-delegate fallback for detached inspectors; normal browser responder unchanged",
+    "ownership": "ABI-checked isFront and isVisible, unique live tab match across owned windows, key window equals main window, no sheet or normal browser key window",
+    "resources": "No lazy tab loading, new event monitor, polling, timer or persistent inspector reference"
+  },
+  "environment": {
+    "os": "macOS 27.0 (26A428)",
+    "architecture": "arm64",
+    "profiles": "owned temporary QA profile; automatic capture copy disabled"
+  },
+  "actualUI": [
+    {
+      "build": "27 intermediate",
+      "widthPt": 900,
+      "appearance": "dark",
+      "result": "Detached F12 closes and returns to original page input; typing continues to route-ok; Elements then Option-Command-J selects Console; Option-Command-I closes and restores input"
+    },
+    {
+      "build": "27 final",
+      "widthPt": 900,
+      "appearance": "dark",
+      "result": "Two browser windows with independent inspectors for pages 9 and 2; Option-Command-I closes page 2 inspector only; Window menu still opens page 9 inspector, which F12 then closes"
+    },
+    {
+      "build": "27 final",
+      "widthPt": 900,
+      "appearance": "dark",
+      "result": "After selecting page 8, Window menu opens background page 9 inspector; F12 closes that inspector without switching page 8 or opening its inspector; page 8 HTML remains focused"
+    },
+    {
+      "build": "27 final",
+      "widthPt": 900,
+      "appearance": "light",
+      "result": "Detached F12 returns to page 8 input; immediate typing yields Light-ok without clicking the webpage again"
+    }
+  ],
+  "failedAttempts": [
+    {
+      "failure": "detached inspector did not become the key and main window",
+      "resolution": "Test initially detached before asynchronous visibility. It now waits for the inspector to be visible before requesting detach; actual front-window assertions unchanged."
+    },
+    {
+      "failure": "docked inspector has visible space after Auto Layout",
+      "resolution": "A later run remembered detached layout. Docking test now explicitly requests attach after visibility, independent of prior layout; original geometry assertion retained."
+    },
+    {
+      "failure": "site favicon is reused by bookmark origin",
+      "resolution": "Recurred once this turn before inspector tests. Four temporary instrumented reproductions passed icon assertions but did not establish a cause. Diagnostic-only early exits lacked the regular smoke report and are not counted as full smoke passes. All temporary diagnostics removed; favicon implementation and assertions unchanged. Cause remains open."
+    }
+  ],
+  "sources": [
+    "https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/_WKInspector.h",
+    "https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/Inspector/mac/WebInspectorUIProxyMac.mm"
+  ],
+  "limits": [
+    "Favicon cache intermittent cause unresolved",
+    "Full visual, accessibility, real IME and bookmark pointer acceptance remain open",
+    "Audio scope, actual Codex paste and receiver attachment remain open",
+    "Broader extension, system-version and performance requirements retain full plan scope",
+    "Normal app untouched; QA sessions exited normally; no 0.8 release"
+  ]
+}

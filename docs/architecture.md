@@ -77,7 +77,9 @@ Chrome 级验收仍需要相同电脑、相同窗口尺寸/网络/页面集、�
 
 F12 / ⌥⌘I 切换检查器，⌥⌘J 直接打开 Console，开发菜单和更多菜单也提供入口。WebKit 自带元素、样式、网络、源代码、控制台面板；没有自建仿制面板。实现参照官方 WebKit 的 [_WKInspector](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/_WKInspector.h) 和 [_WKInspectorIBActions](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/_WKInspectorIBActions.h) 方法声明，不复制上游实现。此例外仅适用于本地版，不作为 App Store API 合规保证。
 
-检查器自身关闭后的焦点恢复也集中在 `DeveloperTools.swift`，使用 [WKUIDelegatePrivate 的关闭通知](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/WKUIDelegatePrivate.h)。仅当加载中的协议与本地回调的 Objective-C 类型编码完全相同时注册，不替换已有方法。WebKit 拆除面板后，在主线程执行一次恢复：要求仍为原活动页、检查器已关闭、浏览器窗口为 key window、没有 sheet 且焦点未被其他输入占用。弱引用不延长页面和窗口寿命，不增加轮询；缺少兼容回调时不注册，现有显式快捷键关闭路径仍保留。独立检查器窗口的 F12 命令路由仍待完善，原生窗口关闭后的焦点已在本机验证。
+检查器自身关闭后的焦点恢复也集中在 `DeveloperTools.swift`，使用 [WKUIDelegatePrivate 的关闭通知](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/WKUIDelegatePrivate.h)。仅当加载中的协议与本地回调的 Objective-C 类型编码完全相同时注册，不替换已有方法。WebKit 拆除面板后，在主线程执行一次恢复：要求仍为原活动页、检查器已关闭、浏览器窗口为 key window、没有 sheet 且焦点未被其他输入占用。弱引用不延长页面和窗口寿命，不增加轮询；缺少兼容回调时不注册，现有显式快捷键关闭路径仍保留。
+
+独立检查器窗口不包含浏览器控制器的响应链，由同一文件中的应用代理扩展接收 F12 / ⌥⌘I / ⌥⌘J。通过经 ABI 检查的 `isFront` 从已有标签中确定实际检查器；WebKit 的 [macOS 实现](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/Inspector/mac/WebInspectorUIProxyMac.mm) 按检查器所属 main window 判断，因此额外要求 key / main 为同一窗口、没有 sheet 且不是普通浏览器窗口，避免设置或临时面板误用后台检查器。只接受唯一匹配，不按窗口标题或第一个浏览器猜测；后台被检查标签仍可正确匹配。没有匹配时菜单禁用，普通浏览器命令继续由原窗口处理，不增加事件监听或常驻任务。
 
 
 ## 扩展宿主（0.8 开发预览）
