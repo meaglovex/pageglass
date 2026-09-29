@@ -53,6 +53,7 @@ final class SettingsController:NSWindowController {
         reloadValues(); renderPage()
     }
     required init?(coder:NSCoder) { fatalError() }
+    @objc func closeTab() { close() }
     @objc private func openExtensions() { browser?.showExtensions() }
     @objc private func selectPage(_ sender:NSButton) {
         guard Page.allCases.indices.contains(sender.tag) else { return }

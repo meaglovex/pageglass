@@ -1,0 +1,205 @@
+{
+  "date": "2026-09-30",
+  "status": "settings-shortcut-fixed-normal-layout-matrix-checked-release-incomplete",
+  "version": "0.8.0-alpha.1",
+  "build": 25,
+  "sourceBaseCommit": "552989998f7874724d5a528036468d39a3efddfa",
+  "sourceDigestSHA256": "579299073ce98fb885feb54973cf70b7894f2a7acb2facf8e41ae9f308e4fba3",
+  "sourceDigestMethod": "Python pathlib Path-component sorting of Sources/Browser files, followed by scripts/build.sh: relative path, NUL, raw SHA256 for each file",
+  "binarySHA256": {
+    "release": "8fabf72524414fa89500a1a3ea7e21d2c74187abd71b7b006a16bb71af5d9fdf",
+    "qa": "175a771453ca6cf0c0cd8fcf7bb977f52eca4753203df6883658c49216e1d7d5"
+  },
+  "environment": {
+    "os": "macOS 27.0 (26A428)",
+    "architecture": "arm64",
+    "profile": "isolated temporary profiles; owned synthetic HTML and bookmarks; automatic capture copy disabled"
+  },
+  "smokeRun": "20260930-064433",
+  "smokePassed": 287,
+  "unitPassed": 37,
+  "defaultUnitSkipped": 1,
+  "newChecks": [
+    "close shortcut resolves to settings while its text field is focused",
+    "settings accepts the shared close shortcut through the responder chain",
+    "closing settings preserves all browser tabs and their live page"
+  ],
+  "settingsShortcut": {
+    "beforeBuild": 24,
+    "before": "Command-W did nothing while settings had focus; File menu closeTab action was disabled; browser still had 30 tabs",
+    "fix": "SettingsController handles the existing closeTab responder action and closes only its settings window",
+    "actualBuild25": "Command-W closed settings and returned to the original webpage with all 30 tabs preserved; repeated while changing appearance in the visual matrix"
+  },
+  "normalLayoutMatrix": {
+    "build": 25,
+    "method": "Native CUA screenshots and accessibility observations, viewed in the task; no screenshot files committed",
+    "cases": [
+      {
+        "widthPt": 900,
+        "tabs": 1,
+        "appearance": "light",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 900,
+        "tabs": 1,
+        "appearance": "dark",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 900,
+        "tabs": 10,
+        "appearance": "light",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 900,
+        "tabs": 10,
+        "appearance": "dark",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 900,
+        "tabs": 30,
+        "appearance": "light",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 900,
+        "tabs": 30,
+        "appearance": "dark",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1280,
+        "tabs": 1,
+        "appearance": "light",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1280,
+        "tabs": 1,
+        "appearance": "dark",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1280,
+        "tabs": 10,
+        "appearance": "light",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1280,
+        "tabs": 10,
+        "appearance": "dark",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1280,
+        "tabs": 30,
+        "appearance": "light",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1280,
+        "tabs": 30,
+        "appearance": "dark",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1440,
+        "tabs": 1,
+        "appearance": "light",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1440,
+        "tabs": 1,
+        "appearance": "dark",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1440,
+        "tabs": 10,
+        "appearance": "light",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1440,
+        "tabs": 10,
+        "appearance": "dark",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1440,
+        "tabs": 30,
+        "appearance": "light",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      },
+      {
+        "widthPt": 1440,
+        "tabs": 30,
+        "appearance": "dark",
+        "pageViewportHeightCSSPx": 752,
+        "observed": true
+      }
+    ],
+    "observations": [
+      "Active-tab close button stays at the right; long titles truncate without hiding it",
+      "Address field, primary capture button, new-tab and tab-search controls remain visible",
+      "New-tab button follows the sole tab when only one remains",
+      "Native tab search opens synthetic tab 10; actual tab context menu closes right-hand tabs from 30 to 10, then closes other tabs from 10 to 1 at every width",
+      "At 1440 pt the first AX read after closing other tabs retained the old count during transition; the screenshot and subsequent full AX state confirmed the final single tab"
+    ],
+    "excluded": [
+      "loading, error, capture selection and partial-result state matrix",
+      "increased contrast",
+      "complete popup and inspector docking matrix",
+      "real IME, VoiceOver and trackpad"
+    ]
+  },
+  "inspectorUI": {
+    "build": 25,
+    "widthPt": 1440,
+    "tabs": 1,
+    "appearances": [
+      "light",
+      "dark"
+    ],
+    "observed": "F12 opened the actual bottom-docked WebKit Console in both appearances",
+    "nativeCloseButton": "Clicking inspector Close restored the page area, but AX focus remained on the standard window in both appearances; not accepted as webpage focus restoration",
+    "priorToggleEvidence": "The F12-toggle focus path passed on build 24 and remains covered by the build 25 smoke regression; do not conflate it with native Close"
+  },
+  "otherObservations": [
+    "Build 24: bookmark overflow right-click through CUA again produced no context menu; actual pointer path remains unaccepted",
+    "Build 25 at 900 pt: owned full-page capture completed and annotation editor opened; two edge drags did not resize the editor, so physical minimum-height and sidebar-scroll acceptance remain open",
+    "Synthetic page input colors are fixture styling, not browser chrome; macOS purple screen-sharing indicator is not an application defect",
+    "All three visual QA app runs exited normally; normal installed app was not replaced"
+  ],
+  "limits": [
+    "Full M1 visual/accessibility acceptance remains incomplete despite all 18 normal-layout cases",
+    "Inspector native Close focus is an observed unresolved defect",
+    "Bookmark overflow pointer interaction and editor physical resize remain unaccepted",
+    "Actual Codex paste and receiver attachment remain unaccepted",
+    "Audio implementation awaits scope decision; no private audio API called",
+    "Broader extension, multiwindow and macOS 14 / 15.4 device acceptance remain open",
+    "Chrome comparison and real extension/editor-preview performance remain open; prior build 24 measurements were not relabeled as build 25"
+  ]
+}
