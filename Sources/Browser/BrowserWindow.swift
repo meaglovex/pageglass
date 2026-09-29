@@ -104,6 +104,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         controller.addUserScript(WKUserScript(source:CaptureService.script,injectionTime:.atDocumentEnd,forMainFrameOnly:true,in:CaptureService.world))
         controller.addUserScript(WKUserScript(source:InteractionRecording.script,injectionTime:.atDocumentEnd,forMainFrameOnly:true,in:CaptureService.world))
         let view = WKWebView(frame:.zero,configuration:config)
+        DeveloperTools.prepareDelegate()
         view.allowsBackForwardNavigationGestures = true; view.navigationDelegate = self; view.uiDelegate = self
         view.isInspectable = true; view.pageZoom = store.state.settings.defaultZoom
         tab.webView = view
