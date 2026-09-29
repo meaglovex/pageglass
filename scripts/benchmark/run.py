@@ -54,7 +54,7 @@ def terminate_owned(pid,plan):
     if result.returncode==0 and '--benchmark-plan' in result.stdout and str(plan) in result.stdout:os.kill(pid,signal.SIGTERM)
 
 
-def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1):
+def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1,chrome_height=860):
     run=uuid.uuid4().hex;folder=output/run;folder.mkdir()
     url=f'http://127.0.0.1:{server.server_port}/run/{run}/index.html?iterationCount={iterations}&viewport=800x600'
     urls=[url] if workload=='speedometer' else [f'http://127.0.0.1:{server.server_port}/memory/{run}/{i}.html' for i in range(tabs)]
@@ -66,7 +66,7 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
         subprocess.run(['/usr/bin/open','-n',str(APP),'--args','--benchmark-plan',str(plan)],check=True)
     else:
         log=(folder/'chrome.log').open('w')
-        process=subprocess.Popen([str(CHROME),'--user-data-dir='+str(profile),'--no-first-run','--no-default-browser-check','--new-window','--window-size=1280,860',*urls],stdout=log,stderr=log)
+        process=subprocess.Popen([str(CHROME),'--user-data-dir='+str(profile),'--no-first-run','--no-default-browser-check','--new-window',f'--window-size=1280,{chrome_height}',*urls],stdout=log,stderr=log)
         log.close();pid=process.pid
     started=time.monotonic();states=[state]
     try:
@@ -110,7 +110,11 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--run',action='store_true');parser.add_argument('--rounds',type=int,default=3);parser.add_argument('--iterations',type=int,default=10);parser.add_argument('--workload',choices=['speedometer','memory'],default='speedometer');args=parser.parse_args()
+    global APP
+    parser=argparse.ArgumentParser();parser.add_argument('--run',action='store_true');parser.add_argument('--rounds',type=int,default=3);parser.add_argument('--iterations',type=int,default=10);parser.add_argument('--workload',choices=['speedometer','memory'],default='speedometer');parser.add_argument('--pageglass-app',type=Path,default=APP);parser.add_argument('--engines',choices=['both','pageglass','chrome'],default='both');parser.add_argument('--chrome-window-height',type=int,default=860);args=parser.parse_args()
+    APP=args.pageglass_app.resolve()
+    engines=['pageglass','chrome'] if args.engines=='both' else [args.engines]
+    if not 640 <= args.chrome_window_height <= 2160:parser.error('Chrome window height must be between 640 and 2160')
     if args.rounds<3 or args.iterations<10:parser.error('comparison requires at least 3 rounds and 10 iterations')
     source,helper,provenance=prepare()
     output=ROOT/'qa-output'/('benchmark-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid.uuid4().hex[:6]);output.mkdir()
@@ -119,6 +123,8 @@ def main():
     for name,executable,plist in [('pageglass',APP/'Contents/MacOS/Pageglass',APP/'Contents/Info.plist'),('chrome',CHROME,CHROME.parents[1]/'Info.plist')]:
         if plist.exists() and executable.exists():versions[name]={'version':plistlib.loads(plist.read_bytes()).get('CFBundleShortVersionString'),'executableSHA256':hashlib.sha256(executable.read_bytes()).hexdigest()}
     provenance['browsers']=versions
+    provenance['engines']=engines
+    provenance['chromeWindowHeight']=args.chrome_window_height
     provenance['hardwareModel']=subprocess.check_output(['sysctl','-n','hw.model'],text=True).strip()
     preflight={'environment':env,'blockers':blockers(env),'source':provenance,'mode':'run' if args.run else 'prepare-only'}
     (output/'preflight.json').write_text(json.dumps(preflight,indent=2));print(json.dumps({'output':str(output),**preflight}),flush=True)
@@ -129,15 +135,15 @@ def main():
     results=[]
     try:
         for round_number in range(args.rounds):
-            for engine in (['pageglass','chrome'] if round_number%2==0 else ['chrome','pageglass']):
+            for engine in (engines if round_number%2==0 else list(reversed(engines))):
                 for tabs in ([1,5,10] if args.workload=='memory' else [1]):
-                    result=run_one(engine,server,helper,output,args.iterations,args.workload,tabs);results.append(result)
+                    result=run_one(engine,server,helper,output,args.iterations,args.workload,tabs,args.chrome_window_height);results.append(result)
                     print(json.dumps(result),flush=True);(output/'runs.json').write_text(json.dumps(results,indent=2))
         if args.workload=='speedometer':
-            means={e:statistics.median(r['score'] for r in results if r['engine']==e) for e in ['pageglass','chrome']}
-            comparison={'medianScore':means,'pageglassToChromeScoreRatio':means['pageglass']/means['chrome'],'scope':'Speedometer 3.1 responsiveness only; post-benchmark footprint is not a multi-tab memory comparison'}
+            means={e:statistics.median(r['score'] for r in results if r['engine']==e) for e in engines}
+            comparison={'medianScore':means,'pageglassToChromeScoreRatio':means['pageglass']/means['chrome'] if len(engines)==2 else None,'scope':'Speedometer 3.1 responsiveness only; post-benchmark footprint is not a multi-tab memory comparison'}
         else:
-            comparison={'medianPhysicalFootprintBytes':{str(tabs):{e:statistics.median(r['physicalFootprintBytes'] for r in results if r['engine']==e and r['tabs']==tabs) for e in ['pageglass','chrome']} for tabs in [1,5,10]},'scope':'1/5/10 fully loaded same-origin PM fixture tabs; not representative of all websites; compare recorded viewports before acceptance'}
+            comparison={'medianPhysicalFootprintBytes':{str(tabs):{e:statistics.median(r['physicalFootprintBytes'] for r in results if r['engine']==e and r['tabs']==tabs) for e in engines} for tabs in [1,5,10]},'scope':'1/5/10 fully loaded same-origin PM fixture tabs; not representative of all websites; compare recorded viewports before acceptance'}
         report={'status':'completed','source':provenance,'runs':results,**comparison}
         (output/'summary.json').write_text(json.dumps(report,indent=2));print(json.dumps(report),flush=True)
     finally:server.shutdown();server.server_close()

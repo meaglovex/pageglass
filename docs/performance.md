@@ -4,6 +4,8 @@
 
 ## 同负载测量
 
+0.7 的运行器可用 `--pageglass-app <应用路径>` 指向保留的 0.6 安装包；`--engines pageglass` 或 `--engines chrome` 可单独收集基线，默认仍交替测量两款浏览器。`--chrome-window-height` 用于校准 Chrome 的实际页面视口；调整窗口后必须检查各轮结果中的 viewport，不能只比较窗口外框。单引擎运行不会生成两款浏览器的分数比值。前台、锁屏和温控检查始终生效。
+
 使用本机正式 Chrome 与 release Pageglass，每轮独立测试数据，默认 3 轮，交替浏览器顺序。不会关闭或读取用户现有 Chrome 标签与登录。
 
 ```sh

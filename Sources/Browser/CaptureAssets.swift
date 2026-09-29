@@ -7,6 +7,7 @@ enum CaptureAssets {
     struct Result { var html:String; var manifest:[[String:Any]]; var warnings:[String]; var paths:[String:String] }
 
     static func bundle(_ view:WKWebView,html:String,references:[[String:String]],folder:URL) async throws -> Result {
+        try Task.checkCancellation()
         guard !references.isEmpty else { return Result(html:html,manifest:[],warnings:[],paths:[:]) }
         let urls = Array(Set(references.compactMap { $0["url"] })).sorted()
         var items: [[String:Any]]
@@ -15,10 +16,12 @@ enum CaptureAssets {
                 view.callAsyncJavaScript(script,arguments:["urls":urls],in:nil,in:CaptureService.world) { result in continuation.resume(with:result) }
             }
             items = raw as? [[String:Any]] ?? []
-        } catch { items = urls.map { ["url":$0,"status":"page-fetch-failed"] } }
+        } catch { try Task.checkCancellation(); items = urls.map { ["url":$0,"status":"page-fetch-failed"] } }
+        try Task.checkCancellation()
         let directory = folder.appendingPathComponent("assets",isDirectory:true)
         var replacements: [String:String] = [:], manifest: [[String:Any]] = [], total = 0
         for (index,var item) in items.enumerated() {
+            try Task.checkCancellation()
             guard let url = item["url"] as? String else { continue }
             let encoded = item.removeValue(forKey:"base64") as? String
             if item["status"] as? String == "bundled", let encoded,encoded.count <= 2_800_000,let bytes = Data(base64Encoded:encoded), !bytes.isEmpty,bytes.count <= 2*1024*1024,total+bytes.count <= 20*1024*1024,let ext = fileExtension(bytes) {

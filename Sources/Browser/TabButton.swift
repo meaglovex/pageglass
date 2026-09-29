@@ -46,13 +46,30 @@ final class TabButton: NSView, NSDraggingSource {
         toolTip = tab.url?.absoluteString ?? label.stringValue
         registerForDraggedTypes([Self.pasteType])
     }
+    func update(_ tab:BrowserTab,selected:Bool) {
+        self.selected = selected
+        label.stringValue = tab.title.isEmpty ? "新标签页" : tab.title
+        icon.image = tab.favicon ?? NSImage(systemSymbolName:"globe",accessibilityDescription:nil)
+        icon.contentTintColor = tab.favicon == nil ? .secondaryLabelColor : nil
+        closeButton.setAccessibilityLabel("关闭 \(label.stringValue)")
+        setAccessibilityLabel(label.stringValue)
+        setAccessibilityValue(selected ? "当前标签页" : "")
+        toolTip = "\(label.stringValue)\n\(tab.url?.absoluteString ?? "")"
+    }
     required init?(coder:NSCoder) { fatalError() }
     override var mouseDownCanMoveWindow: Bool { false }
+    override var acceptsFirstResponder: Bool { true }
+    override func becomeFirstResponder()->Bool { needsDisplay = true; return true }
+    override func resignFirstResponder()->Bool { needsDisplay = true; return true }
+    override func keyDown(with event:NSEvent) {
+        if event.keyCode == 36 || event.keyCode == 49 { activate?() } else { super.keyDown(with:event) }
+    }
     override func draw(_ dirtyRect:NSRect) {
         let activeColor = effectiveAppearance.bestMatch(from:[.darkAqua,.aqua]) == .darkAqua ? NSColor(calibratedWhite:0.20,alpha:1) : NSColor.white
-        let fill = selected ? activeColor : (hovering ? activeColor.withAlphaComponent(0.5) : .clear)
+        let fill = down != nil ? NSColor.selectedContentBackgroundColor.withAlphaComponent(0.35) : selected ? activeColor : (hovering ? activeColor.withAlphaComponent(0.5) : .clear)
         fill.setFill(); NSBezierPath(roundedRect:bounds.insetBy(dx:1,dy:1),xRadius:9,yRadius:9).fill()
         if !selected { NSColor.separatorColor.setFill(); NSRect(x:bounds.width-1,y:9,width:0.5,height:bounds.height-18).fill() }
+        if window?.firstResponder === self { NSGraphicsContext.saveGraphicsState(); NSFocusRingPlacement.only.set(); NSBezierPath(roundedRect:bounds.insetBy(dx:3,dy:3),xRadius:7,yRadius:7).fill(); NSGraphicsContext.restoreGraphicsState() }
     }
     override func updateTrackingAreas() {
         if let tracking { removeTrackingArea(tracking) }
@@ -61,8 +78,8 @@ final class TabButton: NSView, NSDraggingSource {
     }
     override func mouseEntered(with event:NSEvent) { hovering = true; needsDisplay = true }
     override func mouseExited(with event:NSEvent) { hovering = false; needsDisplay = true }
-    override func mouseDown(with event:NSEvent) { down = event }
-    override func mouseUp(with event:NSEvent) { if down != nil { down = nil; activate?() } }
+    override func mouseDown(with event:NSEvent) { down = event; needsDisplay = true }
+    override func mouseUp(with event:NSEvent) { if down != nil { down = nil; needsDisplay = true; activate?() } }
     override func otherMouseDown(with event:NSEvent) { if event.buttonNumber == 2 { close?() } }
     override func accessibilityPerformPress()->Bool { activate?(); return true }
     @objc private func closePressed() { close?() }
@@ -86,6 +103,15 @@ final class TabButton: NSView, NSDraggingSource {
 }
 
 final class HeaderBackground: NSView {
+    override func draw(_ dirtyRect:NSRect) { NSColor.windowBackgroundColor.setFill(); bounds.fill() }
+    override func viewDidChangeEffectiveAppearance() { super.viewDidChangeEffectiveAppearance(); needsDisplay = true }
     override var mouseDownCanMoveWindow: Bool { true }
     override func mouseDown(with event:NSEvent) { window?.performDrag(with:event) }
+}
+
+final class ChromeStackView:NSStackView {
+    var surfaceColor:NSColor = .controlBackgroundColor
+    var cornerRadius:CGFloat = 0
+    override func draw(_ dirtyRect:NSRect) { surfaceColor.setFill(); NSBezierPath(roundedRect:bounds,xRadius:cornerRadius,yRadius:cornerRadius).fill() }
+    override func viewDidChangeEffectiveAppearance() { super.viewDidChangeEffectiveAppearance(); needsDisplay = true }
 }

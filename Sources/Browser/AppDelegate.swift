@@ -90,6 +90,7 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
         add(capture,"开始 / 停止交互记录",#selector(BrowserWindow.toggleInteractionRecording),"i",[.command,.shift])
         add(capture,"捕获元素",#selector(BrowserWindow.selectElement),"c",[.command,.shift]); add(capture,"捕获全部",#selector(BrowserWindow.capturePage),"a",[.command,.shift])
         add(capture,"复制给 Codex",#selector(BrowserWindow.copyLatest)); add(capture,"复制截图",#selector(BrowserWindow.copyImage)); add(capture,"打开捕获文件夹",#selector(BrowserWindow.revealCapture))
+        add(capture,"捕获历史…",#selector(BrowserWindow.showCaptureHistory))
         let windows = menu("窗口"); NSApp.windowsMenu = windows
         add(windows,"下载",#selector(BrowserWindow.showDownloads),"j"); add(windows,"最小化",#selector(NSWindow.performMiniaturize(_:)),"m")
     }

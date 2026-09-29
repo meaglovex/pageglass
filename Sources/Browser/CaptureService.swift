@@ -3,7 +3,8 @@ import WebKit
 
 struct CaptureResult {
     let directory: URL
-    let image: NSImage
+    // Load the full raster only when needed; keeping the latest result must not pin a long screenshot in RAM.
+    var image:NSImage { NSImage(contentsOf:directory.appendingPathComponent("screenshot.png")) ?? NSImage(size:.zero) }
     let prompt: String
     let metadata: [String: Any]
 
@@ -14,7 +15,6 @@ struct CaptureResult {
         pasteboard.setString(prompt, forType:.string)
         pasteboard.setString(directory.path,forType:CaptureRetention.clipboardType)
     }
-    func copyImage() { NSPasteboard.general.clearContents(); NSPasteboard.general.writeObjects([image]); NSPasteboard.general.setString(directory.path,forType:CaptureRetention.clipboardType) }
 }
 
 @MainActor
@@ -38,43 +38,56 @@ final class CaptureService {
     }
 
     func capture(_ view: WKWebView, mode:String, destination:URL? = nil, interactionHistory:InteractionArchive? = nil, progress: (String)->Void) async throws -> CaptureResult {
+        try Task.checkCancellation()
         guard let data = try await js(view,"globalThis.__pageglass.extract('\(mode)')") as? [String:Any], let html = data["html"] as? String else { throw Failure.message("页面尚未就绪，请加载后重试") }
+        try Task.checkCancellation()
         var metadata = data
+        var issues = data["qualityIssues"] as? [String] ?? []
         let originalURL = view.url
         var warnings = data["warnings"] as? [String] ?? []
         progress("正在生成截图…")
         let image: NSImage
         if mode == "page" {
-            image = try await fullImage(view,data:data,warnings:&warnings,progress:progress)
+            image = try await fullImage(view,data:data,warnings:&warnings,issues:&issues,progress:progress)
         } else {
             guard let r = data["rect"] as? [String:Double], let viewport = data["viewport"] as? [String:Double], let vw = viewport["width"], vw > 0 else { throw Failure.message("元素没有可用的边界") }
             let scale = view.bounds.width / vw
             let wanted = CGRect(x:(r["x"] ?? 0)*scale,y:(r["y"] ?? 0)*scale,width:(r["width"] ?? 0)*scale,height:(r["height"] ?? 0)*scale)
             let visible = wanted.intersection(view.bounds)
             guard !visible.isNull, visible.width > 0, visible.height > 0 else { throw Failure.message("元素不在可视区域，请滚动后重新捕获") }
-            if visible != wanted { warnings.append("元素超出视口，截图只包含可见部分；HTML 包含所选元素的可导出结构。") }
+            if visible != wanted { issues.append("element-clipped"); warnings.append("元素超出视口，截图只包含可见部分；HTML 包含所选元素的可导出结构。") }
             metadata["screenshotRect"] = ["x":visible.minX,"y":visible.minY,"width":visible.width,"height":visible.height]
             image = try await snapshot(view,rect:visible)
         }
+        try Task.checkCancellation()
         guard view.url == originalURL else { throw Failure.message("捕获期间页面发生跳转，已取消保存，请重试") }
         metadata["warnings"] = warnings
         metadata.removeValue(forKey:"html"); metadata.removeValue(forKey:"assetReferences")
         metadata["screenshot"] = ["file":"screenshot.png","width":image.size.width,"height":image.size.height]
         let folder = (destination ?? Self.root).appendingPathComponent("\(Int(Date().timeIntervalSince1970))-\(UUID().uuidString.prefix(8))",isDirectory:true)
-        try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true,attributes:[.posixPermissions:0o700])
+        let work = folder.deletingLastPathComponent().appendingPathComponent(".pending-"+UUID().uuidString,isDirectory:true)
+        var committed = false
+        try FileManager.default.createDirectory(at:work,withIntermediateDirectories:true,attributes:[.posixPermissions:0o700])
+        defer { if !committed { try? FileManager.default.removeItem(at:work) } }
         guard let tiff = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data:tiff), let png = bitmap.representation(using:.png,properties:[:]) else { throw Failure.message("截图编码失败") }
-        try png.write(to:folder.appendingPathComponent("screenshot.png"),options:.atomic)
+        try png.write(to:work.appendingPathComponent("screenshot.png"),options:.atomic)
         progress("正在保存图片与字体…")
-        let assets = try await CaptureAssets.bundle(view,html:html,references:(data["assetReferences"] as? [[String:String]] ?? []) + (interactionHistory?.references ?? []),folder:folder)
+        let assets = try await CaptureAssets.bundle(view,html:html,references:(data["assetReferences"] as? [[String:String]] ?? []) + (interactionHistory?.references ?? []),folder:work)
+        try Task.checkCancellation()
         guard view.url == originalURL else { throw Failure.message("资源保存期间页面发生跳转，已取消捕获，请重试") }
         warnings += assets.warnings
         if let interactionHistory {
-            metadata["interactionHistory"] = try interactionHistory.write(to:folder,assetPaths:assets.paths)
+            metadata["interactionHistory"] = try interactionHistory.write(to:work,assetPaths:assets.paths)
             warnings += interactionHistory.warnings
         }
+        if !assets.warnings.isEmpty { issues.append("missing-assets") }
+        if let interactionHistory,interactionHistory.frames.contains(where:{$0.png == nil}) { issues.append("missing-interaction-frames") }
+        metadata["qualityIssues"] = Array(Set(issues)).sorted()
+        metadata["outcome"] = issues.isEmpty ? "complete" : "partial"
         metadata["warnings"] = warnings; metadata["assetManifest"] = assets.manifest
-        try assets.html.write(to:folder.appendingPathComponent("reference.html"),atomically:true,encoding:.utf8)
-        try JSONSerialization.data(withJSONObject:metadata,options:[.prettyPrinted,.sortedKeys,.withoutEscapingSlashes]).write(to:folder.appendingPathComponent("capture.json"),options:.atomic)
+        progress("正在保存捕获包…")
+        try Task.checkCancellation()
+        try assets.html.write(to:work.appendingPathComponent("reference.html"),atomically:true,encoding:.utf8)
         let title = data["title"] as? String ?? "页面"
         let prompt = """
         我用Pageglass捕获了\(mode == "page" ? "整个已加载页面" : "一个页面元素")，请以此为原型参考。
@@ -93,8 +106,11 @@ final class CaptureService {
 
         我的修改要求：
         """
-        try prompt.write(to:folder.appendingPathComponent("PROMPT.txt"),atomically:true,encoding:.utf8)
-        return CaptureResult(directory:folder,image:image,prompt:prompt,metadata:metadata)
+        try prompt.write(to:work.appendingPathComponent("PROMPT.txt"),atomically:true,encoding:.utf8)
+        try Task.checkCancellation()
+        try JSONSerialization.data(withJSONObject:metadata,options:[.prettyPrinted,.sortedKeys,.withoutEscapingSlashes]).write(to:work.appendingPathComponent("capture.json"),options:.atomic)
+        try FileManager.default.moveItem(at:work,to:folder); committed = true
+        return CaptureResult(directory:folder,prompt:prompt,metadata:metadata)
     }
 
     private func snapshot(_ view:WKWebView,rect:CGRect) async throws -> NSImage {
@@ -104,11 +120,11 @@ final class CaptureService {
         return try await view.takeSnapshot(configuration:configuration)
     }
 
-    private func fullImage(_ view:WKWebView,data:[String:Any],warnings:inout [String],progress:(String)->Void) async throws -> NSImage {
+    private func fullImage(_ view:WKWebView,data:[String:Any],warnings:inout [String],issues:inout [String],progress:(String)->Void) async throws -> NSImage {
         guard let doc = data["document"] as? [String:Double], let vp = data["viewport"] as? [String:Double], let width = vp["width"], let height = vp["height"], width > 0, height > 0 else { throw Failure.message("无法取得页面尺寸") }
         let total = min(doc["height"] ?? height, 20000, height * 30, 24_000_000 / min(width,1440))
-        if total < (doc["height"] ?? height) { warnings.append("长截图超过 20000 CSS 像素、30 屏或 2400 万像素预算，已截断；请分区域捕获。") }
-        if (doc["width"] ?? width) > width + 1 { warnings.append("页面有横向溢出，长截图只捕获视口宽度。") }
+        if total < (doc["height"] ?? height) { issues.append("screenshot-truncated"); warnings.append("长截图超过 20000 CSS 像素、30 屏或 2400 万像素预算，已截断；请分区域捕获。") }
+        if (doc["width"] ?? width) > width + 1 { issues.append("horizontal-overflow"); warnings.append("页面有横向溢出，长截图只捕获视口宽度。") }
         warnings.append("整页指当前已加载 DOM；无限滚动和虚拟列表中未加载的内容不包含在内。")
         let outputWidth = Int(min(width,1440)), outputHeight = Int(ceil(total * Double(outputWidth) / width))
         guard let bitmap = NSBitmapImageRep(bitmapDataPlanes:nil,pixelsWide:outputWidth,pixelsHigh:outputHeight,bitsPerSample:8,samplesPerPixel:4,hasAlpha:true,isPlanar:false,colorSpaceName:.deviceRGB,bytesPerRow:0,bitsPerPixel:0), let context = NSGraphicsContext(bitmapImageRep:bitmap) else { throw Failure.message("无法创建长截图画布") }
@@ -116,13 +132,14 @@ final class CaptureService {
         var requested = 0.0, covered = 0.0, tileIndex = 0
         do {
             while covered < total - 0.5 {
-                guard !Task.isCancelled else { throw Failure.message("捕获已取消") }
+                try Task.checkCancellation()
                 let raw = try await js(view,"globalThis.__pageglass.tile(\(requested),\(tileIndex > 0 ? "true" : "false"))") as? [String:Double]
                 try await Task.sleep(for:.milliseconds(160))
                 let actualY = raw?["y"] ?? requested
                 let image = try await snapshot(view,rect:view.bounds)
+                try Task.checkCancellation()
                 let end = min(actualY + height,total)
-                guard end > covered + 0.1 else { warnings.append("页面高度在捕获期间变化，截图在最后有效位置停止。"); break }
+                guard end > covered + 0.1 else { issues.append("page-changed"); warnings.append("页面高度在捕获期间变化，截图在最后有效位置停止。"); break }
                 // 末屏滚动会被 clamp；仅拼接未覆盖的下段，避免重复内容。
                 let start = max(covered,actualY), used = end-start
                 let crop = CGRect(x:0,y:(height-(start-actualY)-used)/height*image.size.height,width:image.size.width,height:used/height*image.size.height)
@@ -147,15 +164,16 @@ extension BrowserWindow {
         guard !capturing else { return }
         if let recorder = interactionRecording,recorder.isRecording {
             let view = webView
-            capturing = true;syncChrome()
-            Task { @MainActor in
+            capturing = true; captureProgress = "正在保存最后一次交互…"; syncChrome()
+            captureTask = Task { @MainActor in
                 _ = await recorder.finish(view)
-                capturing = false
+                capturing = false; captureTask = nil
+                guard !Task.isCancelled else { syncChrome(); return }
                 selectElement()
             }
             return
         }
-        selecting.toggle(); syncChrome()
+        selecting.toggle(); selectionDescription = ""; syncChrome()
         status.stringValue = selecting ? "移动鼠标选择元素，↑ 扩大到父级，点击或 Enter 捕获，Esc 取消" : "已取消捕获"
         webView.evaluateJavaScript("globalThis.__pageglass.\(selecting ? "start" : "stop")()",in:nil,in:CaptureService.world) { [weak self] result in
             if case .failure = result { self?.selecting = false; self?.status.stringValue = "页面未准备好，请加载完成后重试"; self?.syncChrome() }
@@ -165,22 +183,35 @@ extension BrowserWindow {
     @objc func capturePage() { performCapture(mode:"page") }
     func performCapture(mode:String) {
         guard !capturing else { return }
-        capturing = true; selecting = false; syncChrome()
+        capturing = true; selecting = false; captureProgress = "准备捕获…"; syncChrome()
         let view = webView
-        Task { @MainActor in
-            defer { capturing = false; syncChrome() }
+        captureTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { captureTask = nil; capturing = false; captureProgress = ""; syncChrome() }
             do {
                 let history = await interactionRecording?.finish(view)
-                let result = try await captureService.capture(view,mode:mode,destination:captureRoot,interactionHistory:history) { [weak self] text in self?.status.stringValue = text }
+                try Task.checkCancellation()
+                let result = try await captureService.capture(view,mode:mode,destination:captureRoot,interactionHistory:history) { [weak self] text in self?.captureProgress = text; self?.syncCaptureBar() }
                 latest = result; result.copyForCodex()
-                let warnings = result.metadata["warnings"] as? [String] ?? []
-                let partial = warnings.contains { $0.contains("截断") || $0.contains("只包含可见部分") || $0.contains("停止") }
-                status.stringValue = partial ? "已复制 · 部分内容有限制，请查看 capture.json" : "已复制给 Codex · \(result.metadata["nodeCount"] ?? 0) 个元素 · 包含截图、样式与交互说明"
-            } catch { status.stringValue = "捕获失败：\(error.localizedDescription)" }
+                status.stringValue = "已复制本机文件引用 · 可在本机 Codex 粘贴"
+                showCaptureResult(result)
+                NotificationCenter.default.post(name:CaptureRetention.changed,object:captureRoot)
+            } catch {
+                let cancelled = Task.isCancelled || error is CancellationError
+                status.show(cancelled ? "已取消捕获，页面已恢复" : "捕获失败：\(error.localizedDescription)",persistent:!cancelled)
+            }
         }
     }
-    @objc func copyLatest() { guard let latest,FileManager.default.fileExists(atPath:latest.directory.path) else { self.latest = nil; status.stringValue = "捕获已清理或尚未捕获，请重新捕获"; return }; latest.copyForCodex(); status.stringValue = "已复制 · 在本机 Codex 粘贴后补充修改要求" }
-    @objc func copyImage() { guard let latest,FileManager.default.fileExists(atPath:latest.directory.path) else { self.latest = nil; status.stringValue = "捕获已清理或尚未捕获，请重新捕获"; return }; latest.copyImage(); status.stringValue = "已复制截图 · 可直接作为图片粘贴" }
+    @objc func copyLatest() {
+        guard let latest else { status.stringValue = "请从捕获历史选择记录，或重新捕获"; return }
+        do { try CaptureCatalog.copyPrompt(latest.directory); status.stringValue = "已复制本机文件引用 · 在本机 Codex 粘贴" }
+        catch { self.latest = nil; status.show("捕获文件已清理或损坏，请重新捕获",persistent:true) }
+    }
+    @objc func copyImage() {
+        guard let latest else { status.stringValue = "请从捕获历史选择记录，或重新捕获"; return }
+        do { try CaptureCatalog.copyImage(latest.directory); status.stringValue = "已复制截图" }
+        catch { self.latest = nil; status.show("截图已清理或损坏，请重新捕获",persistent:true) }
+    }
     @objc func revealCapture() {
         if let latest { NSWorkspace.shared.activateFileViewerSelecting([latest.directory]) }
         else { try? FileManager.default.createDirectory(at:captureRoot,withIntermediateDirectories:true); NSWorkspace.shared.open(captureRoot) }

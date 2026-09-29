@@ -1,5 +1,7 @@
 # 0.4 验证记录
 
+> 本文件保留按时间排列的历史验收。当前 0.7 开发版结论与未完成项见 [validation-0.7.md](validation-0.7.md)；不要将早期的“未实现/未发布”条目当作当前状态。
+
 测试环境：2026-09-29，本机 macOS arm64，Apple Swift 6.4 / Xcode SDK 27，最低部署目标 macOS 14。构建脚本使用 SwiftPM native backend，避免 Swift 6.4 默认 Xcode backend 的产物路径差异；此参数在新工具链已标记 deprecated，后续应迁移。
 
 ## 已验证

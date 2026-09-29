@@ -10,6 +10,7 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
         }
         let scheme = url.scheme?.lowercased() ?? ""
         if ["http","https","file","about","blob","data"].contains(scheme) {
+            if action.targetFrame?.isMainFrame == true { tabs.first(where:{$0.webView === webView})?.pendingURL = url }
             decisionHandler(action.shouldPerformDownload ? .download : .allow)
         } else {
             decisionHandler(.cancel)
@@ -21,13 +22,15 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
     }
     func webView(_ webView:WKWebView,decidePolicyFor response:WKNavigationResponse,decisionHandler:@escaping(WKNavigationResponsePolicy)->Void) { decisionHandler(response.canShowMIMEType ? .allow : .download) }
     func webView(_ webView:WKWebView,didStartProvisionalNavigation navigation:WKNavigation!) {
-        if let tab = tabs.first(where:{$0.webView === webView}) { tab.iconTask?.cancel();tab.favicon = nil;renderTabs() }
+        tabs.first(where:{$0.webView === webView})?.failure = nil
+        if let tab = tabs.first(where:{$0.webView === webView}) { tab.iconTask?.cancel();tab.favicon = nil;updateTabAppearance(tab) }
         // A failed or cancelled navigation can leave the old document alive.
         webView.evaluateJavaScript("globalThis.__pageglassRecorder?.stop(false)",in:nil,in:CaptureService.world)
         tabs.first(where:{$0.webView === webView})?.recording.reset()
         if webView === self.activeWebView { selecting = false; status.stringValue = "正在加载…"; syncChrome() }
     }
     func webView(_ webView:WKWebView,didFinish navigation:WKNavigation!) {
+        if let tab = tabs.first(where:{$0.webView === webView}) { tab.failure = nil; tab.pendingURL = webView.url }
         loadFavicon(for:webView)
         if webView.url == Resources.bundle.url(forResource:"home",withExtension:"html",subdirectory:"Resources") {
             let destination = Navigation.url(for:"test",searchEngine:store.state.settings.searchEngine)!
@@ -40,11 +43,16 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
     func webView(_ webView:WKWebView,didFailProvisionalNavigation navigation:WKNavigation!,withError error:Error) { report(error,view:webView) }
     func webView(_ webView:WKWebView,didFail navigation:WKNavigation!,withError error:Error) { report(error,view:webView) }
     private func report(_ error:Error,view:WKWebView) {
-        if (error as NSError).code != NSURLErrorCancelled && view === activeWebView { status.stringValue = "加载失败：\(error.localizedDescription)" }
+        let error = error as NSError
+        guard !(error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled),let tab = tabs.first(where:{$0.webView === view}) else { return }
+        let url = (error.userInfo[NSURLErrorFailingURLErrorKey] as? URL) ?? tab.pendingURL ?? view.url
+        tab.failure = PageFailure(message:"无法打开 \(url?.host ?? "页面")：\(error.localizedDescription)",url:url)
+        if view === activeWebView { syncChrome() }
     }
     func webViewWebContentProcessDidTerminate(_ webView:WKWebView) {
         tabs.first(where:{$0.webView === webView})?.recording.reset()
-        if webView === self.activeWebView { status.stringValue = "页面进程已退出，按 ⌘R 重新加载";syncChrome() }
+        if let tab = tabs.first(where:{$0.webView === webView}) { tab.failure = PageFailure(message:"页面进程已退出，可以重新加载此标签页。",url:webView.url ?? tab.url) }
+        if webView === self.activeWebView { syncChrome() }
     }
     func webView(_ webView:WKWebView,createWebViewWith configuration:WKWebViewConfiguration,for action:WKNavigationAction,windowFeatures:WKWindowFeatures)->WKWebView? {
         guard !capturing, action.targetFrame == nil else { return nil }

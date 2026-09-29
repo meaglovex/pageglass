@@ -11,6 +11,17 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     var closedTabs: [SavedTab] = []
     let content = NSView()
     let tabRow = NSStackView()
+    let tabScroll = NSScrollView()
+    var tabButtons: [UUID:TabButton] = [:]
+    var tabWidths: [UUID:NSLayoutConstraint] = [:]
+    var tabPopover: NSPopover?
+    var bookmarkPopover: NSPopover?
+    var overflowBookmarks: [PageRecord] = []
+    var renderedBookmarks: [PageRecord]?
+    var renderedBookmarkWidth: CGFloat = 0
+    var renderedBookmarksVisible = false
+    var compactTools: [NSView] = []
+    let errorBar = NSStackView(), errorLabel = NSTextField(labelWithString:"")
     let bookmarkRow = NSStackView()
     let address = NSTextField()
     let status = BrowserNotice(labelWithString: "")
@@ -23,6 +34,14 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     var latest: CaptureResult?
     var selecting = false
     var capturing = false
+    var captureTask: Task<Void,Never>?
+    var captureProgress = ""
+    var selectionDescription = ""
+    var recordingBarHidden = false
+    let captureBar = NSStackView(), captureLabel = NSTextField(labelWithString:"")
+    let cancelCaptureButton = NSButton()
+    var captureResultController: CapturePreviewController?
+    var captureLibraryController: CaptureLibraryController?
     var downloads: [ObjectIdentifier: WKDownload] = [:]
     var downloadRecords: [ObjectIdentifier:DownloadRecord] = [:]
     var downloadObservers: [ObjectIdentifier:NSKeyValueObservation] = [:]
@@ -75,11 +94,11 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         tab.webView = view
         tab.observations = [
             view.observe(\.title,options:[.new]) { [weak self,weak tab] view,_ in
-                DispatchQueue.main.async { tab?.title = view.title?.isEmpty == false ? view.title! : "新标签页"; self?.renderTabs(); self?.syncChrome()
+                DispatchQueue.main.async { if let tab { tab.title = view.title?.isEmpty == false ? view.title! : "新标签页"; self?.updateTabAppearance(tab) }; self?.syncChrome()
                     if let self,!self.privateBrowsing,!self.isTesting,let url = view.url { self.store.updateHistoryTitle(url:url.absoluteString,title:view.title ?? "") }
                 }
             },
-            view.observe(\.url,options:[.new]) { [weak self,weak tab] view,_ in DispatchQueue.main.async { tab?.url = view.url; self?.syncChrome() } },
+            view.observe(\.url,options:[.new]) { [weak self,weak tab] view,_ in DispatchQueue.main.async { if let tab { tab.url = view.url; self?.updateTabAppearance(tab) }; self?.syncChrome() } },
             view.observe(\.estimatedProgress,options:[.new]) { [weak self] _,_ in DispatchQueue.main.async { self?.syncChrome() } },
             view.observe(\.isLoading,options:[.new]) { [weak self] _,_ in DispatchQueue.main.async { self?.syncChrome() } }
         ]
@@ -106,7 +125,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         window?.makeFirstResponder(view)
         if fresh { if let url = tab.url { load(url) } else { loadHome() } }
         status.stringValue = ""
-        renderTabs(); syncChrome(); saveSession()
+        renderTabs(revealActive:true); syncChrome(); saveSession()
     }
     func syncChrome() {
         guard tabs.indices.contains(activeIndex),let view = tabs[activeIndex].webView else { return }
@@ -129,6 +148,8 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         bookmarkButton.contentTintColor = marked ? .systemBlue : .secondaryLabelColor
         siteButton.image = NSImage(systemSymbolName:view.url?.scheme == "https" ? "lock" : "info.circle",accessibilityDescription:"网站信息")
         window?.title = "\(view.title.flatMap { $0.isEmpty ? nil : $0 } ?? "新标签页") — Pageglass\(privateBrowsing ? "（无痕）" : "")"
+        syncPageFailure()
+        syncCaptureBar()
     }
     func displayURL(_ url:URL?)->String {
         guard let url else { return "" }
@@ -137,6 +158,9 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     }
     func load(_ url:URL) {
         dismissSuggestions()
+        tabs[activeIndex].pendingURL = url
+        tabs[activeIndex].failure = nil
+        syncPageFailure()
         if url.isFileURL { webView.loadFileURL(url,allowingReadAccessTo:url.deletingLastPathComponent()) }
         else { webView.load(URLRequest(url:url)) }
     }
@@ -152,15 +176,17 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         (NSApp.delegate as? AppDelegate)?.saveSessions()
     }
     func windowWillClose(_ notification:Notification) {
+        captureTask?.cancel(); cancelCapture()
         dismissSuggestions(); saveSession()
-        libraryController?.close(); settingsController?.close()
+        libraryController?.close(); settingsController?.close(); tabPopover?.close(); bookmarkPopover?.close(); captureResultController?.close()
+        captureLibraryController?.close()
         for download in downloads.values { updateDownload(download,state:"已取消：窗口已关闭"); download.cancel { _ in } }
         downloadObservers.removeAll(); downloads.removeAll()
         for tab in tabs { tab.release() }
         (NSApp.delegate as? AppDelegate)?.closed(self)
     }
     func windowDidResignKey(_ notification:Notification) { dismissSuggestions() }
-    func windowDidResize(_ notification:Notification) { renderTabs(); dismissSuggestions() }
+    func windowDidResize(_ notification:Notification) { renderTabs(revealActive:true); renderBookmarks(); updateToolbarLayout(); dismissSuggestions(); tabPopover?.close(); bookmarkPopover?.close() }
     @objc func newTab() { guard !capturing else { return }; tabs.append(BrowserTab()); activate(tabs.count-1); address.stringValue = ""; focusAddress() }
     func openTab(_ url:URL,inBackground:Bool = false) {
         guard !capturing else { return }
@@ -179,6 +205,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         activeIndex = min(activeIndex,tabs.count-1); activate(activeIndex)
     }
     @objc func navigate() {
+        guard (address.currentEditor() as? NSTextView)?.hasMarkedText() != true else { return }
         let input = selectedSuggestion >= 0 && suggestions.indices.contains(selectedSuggestion) ? suggestions[selectedSuggestion].url : address.stringValue
         guard !capturing,let url = Navigation.url(for:input,searchEngine:store.state.settings.searchEngine) else { status.stringValue = "请输入有效的网址或搜索词"; return }
         window?.makeFirstResponder(webView); load(url)
@@ -211,6 +238,9 @@ final class WeakCaptureHandler: NSObject, WKScriptMessageHandler {
             owner.interactionRecording?.receive(step,document:document,view:view);return
         }
         guard owner.selecting else { return }
+        if data["type"] as? String == "selection-changed",let description = data["description"] as? String {
+            owner.selectionDescription = String(description.prefix(240))+" · ↑ 父级 / ↓ 子级 · Enter 捕获"; owner.syncCaptureBar(); return
+        }
         if data["type"] as? String == "selected" { owner.selecting = false; owner.performCapture(mode:"element") }
         if data["type"] as? String == "cancelled" { owner.selecting = false; owner.status.stringValue = "已取消捕获"; owner.syncChrome() }
     }

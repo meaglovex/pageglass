@@ -7,6 +7,8 @@ final class BrowserTab: NSObject {
     let container = NSView()
     var webView: WKWebView?
     var url: URL?
+    var pendingURL: URL?
+    var failure: PageFailure?
     var title = "新标签页"
     var favicon:NSImage?
     var iconTask:Task<Void,Never>?

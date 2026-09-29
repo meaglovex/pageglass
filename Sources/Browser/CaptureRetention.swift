@@ -2,6 +2,7 @@ import AppKit
 
 /// Only direct, completed capture packages are eligible. Never follow symlinks or metadata paths.
 struct CaptureRetention {
+    static let changed = Notification.Name("PageglassCapturesChanged")
     let root: URL
     struct Report {
         var removed: [URL] = []
@@ -34,6 +35,17 @@ struct CaptureRetention {
         return report
     }
     static func samePackage(_ left:URL,_ right:URL)->Bool { left.resolvingSymlinksInPath().standardizedFileURL.path == right.resolvingSymlinksInPath().standardizedFileURL.path }
+    func remove(_ selected:[URL],move:(URL)throws->Void = { try FileManager.default.trashItem(at:$0,resultingItemURL:nil) })->Report {
+        var report = Report()
+        do {
+            let eligible = Set(try packages().map { $0.url.standardizedFileURL })
+            for url in Set(selected.map(\.standardizedFileURL)) {
+                guard eligible.contains(url) else { report.failures += 1; continue }
+                do { try move(url); report.removed.append(url) } catch { report.failures += 1 }
+            }
+        } catch { report.failures += 1 }
+        return report
+    }
     static let clipboardType = NSPasteboard.PasteboardType("dev.pageglass.capture-path")
     static func clearClipboard(for removed:[URL],pasteboard:NSPasteboard = .general) {
         guard let path = pasteboard.string(forType:clipboardType),removed.contains(where:{ samePackage($0,URL(fileURLWithPath:path)) }) else { return }
@@ -53,6 +65,7 @@ extension BrowserWindow {
         let report = CaptureRetention(root:captureRoot).clean(days:store.state.settings.captureRetentionDays ?? 0,all:all)
         CaptureRetention.clearClipboard(for:report.removed)
         if let latest,report.removed.contains(where:{ CaptureRetention.samePackage($0,latest.directory) }) { self.latest = nil }
+        if !report.removed.isEmpty { NotificationCenter.default.post(name:CaptureRetention.changed,object:captureRoot) }
         return report
     }
 }
