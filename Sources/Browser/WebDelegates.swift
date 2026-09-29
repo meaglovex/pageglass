@@ -23,11 +23,14 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
     func webView(_ webView:WKWebView,decidePolicyFor response:WKNavigationResponse,decisionHandler:@escaping(WKNavigationResponsePolicy)->Void) { decisionHandler(response.canShowMIMEType ? .allow : .download) }
     func webView(_ webView:WKWebView,didStartProvisionalNavigation navigation:WKNavigation!) {
         tabs.first(where:{$0.webView === webView})?.failure = nil
-        if let tab = tabs.first(where:{$0.webView === webView}) { tab.iconTask?.cancel();tab.favicon = nil;updateTabAppearance(tab) }
+        tabs.first(where:{$0.webView === webView})?.iconTask?.cancel()
         // A failed or cancelled navigation can leave the old document alive.
         webView.evaluateJavaScript("globalThis.__pageglassRecorder?.stop(false)",in:nil,in:CaptureService.world)
         tabs.first(where:{$0.webView === webView})?.recording.reset()
         if webView === self.activeWebView { selecting = false; status.stringValue = "正在加载…"; syncChrome() }
+    }
+    func webView(_ webView:WKWebView,didCommit navigation:WKNavigation!) {
+        if let tab = tabs.first(where:{$0.webView === webView}) { tab.favicon = nil; updateTabAppearance(tab) }
     }
     func webView(_ webView:WKWebView,didFinish navigation:WKNavigation!) {
         if let tab = tabs.first(where:{$0.webView === webView}) { tab.failure = nil; tab.pendingURL = webView.url }
@@ -44,7 +47,10 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
     func webView(_ webView:WKWebView,didFail navigation:WKNavigation!,withError error:Error) { report(error,view:webView) }
     private func report(_ error:Error,view:WKWebView) {
         let error = error as NSError
-        guard !(error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled),let tab = tabs.first(where:{$0.webView === view}) else { return }
+        // Policy handoff (102) and media-document handoff (204) are not page failures.
+        guard !(error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled),
+              !(error.domain == "WebKitErrorDomain" && [102,204].contains(error.code)),
+              let tab = tabs.first(where:{$0.webView === view}) else { return }
         let url = (error.userInfo[NSURLErrorFailingURLErrorKey] as? URL) ?? tab.pendingURL ?? view.url
         tab.failure = PageFailure(message:"无法打开 \(url?.host ?? "页面")：\(error.localizedDescription)",url:url)
         if view === activeWebView { syncChrome() }

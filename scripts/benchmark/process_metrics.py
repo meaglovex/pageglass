@@ -63,7 +63,9 @@ def measure(root, engine, profile=None):
         raise RuntimeError('footprint reported errors: ' + json.dumps(raw['errors']))
     by_pid = {p['pid']: p for p in raw.get('processes', [])}
     if set(by_pid) != {p['pid'] for p in group}:
-        raise RuntimeError('process group changed during sample; retry instead of treating missing data as zero')
+        missing=[p['name'] for p in group if p['pid'] not in by_pid]
+        unexpected=list(set(by_pid)-{p['pid'] for p in group})
+        raise RuntimeError('process group changed during sample; missing='+repr(missing)+'; unexpected='+repr(unexpected))
     for item in group:
         item['physicalFootprintBytes'] = by_pid[item['pid']]['footprint']
         item['translated'] = by_pid[item['pid']].get('translated')

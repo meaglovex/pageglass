@@ -46,13 +46,20 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path.startswith('/oversized'):
             self.send_response(200); self.send_header('Content-Type','image/png'); self.send_header('Content-Length',str(3*1024*1024)); self.end_headers(); return
 
+        if self.path.startswith('/slow-download'):
+            self.send_response(200); self.send_header('Content-Type','application/octet-stream'); self.send_header('Content-Disposition','attachment; filename="pageglass-slow-test.bin"'); self.send_header('Content-Length',str(16*1024*1024)); self.end_headers()
+            try:
+                for _ in range(256):
+                    self.wfile.write(b'P'*65536); self.wfile.flush(); time.sleep(0.25)
+            except (BrokenPipeError,ConnectionResetError): pass
+            return
         if self.path.startswith('/download'):
             data = b'Pageglass download verification\n' * 128
             self.send_response(200); self.send_header('Content-Type','application/octet-stream'); self.send_header('Content-Disposition','attachment; filename="pageglass-test.txt"'); self.send_header('Content-Length',str(len(data))); self.end_headers(); self.wfile.write(data); return
         if self.path.startswith('/redirect'):
             self.send_response(302); self.send_header('Location','/demo.html'); self.end_headers(); return
         if self.path.startswith('/browser-test'):
-            data = b'''<!doctype html><meta charset=utf-8><title>Browser QA</title><h1>Browser QA</h1><a href=/demo.html>Open demo</a><p><a href=/download>Download test file</a></p><form method=post enctype=multipart/form-data><input type=file name=file><button>Upload test file</button></form><button onclick="document.querySelector('output').textContent=confirm('Confirm test')?'confirmed':'cancelled'">Confirm dialog</button><output></output>'''
+            data = b'''<!doctype html><meta charset=utf-8><title>Browser QA</title><h1>Browser QA</h1><a href=/demo.html>Open demo</a><p><a href=/download>Download test file</a> <a href=/slow-download>Slow download for cancellation</a></p><form method=post enctype=multipart/form-data><input type=file name=file><button>Upload test file</button></form><button onclick="document.querySelector('output').textContent=confirm('Confirm test')?'confirmed':'cancelled'">Confirm dialog</button><output></output>'''
             self.send_response(200); self.send_header('Content-Type','text/html'); self.send_header('Content-Length',str(len(data))); self.end_headers(); self.wfile.write(data); return
         super().do_GET()
     def do_POST(self):

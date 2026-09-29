@@ -54,6 +54,17 @@ def terminate_owned(pid,plan):
     if result.returncode==0 and '--benchmark-plan' in result.stdout and str(plan) in result.stdout:os.kill(pid,signal.SIGTERM)
 
 
+def native_pid(plan):
+    # LaunchServices can start a process that is still waiting for a file-access dialog.
+    # Identify only this exact app/plan so failed startup can be diagnosed and cleaned up.
+    prefix=str(APP/'Contents/MacOS/Pageglass')+' --benchmark-plan '+str(plan)
+    rows=subprocess.check_output(['/bin/ps','-axo','pid=,args='],text=True)
+    for row in rows.splitlines():
+        fields=row.strip().split(None,1)
+        if len(fields)==2 and fields[1]==prefix:return int(fields[0])
+    return None
+
+
 def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1,chrome_height=860):
     run=uuid.uuid4().hex;folder=output/run;folder.mkdir()
     url=f'http://127.0.0.1:{server.server_port}/run/{run}/index.html?iterationCount={iterations}&viewport=800x600'
@@ -70,8 +81,10 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
         log.close();pid=process.pid
     started=time.monotonic();states=[state]
     try:
-        while time.monotonic()-started<600:
-            if engine=='pageglass' and pid is None and (folder/'native-state.json').exists():pid=json.loads((folder/'native-state.json').read_text())['pid']
+        timeout=120 if workload=='memory' else 600
+        while time.monotonic()-started<timeout:
+            if engine=='pageglass' and pid is None:pid=native_pid(plan)
+            if engine=='pageglass' and time.monotonic()-started>60 and not (folder/'native-state.json').exists():raise RuntimeError('native startup not ready after 60 seconds; inspect startup or directory access prompts')
             with server.results_lock: result=json.loads(json.dumps(server.results.get(run)))
             if (folder/'native-error.json').exists():raise RuntimeError((folder/'native-error.json').read_text())
             if result is not None and (workload=='speedometer' or len(result.get('tabs',{}))==tabs):break
@@ -79,7 +92,13 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
             time.sleep(5);state=environment(helper);states.append(state)
             if blockers(state):raise RuntimeError('measurement invalidated: '+'; '.join(blockers(state)))
             if pid is not None and state['frontmostPID']!=pid:raise RuntimeError('measurement invalidated: browser not foreground')
-        else:raise RuntimeError('benchmark timeout (no completion report)')
+        else:
+            if workload=='memory':
+                loaded=sorted((result or {}).get('tabs',{}))
+                failure={'status':'incomplete','reason':'not all tabs reported loaded before sampling','reportedTabs':loaded,'expectedTabs':tabs,'timeoutSeconds':timeout}
+                (folder/'incomplete.json').write_text(json.dumps(failure,indent=2))
+                raise RuntimeError('memory fixture load timeout: reported tabs '+repr(loaded)+' of '+str(tabs))
+            raise RuntimeError('benchmark timeout (no completion report)')
         state=environment(helper);states.append(state)
         if blockers(state):raise RuntimeError('measurement invalidated at finish')
         if workload=='speedometer' and (result.get('status')!='completed' or result.get('invalid')):raise RuntimeError('invalid benchmark: '+str(result.get('error') or result.get('invalid')))
@@ -96,14 +115,26 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
             visible=[t for t in result['tabs'].values() if t.get('visible')]
             if len(visible)!=1:raise RuntimeError('memory fixture must have exactly one visible tab')
             viewport=visible[0]['viewport']
+            if any(t['viewport']!={'width':1280,'height':760} for t in result['tabs'].values()):raise RuntimeError('memory workload viewport must be fixed in every tab')
+            if visible[0]['containerViewport']['width']<1280 or visible[0]['containerViewport']['height']<760:raise RuntimeError('memory workload is clipped by browser chrome')
+            retries=[]
             for _ in range(5):
-                state=environment(helper);states.append(state)
-                if blockers(state) or state['frontmostPID']!=pid:raise RuntimeError('memory sample invalidated: desktop state or foreground changed')
-                samples.append(measure(pid,engine,profile if engine=='chrome' else None));time.sleep(1)
+                for attempt in range(3):
+                    state=environment(helper);states.append(state)
+                    if blockers(state) or state['frontmostPID']!=pid:raise RuntimeError('memory sample invalidated: desktop state or foreground changed')
+                    try:
+                        sample=measure(pid,engine,profile if engine=='chrome' else None);break
+                    except RuntimeError as error:
+                        if not any(reason in str(error) for reason in ['process group changed during sample','footprint reported errors:']):raise
+                        retries.append({'sample':len(samples),'attempt':attempt+1,'reason':str(error)})
+                        (folder/'discarded-samples.json').write_text(json.dumps(retries,indent=2))
+                        if attempt==2:raise
+                        time.sleep(1)
+                samples.append(sample);time.sleep(1)
             with server.results_lock: settled=json.loads(json.dumps(server.results[run]))
             if [t['viewport'] for t in settled['tabs'].values() if t.get('visible')]!=[viewport]:raise RuntimeError('memory sample invalidated: visible viewport changed')
             result=settled;result['measuredViewport']=viewport
-            result['memorySamples']=samples;result['status']='completed'
+            result['memorySamples']=samples;result['discardedSamples']=retries;result['status']='completed'
         memory=samples[-1] if samples else measure(pid,engine,profile if engine=='chrome' else None)
         result.update({'engine':engine,'environment':states,'memoryAfterBenchmark':memory,'elapsedSeconds':time.monotonic()-started})
         (folder/'result.json').write_text(json.dumps(result,indent=2))
@@ -119,19 +150,20 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
 
 def main():
     global APP
-    parser=argparse.ArgumentParser();parser.add_argument('--run',action='store_true');parser.add_argument('--rounds',type=int,default=3);parser.add_argument('--iterations',type=int,default=10);parser.add_argument('--workload',choices=['speedometer','memory'],default='speedometer');parser.add_argument('--pageglass-app',type=Path,default=APP);parser.add_argument('--engines',choices=['both','pageglass','chrome'],default='both');parser.add_argument('--chrome-window-height',type=int,default=860);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--run',action='store_true');parser.add_argument('--rounds',type=int,default=3);parser.add_argument('--iterations',type=int,default=10);parser.add_argument('--workload',choices=['speedometer','memory'],default='speedometer');parser.add_argument('--pageglass-app',type=Path,default=APP);parser.add_argument('--engines',choices=['both','pageglass','chrome'],default='both');parser.add_argument('--chrome-window-height',type=int,default=860);parser.add_argument('--output-root',type=Path,default=ROOT/'qa-output');args=parser.parse_args()
     APP=args.pageglass_app.resolve()
     engines=['pageglass','chrome'] if args.engines=='both' else [args.engines]
     if not 640 <= args.chrome_window_height <= 2160:parser.error('Chrome window height must be between 640 and 2160')
     if args.rounds<3 or args.iterations<10:parser.error('comparison requires at least 3 rounds and 10 iterations')
     source,helper,provenance=prepare()
-    output=ROOT/'qa-output'/('benchmark-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid.uuid4().hex[:6]);output.mkdir()
+    output=args.output_root.resolve()/('benchmark-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid.uuid4().hex[:6]);output.mkdir(parents=True)
     env=environment(helper)
     versions={}
     for name,executable,plist in [('pageglass',APP/'Contents/MacOS/Pageglass',APP/'Contents/Info.plist'),('chrome',CHROME,CHROME.parents[1]/'Info.plist')]:
         if plist.exists() and executable.exists():versions[name]={'version':plistlib.loads(plist.read_bytes()).get('CFBundleShortVersionString'),'executableSHA256':hashlib.sha256(executable.read_bytes()).hexdigest()}
     provenance['browsers']=versions
     provenance['engines']=engines
+    provenance['memoryFixture']={'version':2,'viewport':{'width':1280,'height':760},'sha256':hashlib.sha256(Path(__file__).with_name('memory.html').read_bytes()).hexdigest(),'containerSHA256':hashlib.sha256(Path(__file__).with_name('server.py').read_bytes()).hexdigest()}
     provenance['chromeWindowHeight']=args.chrome_window_height
     provenance['hardwareModel']=subprocess.check_output(['sysctl','-n','hw.model'],text=True).strip()
     preflight={'environment':env,'blockers':blockers(env),'source':provenance,'mode':'run' if args.run else 'prepare-only'}

@@ -21,8 +21,11 @@ enum BrowserFeatureSmoke {
         browser.closeTab()
         browser.openTab(fixture); try await loaded(browser.webView)
         let moved = browser.tabs[browser.activeIndex].id
-        browser.moveTab(moved,before:browser.tabs[0].id)
+        browser.moveTab(moved,relativeTo:browser.tabs[0].id)
         try require(browser.tabs[0].id == moved && browser.activeIndex == 0,"reorder retains active tab identity")
+        browser.moveTab(moved,relativeTo:browser.tabs.last!.id,after:true)
+        try require(browser.tabs.last?.id == moved && browser.activeIndex == browser.tabs.count-1,"drag placement can move a tab to the end while preserving selection")
+        browser.moveTab(moved,relativeTo:browser.tabs[0].id)
         try require(!browser.tabMenu(moved).items.contains { ($0.representedObject as? [String])?.last == "pin" },"tab menu has no pin action")
         for _ in 0..<100 { if browser.webView.title?.contains("捕获练习") == true { break }; try await Task.sleep(for:.milliseconds(50)) }
         browser.toggleBookmark(); browser.store.flush()
@@ -35,10 +38,14 @@ enum BrowserFeatureSmoke {
         for width in [110.0,230.0] {
             for title in ["短",String(repeating:"很长的标签标题",count:8)] {
                 let tab = BrowserTab();tab.title = title
-                let item = TabButton(tab:tab,ownerID:browser.id);item.frame = NSRect(x:0,y:0,width:width,height:30)
+                let item = TabButton(tab:tab);item.frame = NSRect(x:0,y:0,width:width,height:30)
                 browser.window?.contentView?.addSubview(item);browser.window?.contentView?.layoutSubtreeIfNeeded();item.layoutSubtreeIfNeeded()
                 let rect = item.closeButton.alignmentRect(forFrame:item.closeButton.frame)
                 try require(abs(rect.maxX-(width-10)) < 0.5,"tab close remains right aligned at width \(Int(width)) with \(title.count) title characters: \(rect.maxX), bounds \(item.bounds.width)")
+                let titleHit = item.hitTest(item.convert(NSPoint(x:45,y:15),to:item.superview))
+                let closeHit = item.hitTest(item.convert(NSPoint(x:rect.midX,y:rect.midY),to:item.superview))
+                try require(titleHit === item,"tab title routes pointer events to drag target at width \(Int(width))")
+                try require(closeHit === item.closeButton,"tab close keeps its own pointer target at width \(Int(width))")
                 item.removeFromSuperview()
             }
         }

@@ -19,6 +19,10 @@ class Handler(SimpleHTTPRequestHandler):
         path = urlsplit(self.path).path
         memory=re.fullmatch(r'/memory/([0-9a-f]{32})/(\d)\.html',path)
         if memory:
+            data=(f'<!doctype html><title>PM workspace memory fixture</title><style>html,body{{margin:0}}iframe{{display:block;border:0;width:1280px;height:760px}}</style><iframe title="Fixed viewport workspace" src="/memory-content/{memory[1]}/{memory[2]}.html"></iframe>').encode()
+            self.send_response(200);self.send_header('Content-Type','text/html');self.end_headers();self.wfile.write(data);return
+        memory=re.fullmatch(r'/memory-content/([0-9a-f]{32})/(\d)\.html',path)
+        if memory:
             data=Path(__file__).with_name('memory.html').read_text().replace('%%RUN%%',memory[1]).replace('%%TAB%%',memory[2]).encode()
             self.send_response(200);self.send_header('Content-Type','text/html');self.end_headers();self.wfile.write(data);return
         if path == '/__bench/adapter.js':

@@ -31,10 +31,10 @@ extension BrowserWindow {
     @objc func nextTab() { activate((activeIndex+1)%tabs.count) }
     @objc func previousTab() { activate((activeIndex+tabs.count-1)%tabs.count) }
     @objc func numberedTab(_ item:NSMenuItem) { activate(item.tag == 9 ? tabs.count-1 : min(item.tag-1,tabs.count-1)) }
-    func moveTab(_ source:UUID,before target:UUID) {
+    func moveTab(_ source:UUID,relativeTo target:UUID,after:Bool = false) {
         guard !capturing,source != target,let from = tabs.firstIndex(where:{$0.id == source}),let to = tabs.firstIndex(where:{$0.id == target}) else { return }
         let active = tabs[activeIndex].id, tab = tabs.remove(at:from)
-        tabs.insert(tab,at:min(to - (from < to ? 1 : 0),tabs.count)); activeIndex = tabs.firstIndex(where:{$0.id == active}) ?? 0
+        tabs.insert(tab,at:min(to + (after ? 1 : 0) - (from < to ? 1 : 0),tabs.count)); activeIndex = tabs.firstIndex(where:{$0.id == active}) ?? 0
         renderTabs(revealActive:true); saveSession()
     }
     func tabMenu(_ id:UUID)->NSMenu {

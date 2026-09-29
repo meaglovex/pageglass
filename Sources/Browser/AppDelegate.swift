@@ -2,6 +2,7 @@ import AppKit
 
 final class AppDelegate:NSObject,NSApplicationDelegate {
     var windows: [BrowserWindow] = []
+    var isolatedStore:BrowserStore?
     var restoring = false
     var cleanupTimer: Timer?
     var browser:BrowserWindow? { windows.first }
@@ -9,6 +10,7 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
         makeMenus(); let args = CommandLine.arguments
         if let index = args.firstIndex(of:"--smoke"),args.count > index+1 {
             let output = URL(fileURLWithPath:args[index+1]); let store = BrowserStore(directory:output.appendingPathComponent("browser-data"))
+            isolatedStore = store
             let window = BrowserWindow(store:store); windows.append(window); window.showWindow(nil)
             NSApp.activate(ignoringOtherApps:true)
             Task { @MainActor in await SmokeTest.run(window,output:output) }; return
@@ -33,7 +35,8 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
     @objc func newWindow() { createWindow() }
     @objc func newPrivateWindow() { createWindow(privateBrowsing:true) }
     func createWindow(privateBrowsing:Bool = false,session:SavedWindow? = nil) {
-        let window = BrowserWindow(privateBrowsing:privateBrowsing,session:session)
+        // Windows opened during explicit QA must keep using the isolated test profile.
+        let window = BrowserWindow(privateBrowsing:privateBrowsing,store:isolatedStore ?? .shared,session:session)
         windows.append(window); window.showWindow(nil); window.window?.makeKeyAndOrderFront(nil); saveSessions()
     }
     func closed(_ window:BrowserWindow) { windows.removeAll { $0 === window }; if !windows.isEmpty { saveSessions() } }

@@ -1,14 +1,22 @@
 import AppKit
 
+/// Tab controls occupy the titlebar; keep visible document controls hit-testable there.
+final class TabClipView:NSClipView {
+    override func hitTest(_ point:NSPoint)->NSView? {
+        if let hit = super.hitTest(point) { return hit }
+        let local = convert(point,from:superview)
+        guard !isHidden,bounds.contains(local) else { return nil }
+        return documentView?.hitTest(local)
+    }
+}
+
 /// 原生标签使用自绘背景，文字、关闭按钮和无障碍仍是原生控件。
-final class TabButton: NSView, NSDraggingSource {
-    static let pasteType = NSPasteboard.PasteboardType("dev.pageglass.tab")
+final class TabButton: NSView {
     let tabID: UUID
-    let ownerID: UUID
     var selected = false { didSet { needsDisplay = true } }
     var activate: (() -> Void)?
     var close: (() -> Void)?
-    var reorder: ((UUID)->Void)?
+    var drop: ((NSPoint)->Void)?
     var contextMenu: (() -> NSMenu)?
     private var tracking: NSTrackingArea?
     private var hovering = false
@@ -16,9 +24,10 @@ final class TabButton: NSView, NSDraggingSource {
     private let icon = NSImageView()
     let closeButton = NSButton()
     private var down: NSEvent?
+    private var dragging = false
 
-    init(tab:BrowserTab,ownerID:UUID) {
-        self.tabID = tab.id; self.ownerID = ownerID
+    init(tab:BrowserTab) {
+        self.tabID = tab.id
         super.init(frame:.zero)
         icon.image = tab.favicon ?? NSImage(systemSymbolName:"globe",accessibilityDescription:nil)
         icon.contentTintColor = tab.favicon == nil ? .secondaryLabelColor : nil; icon.imageScaling = .scaleProportionallyDown
@@ -44,7 +53,6 @@ final class TabButton: NSView, NSDraggingSource {
         ])
         setAccessibilityElement(true); setAccessibilityRole(.button); setAccessibilityLabel(label.stringValue)
         toolTip = tab.url?.absoluteString ?? label.stringValue
-        registerForDraggedTypes([Self.pasteType])
     }
     func update(_ tab:BrowserTab,selected:Bool) {
         self.selected = selected
@@ -57,6 +65,11 @@ final class TabButton: NSView, NSDraggingSource {
         toolTip = "\(label.stringValue)\n\(tab.url?.absoluteString ?? "")"
     }
     required init?(coder:NSCoder) { fatalError() }
+    override func hitTest(_ point:NSPoint)->NSView? {
+        guard let hit = super.hitTest(point) else { return nil }
+        // Static title/icon views must not consume the tab's click or drag.
+        return hit === closeButton || hit.isDescendant(of:closeButton) ? hit : self
+    }
     override var mouseDownCanMoveWindow: Bool { false }
     override var acceptsFirstResponder: Bool { true }
     override func becomeFirstResponder()->Bool { needsDisplay = true; return true }
@@ -78,27 +91,23 @@ final class TabButton: NSView, NSDraggingSource {
     }
     override func mouseEntered(with event:NSEvent) { hovering = true; needsDisplay = true }
     override func mouseExited(with event:NSEvent) { hovering = false; needsDisplay = true }
-    override func mouseDown(with event:NSEvent) { down = event; needsDisplay = true }
-    override func mouseUp(with event:NSEvent) { if down != nil { down = nil; needsDisplay = true; activate?() } }
+    override func mouseDown(with event:NSEvent) { down = event; needsDisplay = true; activate?() }
+    override func mouseUp(with event:NSEvent) {
+        let shouldDrop = dragging
+        cancelOperation(nil)
+        if shouldDrop { drop?(event.locationInWindow) }
+    }
+    override func cancelOperation(_ sender:Any?) {
+        down = nil; dragging = false; alphaValue = 1; needsDisplay = true; NSCursor.arrow.set()
+    }
     override func otherMouseDown(with event:NSEvent) { if event.buttonNumber == 2 { close?() } }
     override func accessibilityPerformPress()->Bool { activate?(); return true }
     @objc private func closePressed() { close?() }
     override func menu(for event:NSEvent)->NSMenu? { contextMenu?() }
     override func mouseDragged(with event:NSEvent) {
         guard let down, hypot(event.locationInWindow.x-down.locationInWindow.x,event.locationInWindow.y-down.locationInWindow.y)>4 else { return }
-        self.down = nil
-        let item = NSPasteboardItem(); item.setString("\(ownerID.uuidString):\(tabID.uuidString)",forType:Self.pasteType)
-        let drag = NSDraggingItem(pasteboardWriter:item)
-        let image = NSImage(size:bounds.size); image.lockFocus(); NSColor.controlAccentColor.withAlphaComponent(0.2).setFill(); NSBezierPath(roundedRect:bounds,xRadius:8,yRadius:8).fill(); image.unlockFocus()
-        drag.setDraggingFrame(bounds,contents:image); beginDraggingSession(with:[drag],event:event,source:self)
-    }
-    func draggingSession(_ session:NSDraggingSession,sourceOperationMaskFor context:NSDraggingContext)->NSDragOperation { .move }
-    override func draggingEntered(_ sender:NSDraggingInfo)->NSDragOperation {
-        guard sender.draggingPasteboard.string(forType:Self.pasteType)?.hasPrefix(ownerID.uuidString+":") == true else { return [] }; return .move
-    }
-    override func performDragOperation(_ sender:NSDraggingInfo)->Bool {
-        guard let raw = sender.draggingPasteboard.string(forType:Self.pasteType),raw.hasPrefix(ownerID.uuidString+":"),let uuid = UUID(uuidString:String(raw.split(separator:":").last ?? "")) else { return false }
-        reorder?(uuid); return true
+        dragging = true; alphaValue = 0.6; NSCursor.closedHand.set(); window?.makeFirstResponder(self)
+        autoscroll(with:event)
     }
 }
 

@@ -94,11 +94,11 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         tab.webView = view
         tab.observations = [
             view.observe(\.title,options:[.new]) { [weak self,weak tab] view,_ in
-                DispatchQueue.main.async { if let tab { tab.title = view.title?.isEmpty == false ? view.title! : "新标签页"; self?.updateTabAppearance(tab) }; self?.syncChrome()
+                DispatchQueue.main.async { if let tab { tab.title = self?.displayTitle(view) ?? "新标签页"; self?.updateTabAppearance(tab) }; self?.syncChrome()
                     if let self,!self.privateBrowsing,!self.isTesting,let url = view.url { self.store.updateHistoryTitle(url:url.absoluteString,title:view.title ?? "") }
                 }
             },
-            view.observe(\.url,options:[.new]) { [weak self,weak tab] view,_ in DispatchQueue.main.async { if let tab { tab.url = view.url; self?.updateTabAppearance(tab) }; self?.syncChrome() } },
+            view.observe(\.url,options:[.new]) { [weak self,weak tab] view,_ in DispatchQueue.main.async { if let tab { tab.url = view.url; tab.title = self?.displayTitle(view) ?? tab.title; self?.updateTabAppearance(tab) }; self?.syncChrome() } },
             view.observe(\.estimatedProgress,options:[.new]) { [weak self] _,_ in DispatchQueue.main.async { self?.syncChrome() } },
             view.observe(\.isLoading,options:[.new]) { [weak self] _,_ in DispatchQueue.main.async { self?.syncChrome() } }
         ]
@@ -147,9 +147,15 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         bookmarkButton.image = NSImage(systemSymbolName:marked ? "star.fill" : "star",accessibilityDescription:marked ? "移除书签" : "添加书签")
         bookmarkButton.contentTintColor = marked ? .systemBlue : .secondaryLabelColor
         siteButton.image = NSImage(systemSymbolName:view.url?.scheme == "https" ? "lock" : "info.circle",accessibilityDescription:"网站信息")
-        window?.title = "\(view.title.flatMap { $0.isEmpty ? nil : $0 } ?? "新标签页") — Pageglass\(privateBrowsing ? "（无痕）" : "")"
+        window?.title = "\(displayTitle(view)) — Pageglass\(privateBrowsing ? "（无痕）" : "")"
         syncPageFailure()
         syncCaptureBar()
+    }
+    func displayTitle(_ view:WKWebView)->String {
+        if let title = view.title?.trimmingCharacters(in:.whitespacesAndNewlines), !title.isEmpty { return title }
+        guard let url = view.url, !displayURL(url).isEmpty, url.absoluteString != "about:blank" else { return "新标签页" }
+        if !url.pathExtension.isEmpty { return url.lastPathComponent }
+        return url.host ?? (url.isFileURL ? url.lastPathComponent : "网页")
     }
     func displayURL(_ url:URL?)->String {
         guard let url else { return "" }

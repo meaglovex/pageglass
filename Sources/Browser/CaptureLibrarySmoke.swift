@@ -27,6 +27,14 @@ enum CaptureLibrarySmoke {
         for _ in 0..<200 { if controller.records.count == expected { break }; try await Task.sleep(for:.milliseconds(25)) }
         try require(controller.records.count == expected && controller.table.numberOfRows == expected,"history loads 200 real-image legacy fixtures through its asynchronous list")
         let scanSeconds = Date().timeIntervalSince(started)
+        if let capturedPage = try CaptureCatalog.scan(output).first(where: { $0.mode == "page" && $0.problem == nil }) {
+            controller.detail.show(packages[0])
+            try await Task.sleep(for:.milliseconds(300)); controller.window?.contentView?.layoutSubtreeIfNeeded()
+            let divider = controller.detail.frame.minX
+            controller.detail.show(capturedPage.directory)
+            try await Task.sleep(for:.milliseconds(300)); controller.window?.contentView?.layoutSubtreeIfNeeded()
+            try require(abs(controller.detail.frame.minX-divider) < 1,"changing between icon and page captures preserves the history divider position")
+        } else { throw CaptureService.Failure.message("history layout check requires a real page capture") }
         controller.search.stringValue = "example.test/history/199"; controller.filter()
         try require(controller.filtered.count == 1 && controller.filtered[0].directory == packages[199],"history searches source URLs and selects the matching capture")
         try CaptureCatalog.copyPrompt(packages[199])

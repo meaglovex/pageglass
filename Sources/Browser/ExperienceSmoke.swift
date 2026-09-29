@@ -30,6 +30,18 @@ enum ExperienceSmoke {
             try require(active.visibleRect.width >= active.bounds.width-1,"active tab is visible among 30 tabs at width \(Int(width))")
         }
         let tab = browser.tabs[29], button = browser.tabButtons[tab.id]!
+        if let root = browser.window?.contentView {
+            let point = button.convert(NSPoint(x:45,y:15),to:root.superview)
+            let hit = root.hitTest(point)
+            try require(hit === button,"visible tab is reachable through the window hit-test hierarchy: hit=\(String(describing:hit)), row=\(browser.tabRow.frame), clip=\(browser.tabScroll.contentView.frame), scroll=\(browser.tabScroll.frame)")
+        }
+        browser.moveTab(tab.id,relativeTo:browser.tabs[0].id)
+        if let root = browser.window?.contentView {
+            let point = button.convert(NSPoint(x:45,y:15),to:root.superview)
+            try require(root.hitTest(point) === button,"reordered tab remains reachable by pointer")
+        }
+        browser.moveTab(tab.id,relativeTo:browser.tabs[29].id)
+        browser.moveTab(browser.tabs[29].id,relativeTo:tab.id)
         tab.title = "动态标题"; browser.renderTabs()
         try require(browser.tabButtons[tab.id] === button,"title updates preserve tab control identity")
         let list = TabListController(browser:browser); _ = list.view
@@ -52,6 +64,12 @@ enum ExperienceSmoke {
         browser.load(fixture)
         for _ in 0..<100 { if !browser.webView.isLoading { break }; try await Task.sleep(for:.milliseconds(50)) }
         try require(tab.failure == nil && browser.errorBar.isHidden,"successful navigation clears previous failure")
+        for code in [102,204] {
+            browser.webView(browser.webView,didFailProvisionalNavigation:nil,withError:NSError(domain:"WebKitErrorDomain",code:code))
+            try require(tab.failure == nil && browser.errorBar.isHidden,"handled navigation \(code) does not show a page failure")
+        }
+        browser.webView(browser.webView,didFailProvisionalNavigation:nil,withError:NSError(domain:"WebKitErrorDomain",code:101))
+        try require(tab.failure != nil && !browser.errorBar.isHidden,"unhandled WebKit navigation error remains visible")
         return checks
     }
 }

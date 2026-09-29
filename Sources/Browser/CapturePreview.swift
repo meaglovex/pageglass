@@ -30,6 +30,11 @@ final class CaptureDetailView:NSView {
         NSLayoutConstraint.activate([root.leadingAnchor.constraint(equalTo:leadingAnchor,constant:18),root.trailingAnchor.constraint(equalTo:trailingAnchor,constant:-18),root.topAnchor.constraint(equalTo:topAnchor,constant:18),root.bottomAnchor.constraint(equalTo:bottomAnchor,constant:-18)])
         heading.font = .systemFont(ofSize:16,weight:.semibold); heading.maximumNumberOfLines = 2
         image.imageScaling = .scaleProportionallyDown; image.wantsLayer = true; image.layer?.cornerRadius = 8
+        // Preview content must fit its pane, not resize the history divider when records change.
+        for view in [image,heading,summary,notes,feedback] as [NSView] {
+            view.setContentHuggingPriority(.init(1),for:.horizontal)
+            view.setContentCompressionResistancePriority(.init(1),for:.horizontal)
+        }
         image.imageFrameStyle = .none; image.layer?.borderWidth = 1; image.layer?.borderColor = NSColor.separatorColor.cgColor
         image.heightAnchor.constraint(equalToConstant:180).isActive = true; image.setAccessibilityLabel("捕获截图预览")
         summary.font = .systemFont(ofSize:12); summary.textColor = .secondaryLabelColor; summary.maximumNumberOfLines = 5

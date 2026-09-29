@@ -7,6 +7,10 @@ extension BrowserWindow {
         window?.contentView = root
         let header = HeaderBackground(); header.wantsLayer = true
         let scroll = tabScroll; scroll.drawsBackground = false; scroll.hasHorizontalScroller = true; scroll.autohidesScrollers = true
+        // This scroll view deliberately occupies the full-size titlebar area.
+        // Automatic titlebar insets can exclude every visible tab from hit testing.
+        scroll.automaticallyAdjustsContentInsets = false; scroll.contentInsets = .init()
+        scroll.contentView = TabClipView(); scroll.contentView.drawsBackground = false
         scroll.documentView = tabRow; scroll.translatesAutoresizingMaskIntoConstraints = false
         tabRow.translatesAutoresizingMaskIntoConstraints = false; tabRow.spacing = 0
         header.addSubview(scroll)
@@ -76,12 +80,20 @@ extension BrowserWindow {
             let item:TabButton
             if let existing = tabButtons[tab.id] { item = existing }
             else {
-                item = TabButton(tab:tab,ownerID:id)
+                item = TabButton(tab:tab)
                 let tabID = tab.id
                 item.activate = { [weak self] in guard let self,let i = tabs.firstIndex(where:{$0.id == tabID}) else { return }; activate(i) }
                 item.close = { [weak self] in guard let self,let i = tabs.firstIndex(where:{$0.id == tabID}) else { return }; close(at:i) }
                 item.contextMenu = { [weak self] in self?.tabMenu(tabID) ?? NSMenu() }
-                item.reorder = { [weak self] source in self?.moveTab(source,before:tabID) }
+                item.drop = { [weak self] point in
+                    guard let self, tabScroll.contentView.bounds.contains(tabScroll.contentView.convert(point,from:nil)), let target = tabs.first(where: { tab in
+                        guard let view = self.tabButtons[tab.id] else { return false }
+                        return view.bounds.contains(view.convert(point,from:nil))
+                    }) else { return }
+                    if let targetView = tabButtons[target.id] {
+                        moveTab(tabID,relativeTo:target.id,after:targetView.convert(point,from:nil).x > targetView.bounds.midX)
+                    }
+                }
                 tabButtons[tab.id] = item
                 let constraint = item.widthAnchor.constraint(equalToConstant:width); constraint.isActive = true; tabWidths[tab.id] = constraint
                 item.heightAnchor.constraint(equalToConstant:30).isActive = true
