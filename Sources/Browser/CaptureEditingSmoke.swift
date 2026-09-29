@@ -12,6 +12,8 @@ enum CaptureEditingSmoke {
         let original = try originalNames.map { try Data(contentsOf:directory.appendingPathComponent($0)) }
         let editor = try CaptureEditorController(directory:directory); editor.showWindow(nil); editor.window?.contentView?.layoutSubtreeIfNeeded()
         defer { editor.close() }
+        editor.window?.setContentSize(NSSize(width:900,height:528)); editor.window?.contentView?.layoutSubtreeIfNeeded()
+        try require(editor.window?.contentView?.bounds.width == 900 && editor.canvas.bounds.width > 300 && editor.annotationText.enclosingScrollView != nil,"annotation editor fits 900 pt and scrolls its detail fields at minimum height")
         let marks = [CaptureAnnotation(kind:.rectangle,x:0.05,y:0.08,endX:0.8,endY:0.8),CaptureAnnotation(kind:.arrow,x:0.15,y:0.6,endX:0.7,endY:0.2,color:.blue),CaptureAnnotation(kind:.number,x:0.08,y:0.1,endX:0.08,endY:0.1,text:"1"),CaptureAnnotation(kind:.text,x:0.2,y:0.35,endX:0.2,endY:0.35,text:"新增查看详情",color:.amber)]
         editor.undo.beginUndoGrouping(); editor.setAnnotations(marks,action:"添加四种标注"); editor.undo.endUndoGrouping()
         try require(editor.edits.annotations.count == 4 && editor.dirty,"annotation editor accepts four editable shape types")

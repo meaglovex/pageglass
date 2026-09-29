@@ -15,6 +15,8 @@ final class CaptureDetailView:NSView {
     private var editObserver:NSObjectProtocol?
     private let showsHistory:Bool
     private var exporting = false
+    private var operationFeedback:String?
+    var feedbackText:String { feedback.stringValue }
     init(browser:BrowserWindow,showsHistory:Bool = true) {
         self.browser = browser; self.showsHistory = showsHistory
         super.init(frame:NSRect(x:0,y:0,width:480,height:680))
@@ -55,8 +57,9 @@ final class CaptureDetailView:NSView {
         let button = NSButton(title:title,target:self,action:selector); button.bezelStyle = .rounded; actions.append(button); return button
     }
     func show(_ directory:URL?) {
+        if self.directory != directory { operationFeedback = nil }
         self.directory = directory; generation = UUID(); let token = generation
-        image.image = nil; image.isHidden = directory == nil; notes.stringValue = ""; summary.stringValue = ""; feedback.stringValue = ""
+        image.image = nil; image.isHidden = directory == nil; notes.stringValue = ""; summary.stringValue = ""; feedback.stringValue = operationFeedback ?? ""
         heading.stringValue = directory == nil ? "选择一条捕获记录" : "正在读取捕获…"
         for button in actions { button.isEnabled = false }
         guard let directory else { return }
@@ -75,14 +78,16 @@ final class CaptureDetailView:NSView {
             summary.toolTip = record.source
             notes.stringValue = record.problem ?? ([record.editProblem,record.edits.notes.isEmpty ? nil : "备注：\n"+record.edits.notes,record.edits.annotations.isEmpty ? nil : "已保存 \(record.edits.annotations.count) 个标注",record.warnings.map { "• "+$0 }.joined(separator:"\n")].compactMap{$0}.joined(separator:"\n\n"))
             image.image = thumbnail
-            feedback.stringValue = browser?.privateBrowsing == true ? "捕获已保存到本机，不会随无痕窗口关闭而删除。复制为本机文件引用。" : "复制给 Codex 的内容是本机文件引用；复制截图是独立操作。"
+            if let problem = record.problem { setFeedback(problem) }
+            else { feedback.stringValue = operationFeedback ?? (browser?.privateBrowsing == true ? "捕获已保存到本机，不会随无痕窗口关闭而删除。复制为本机文件引用。" : "复制给 Codex 的内容是本机文件引用；复制截图是独立操作。") }
             for button in actions { button.isEnabled = record.problem == nil }
         }
     }
+    private func setFeedback(_ message:String) { operationFeedback = message.isEmpty ? nil : message; feedback.stringValue = message }
     private func perform(_ operation:(URL)throws->Void,message:String) {
         guard let directory else { return }
-        do { try CaptureCatalog.validate(directory); try operation(directory); feedback.stringValue = message }
-        catch { feedback.stringValue = error.localizedDescription; if (try? CaptureCatalog.validate(directory)) == nil { for button in actions { button.isEnabled = false } } }
+        do { try CaptureCatalog.validate(directory); try operation(directory); setFeedback(message) }
+        catch { setFeedback(error.localizedDescription); if (try? CaptureCatalog.validate(directory)) == nil { for button in actions { button.isEnabled = false } } }
     }
     @objc private func copyPrompt() { perform({ try CaptureCatalog.copyPrompt($0) },message:"已复制本机文件引用 · 在本机 Codex 粘贴") }
     @objc private func copyImage() { perform({ try CaptureCatalog.copyImage($0) },message:"已复制截图") }
@@ -103,19 +108,19 @@ final class CaptureDetailView:NSView {
     @objc private func exportFolder() { exportCapture(.folder) }
     private func exportCapture(_ format:CapturePortable.Format) {
         guard let directory,let window,!exporting else { return }
-        if CaptureEditorController.openEditors.values.contains(where:{CaptureRetention.samePackage($0.directory,directory) && $0.dirty}) { feedback.stringValue = "此捕获有未保存的编辑，请先在标注窗口保存后导出"; return }
+        if CaptureEditorController.openEditors.values.contains(where:{CaptureRetention.samePackage($0.directory,directory) && $0.dirty}) { setFeedback("此捕获有未保存的编辑，请先在标注窗口保存后导出"); return }
         let panel = NSSavePanel(); panel.canCreateDirectories = true; panel.title = format == .zip ? "导出捕获 ZIP" : "导出捕获文件夹"
         if format == .zip { panel.allowedContentTypes = [.zip] }
         panel.nameFieldStringValue = "Pageglass-\(directory.lastPathComponent)"+(format == .zip ? ".zip" : "")
         panel.message = "包含原截图、参考、结构、可读取资源及已保存编辑。不会上传；请选择新名称。"
         panel.beginSheetModal(for:window) { [weak self] response in
             guard let self,response == .OK,let target = panel.url else { return }
-            exporting = true; feedback.stringValue = "正在导出捕获包…"
+            exporting = true; setFeedback("正在导出捕获包…")
             Task { @MainActor [weak self] in
                 let result = await Task.detached(priority:.userInitiated) { Result { try CapturePortable.export(directory,to:target,format:format) } }.value
                 guard let self else { return }; exporting = false
                 if self.directory == directory {
-                    switch result { case .success:feedback.stringValue = "已导出到 \(target.lastPathComponent) · 可将完整包附加给接收工具"; case .failure(let error):feedback.stringValue = error.localizedDescription }
+                    switch result { case .success:setFeedback("已导出到 \(target.lastPathComponent) · 可将完整包附加给接收工具"); case .failure(let error):setFeedback(error.localizedDescription) }
                 }
             }
         }

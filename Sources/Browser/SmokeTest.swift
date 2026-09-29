@@ -64,6 +64,7 @@ enum SmokeTest {
             checks += try await DeveloperToolsSmoke.run(browser)
             checks += try await ChromeLayoutSmoke.run(output:output)
             checks += try await ExperienceSmoke.run(output:output)
+            checks += try ManagementSmoke.run(output:output)
             checks += try await CaptureFlowSmoke.run(browser,output:output)
             checks += try await WorkflowSmoke.run(browser,output:output)
             checks += try await CaptureLibrarySmoke.run(browser,output:output)

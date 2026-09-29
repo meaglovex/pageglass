@@ -29,6 +29,20 @@ enum CaptureLibrarySmoke {
         for _ in 0..<200 { if controller.records.count == expected { break }; try await Task.sleep(for:.milliseconds(25)) }
         try require(controller.records.count == expected && controller.table.numberOfRows == expected,"history loads 200 real-image legacy fixtures through its asynchronous list")
         let scanSeconds = Date().timeIntervalSince(started)
+        controller.detail.show(packages[0])
+        for _ in 0..<100 { if controller.detail.hasUsableActions { break }; try await Task.sleep(for:.milliseconds(25)) }
+        func findCopy(_ view:NSView)->NSButton? {
+            if let button = view as? NSButton,button.title == "复制给 Codex" { return button }
+            for child in view.subviews { if let found = findCopy(child) { return found } }; return nil
+        }
+        guard let copy = findCopy(controller.detail) else { throw CaptureService.Failure.message("capture copy action missing") }
+        copy.performClick(nil); let receipt = controller.detail.feedbackText
+        controller.detail.show(packages[0])
+        for _ in 0..<100 { if controller.detail.hasUsableActions { break }; try await Task.sleep(for:.milliseconds(25)) }
+        try require(receipt.contains("已复制") && controller.detail.feedbackText == receipt,"refreshing the same capture preserves its completed operation receipt")
+        controller.detail.show(packages[1])
+        for _ in 0..<100 { if controller.detail.hasUsableActions { break }; try await Task.sleep(for:.milliseconds(25)) }
+        try require(controller.detail.feedbackText != receipt,"switching captures clears the preceding record operation receipt")
         if let capturedPage = try CaptureCatalog.scan(output).first(where: { $0.mode == "page" && $0.problem == nil }) {
             controller.detail.show(packages[0])
             try await Task.sleep(for:.milliseconds(300)); controller.window?.contentView?.layoutSubtreeIfNeeded()
@@ -42,9 +56,14 @@ enum CaptureLibrarySmoke {
         controller.search.stringValue = "工作流专用备注"; controller.filter()
         try require(controller.filtered.count == 1 && controller.filtered[0].title == "备注检索样本","history searches saved notes among 200 capture records")
         controller.scope.selectItem(at:2); controller.filter(); try require(controller.filtered.isEmpty,"history type filter excludes element captures when whole-page is selected")
+        try require(!controller.emptyState.isHidden && !controller.emptyState.action.isHidden && !controller.remove.isEnabled && !controller.detail.hasUsableActions,"empty capture filters expose recovery and disable stale record actions")
         controller.scope.selectItem(at:1); controller.period.selectItem(at:2); controller.filter()
         try require(controller.filtered.count == 1,"history combines note search type and date filters")
         controller.scope.selectItem(at:0); controller.period.selectItem(at:0)
+        controller.clearFilters()
+        try require(controller.filtered.count == expected && controller.emptyState.isHidden && controller.search.stringValue.isEmpty,"clearing capture filters restores all records without deleting metadata")
+        controller.window?.setContentSize(NSSize(width:900,height:540)); controller.window?.contentView?.layoutSubtreeIfNeeded()
+        try require(controller.window?.contentView?.bounds.width == 900 && controller.detail.bounds.width >= 380 && controller.search.bounds.width >= 180,"capture history fits 900 pt with readable detail and search controls")
         try CaptureCatalog.copyPrompt(packages[199])
         try require(CaptureClipboard.current.string(forType:.string)?.contains(packages[199].path) == true,"legacy capture is reusable after reopening history")
         controller.search.stringValue = ""; controller.filter()

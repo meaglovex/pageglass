@@ -33,7 +33,7 @@ final class CaptureEditorController:NSWindowController,NSWindowDelegate,NSTextFi
         self.directory = directory; edits = try CaptureEdits.load(in:directory); saved = edits
         let image = try CaptureAnnotationDrawing.image(in:directory)
         let window = NSWindow(contentRect:NSRect(x:0,y:0,width:1100,height:730),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
-        window.title = "标注与备注"; window.minSize = NSSize(width:980,height:560); window.isReleasedWhenClosed = false
+        window.title = "标注与备注"; window.minSize = NSSize(width:900,height:560); window.isReleasedWhenClosed = false
         super.init(window:window); window.delegate = self; window.center()
         let root = NSView(); window.contentView = root
         tools.segmentCount = 5
@@ -44,6 +44,7 @@ final class CaptureEditorController:NSWindowController,NSWindowDelegate,NSTextFi
         for (button,action) in [(undoButton,#selector(undoEdit)),(redoButton,#selector(redoEdit)),(deleteButton,#selector(deleteMark))] { button.target = self; button.action = action; button.bezelStyle = .rounded }
         let spacer = NSView(); spacer.setContentHuggingPriority(.init(1),for:.horizontal)
         let save = NSButton(title:"保存",target:self,action:#selector(saveDocument(_:))); save.bezelStyle = .rounded; save.keyEquivalent = "s"; save.keyEquivalentModifierMask = .command
+        save.bezelColor = .controlAccentColor
         let toolbar = NSStackView(views:[tools,color,undoButton,redoButton,deleteButton,spacer,zoom,save]); toolbar.spacing = 8
         scroll.hasVerticalScroller = true; scroll.hasHorizontalScroller = true; scroll.autohidesScrollers = true
         canvas.image = image; canvas.marks = edits.annotations; canvas.setAccessibilityElement(true); canvas.setAccessibilityRole(.group); canvas.setAccessibilityLabel("截图标注画布，选择工具后拖动绘制；方向键移动选中标注，Delete 删除")
@@ -51,19 +52,22 @@ final class CaptureEditorController:NSWindowController,NSWindowDelegate,NSTextFi
         name.stringValue = edits.name; name.placeholderString = "使用原页面标题"; name.delegate = self; name.setAccessibilityLabel("捕获显示名称")
         notes.string = edits.notes; notes.isRichText = false; notes.font = .systemFont(ofSize:13); notes.delegate = self; notes.allowsUndo = true; notes.isAutomaticQuoteSubstitutionEnabled = false; notes.setAccessibilityLabel("备注与修改要求")
         notes.textContainerInset = NSSize(width:6,height:6); notes.isHorizontallyResizable = false; notes.autoresizingMask = [.width]; notes.textContainer?.widthTracksTextView = true
-        let noteScroll = NSScrollView(); noteScroll.hasVerticalScroller = true; noteScroll.borderType = .bezelBorder; noteScroll.documentView = notes; noteScroll.heightAnchor.constraint(greaterThanOrEqualToConstant:140).isActive = true
+        let noteScroll = NSScrollView(); noteScroll.hasVerticalScroller = true; noteScroll.borderType = .bezelBorder; noteScroll.documentView = notes; noteScroll.heightAnchor.constraint(equalToConstant:180).isActive = true
         annotationText.placeholderString = "选中序号或文字后修改"; annotationText.delegate = self; annotationText.setAccessibilityLabel("选中标注的文字"); annotationText.isEnabled = false
         let export = NSButton(title:"导出标注图片…",target:self,action:#selector(exportImage)); export.bezelStyle = .rounded
         let hint = NSTextField(wrappingLabelWithString:"原截图和网页参考保持不变。保存后可重新编辑；备注会随「复制给 Codex」一起提供。\n\n选择工具可拖动标注，方向键微调，Delete 删除。文字内容修改后按 Enter 应用。")
         hint.font = .systemFont(ofSize:12); hint.textColor = BrowserStyle.supportingText
-        let side = NSStackView(views:[label("显示名称"),name,label("备注与修改要求"),noteScroll,label("选中标注文字"),annotationText,export,hint]); side.orientation = .vertical; side.alignment = .leading; side.spacing = 10
+        let side = CaptureEditorSidebar(views:[label("显示名称"),name,label("备注与修改要求"),noteScroll,label("选中标注文字"),annotationText,export,hint]); side.orientation = .vertical; side.alignment = .leading; side.spacing = 10
         for view in side.arrangedSubviews { view.widthAnchor.constraint(equalTo:side.widthAnchor).isActive = true }
+        let sideScroll = NSScrollView(); sideScroll.hasVerticalScroller = true; sideScroll.autohidesScrollers = true; sideScroll.drawsBackground = false
+        side.translatesAutoresizingMaskIntoConstraints = false; sideScroll.documentView = side
+        NSLayoutConstraint.activate([side.leadingAnchor.constraint(equalTo:sideScroll.contentView.leadingAnchor),side.topAnchor.constraint(equalTo:sideScroll.contentView.topAnchor),side.widthAnchor.constraint(equalTo:sideScroll.contentView.widthAnchor)])
         status.font = BrowserStyle.caption; status.textColor = BrowserStyle.supportingText; status.maximumNumberOfLines = 2
-        for view in [toolbar,scroll,side,status] { view.translatesAutoresizingMaskIntoConstraints = false; root.addSubview(view) }
+        for view in [toolbar,scroll,sideScroll,status] { view.translatesAutoresizingMaskIntoConstraints = false; root.addSubview(view) }
         NSLayoutConstraint.activate([
             toolbar.leadingAnchor.constraint(equalTo:root.leadingAnchor,constant:12),toolbar.trailingAnchor.constraint(equalTo:root.trailingAnchor,constant:-12),toolbar.topAnchor.constraint(equalTo:root.topAnchor,constant:10),
-            scroll.leadingAnchor.constraint(equalTo:root.leadingAnchor),scroll.topAnchor.constraint(equalTo:toolbar.bottomAnchor,constant:10),scroll.trailingAnchor.constraint(equalTo:side.leadingAnchor,constant:-16),scroll.bottomAnchor.constraint(equalTo:status.topAnchor,constant:-8),
-            side.topAnchor.constraint(equalTo:scroll.topAnchor,constant:8),side.widthAnchor.constraint(equalToConstant:250),side.trailingAnchor.constraint(equalTo:root.trailingAnchor,constant:-16),side.bottomAnchor.constraint(lessThanOrEqualTo:status.topAnchor,constant:-8),
+            scroll.leadingAnchor.constraint(equalTo:root.leadingAnchor),scroll.topAnchor.constraint(equalTo:toolbar.bottomAnchor,constant:10),scroll.trailingAnchor.constraint(equalTo:sideScroll.leadingAnchor,constant:-16),scroll.bottomAnchor.constraint(equalTo:status.topAnchor,constant:-8),
+            sideScroll.topAnchor.constraint(equalTo:scroll.topAnchor,constant:8),sideScroll.widthAnchor.constraint(equalToConstant:250),sideScroll.trailingAnchor.constraint(equalTo:root.trailingAnchor,constant:-16),sideScroll.bottomAnchor.constraint(equalTo:status.topAnchor,constant:-8),
             status.leadingAnchor.constraint(equalTo:root.leadingAnchor,constant:12),status.trailingAnchor.constraint(equalTo:root.trailingAnchor,constant:-12),status.bottomAnchor.constraint(equalTo:root.bottomAnchor,constant:-10),status.heightAnchor.constraint(greaterThanOrEqualToConstant:18)
         ])
         canvas.commit = { [weak self] marks,action in self?.setAnnotations(marks,action:action) }
@@ -155,7 +159,8 @@ final class CaptureEditorController:NSWindowController,NSWindowDelegate,NSTextFi
         if reset { backdrop.scroll(.zero) }
     }
     @objc private func exportImage() {
-        guard let window,let image = canvas.image else { return }; window.makeFirstResponder(nil)
+        guard let window,let image = canvas.image else { return }
+        guard window.makeFirstResponder(nil) else { status.stringValue = "请先修正标注文字，再导出图片"; return }
         let panel = NSSavePanel(); panel.allowedContentTypes = [.png]; panel.nameFieldStringValue = "Pageglass-标注.png"
         panel.beginSheetModal(for:window) { [weak self] result in
             guard let self,result == .OK,let url = panel.url else { return }
@@ -170,3 +175,4 @@ final class CaptureEditorController:NSWindowController,NSWindowDelegate,NSTextFi
 }
 
 private final class AnnotationBackdrop:NSView { override var isFlipped:Bool { true } }
+private final class CaptureEditorSidebar:NSStackView { override var isFlipped:Bool { true } }
