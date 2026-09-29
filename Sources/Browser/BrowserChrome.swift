@@ -50,7 +50,7 @@ extension BrowserWindow {
         bookmarkRow.spacing = 12; bookmarkRow.edgeInsets = NSEdgeInsets(top:3,left:16,bottom:3,right:16)
         buildFindBar(); buildErrorBar(); buildCaptureBar()
         progress.style = .bar; progress.isIndeterminate = false; progress.maxValue = 1; progress.isHidden = true
-        for v in [header,toolbar,bookmarkRow,progress,findBar,errorBar,captureBar,content] {
+        for v in [header,toolbar,bookmarkRow,progress,findBar,errorBar,content] {
             root.addArrangedSubview(v); v.translatesAutoresizingMaskIntoConstraints = false; v.widthAnchor.constraint(equalTo:root.widthAnchor).isActive = true
         }
         header.heightAnchor.constraint(equalToConstant:38).isActive = true
@@ -61,6 +61,9 @@ extension BrowserWindow {
         status.drawsBackground = true; status.backgroundColor = .controlBackgroundColor; status.lineBreakMode = .byTruncatingMiddle
         status.wantsLayer = true; status.layer?.cornerRadius = 7
         content.addSubview(status)
+        captureBar.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(captureBar)
+        let barWidth = captureBar.widthAnchor.constraint(equalToConstant:620); barWidth.priority = .defaultHigh
+        NSLayoutConstraint.activate([barWidth,captureBar.widthAnchor.constraint(lessThanOrEqualTo:content.widthAnchor,constant:-24),captureBar.centerXAnchor.constraint(equalTo:content.centerXAnchor),captureBar.bottomAnchor.constraint(equalTo:content.bottomAnchor,constant:-44)])
         NSLayoutConstraint.activate([status.leadingAnchor.constraint(equalTo:content.leadingAnchor,constant:12),status.bottomAnchor.constraint(equalTo:content.bottomAnchor,constant:-12),status.widthAnchor.constraint(lessThanOrEqualTo:content.widthAnchor,constant:-24)])
         renderBookmarks(); updateToolbarLayout()
     }

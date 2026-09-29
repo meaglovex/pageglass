@@ -19,6 +19,8 @@ WebKit 支持系统 GPU 路径，但不保证所有网站都比 Chromium 快。�
 
 - `BrowserWindow` / `BrowserChrome`：标签生命周期、两行原生工具栏、地址栏、查找栏与临时回执。
 - `BrowserActions` / `TabButton` / `AddressSuggestions`：导航菜单、标签排序/恢复与本地地址建议。
+- `CommandPalette`：本地快速操作，按类型搜索并分发到现有浏览器动作；组合输入不执行命令。
+- `CaptureSidebar` / `CapturePreview` / `CaptureImagePreview`：不改变网页视口的结果覆盖面板、共享详情与原生缩放预览。
 - `BrowserStore`：原子写入浏览器数据，延迟合并保存；损坏文件不会被空数据覆盖。
 - `LibraryController` / `SettingsController`：书签、历史、下载资料库与设置窗口。
 - `WebDelegates`：导航、下载、JS 对话框、文件上传和权限提示。

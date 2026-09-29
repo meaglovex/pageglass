@@ -161,6 +161,7 @@ final class CaptureService {
 extension BrowserWindow {
     @objc func selectElement() {
         guard !capturing else { return }
+        hideCaptureSidebar()
         if let recorder = interactionRecording,recorder.isRecording {
             let view = webView
             capturing = true; captureProgress = "正在保存最后一次交互…"; syncChrome()
@@ -173,7 +174,7 @@ extension BrowserWindow {
             return
         }
         selecting.toggle(); selectionDescription = ""; syncChrome()
-        status.stringValue = selecting ? "移动鼠标选择元素，↑ 扩大到父级，点击或 Enter 捕获，Esc 取消" : "已取消捕获"
+        status.stringValue = selecting ? "" : "已取消捕获"
         webView.evaluateJavaScript("globalThis.__pageglass.\(selecting ? "start" : "stop")()",in:nil,in:CaptureService.world) { [weak self] result in
             if case .failure = result { self?.selecting = false; self?.status.stringValue = "页面未准备好，请加载完成后重试"; self?.syncChrome() }
         }
@@ -182,6 +183,7 @@ extension BrowserWindow {
     @objc func capturePage() { performCapture(mode:"page") }
     func performCapture(mode:String) {
         guard !capturing else { return }
+        hideCaptureSidebar()
         capturing = true; selecting = false; captureProgress = "准备捕获…"; syncChrome()
         let view = webView
         captureTask = Task { @MainActor [weak self] in

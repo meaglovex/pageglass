@@ -52,7 +52,7 @@ final class CaptureLibraryController:NSWindowController,NSTableViewDataSource,NS
     required init?(coder:NSCoder) { fatalError() }
     deinit { if let observer { NotificationCenter.default.removeObserver(observer) }; watcher?.cancel(); refreshWork?.cancel() }
     func windowDidBecomeKey(_ notification:Notification) { refresh() }
-    func windowWillClose(_ notification:Notification) { watcher?.cancel(); watcher = nil; generation = UUID(); detail.reference?.close() }
+    func windowWillClose(_ notification:Notification) { watcher?.cancel(); watcher = nil; generation = UUID(); detail.closePreviews() }
     @objc func refresh() {
         guard let root = browser?.captureRoot else { return }
         generation = UUID(); let token = generation; summary.stringValue = "正在读取本机捕获…"

@@ -15,6 +15,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     var tabButtons: [UUID:TabButton] = [:]
     var tabWidths: [UUID:NSLayoutConstraint] = [:]
     var tabPopover: NSPopover?
+    var commandPalette:CommandPaletteController?
     var bookmarkPopover: NSPopover?
     var overflowBookmarks: [PageRecord] = []
     var renderedBookmarks: [PageRecord]?
@@ -41,9 +42,9 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     var captureProgress = ""
     var selectionDescription = ""
     var recordingBarHidden = false
-    let captureBar = NSStackView(), captureLabel = NSTextField(labelWithString:"")
-    let cancelCaptureButton = NSButton()
-    var captureResultController: CapturePreviewController?
+    let captureBar = ChromeStackView(), captureLabel = NSTextField(labelWithString:"")
+    let cancelCaptureButton = NSButton(), parentCaptureButton = NSButton()
+    var captureSidebar:CaptureSidebar?
     var captureLibraryController: CaptureLibraryController?
     var downloads: [ObjectIdentifier: WKDownload] = [:]
     var downloadRecords: [ObjectIdentifier:DownloadRecord] = [:]
@@ -113,7 +114,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     }
     func activate(_ index:Int) {
         guard !capturing,tabs.indices.contains(index) else { return }
-        dismissSuggestions()
+        dismissSuggestions(); commandPalette?.dismiss(restoreFocus:false); hideCaptureSidebar()
         if tabs.indices.contains(activeIndex),let old = tabs[activeIndex].webView {
             if index != activeIndex { tabs[activeIndex].recording.pause(old) }
             old.evaluateJavaScript("globalThis.__pageglass?.stop()",in:nil,in:CaptureService.world); tabs[activeIndex].container.removeFromSuperview()
@@ -193,13 +194,18 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     }
     func windowWillClose(_ notification:Notification) {
         captureTask?.cancel(); cancelCapture()
-        dismissSuggestions(); saveSession()
-        libraryController?.close(); settingsController?.close(); tabPopover?.close(); bookmarkPopover?.close(); captureResultController?.close()
+        dismissSuggestions(); commandPalette?.dismiss(restoreFocus:false); saveSession()
+        libraryController?.close(); settingsController?.close(); tabPopover?.close(); bookmarkPopover?.close(); captureSidebar?.detail.closePreviews()
         captureLibraryController?.close()
         for download in downloads.values { updateDownload(download,state:"已取消：窗口已关闭"); download.cancel { _ in } }
         downloadObservers.removeAll(); downloads.removeAll()
         for tab in tabs { tab.release() }
         (NSApp.delegate as? AppDelegate)?.closed(self)
+    }
+    override func cancelOperation(_ sender:Any?) {
+        if captureSidebar?.isHidden == false { dismissCaptureSidebar() }
+        else if selecting || capturing { cancelCapture() }
+        else { super.cancelOperation(sender) }
     }
     func windowDidUpdate(_ notification:Notification) {
         let editor = address.currentEditor()

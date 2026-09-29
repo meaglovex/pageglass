@@ -71,6 +71,7 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
         add(edit,"剪切",#selector(NSText.cut(_:)),"x"); add(edit,"复制",#selector(NSText.copy(_:)),"c"); add(edit,"粘贴",#selector(NSText.paste(_:)),"v"); add(edit,"全选",#selector(NSText.selectAll(_:)),"a")
         add(edit,"在页面中查找…",#selector(BrowserWindow.findInPage),"f"); add(edit,"查找下一个",#selector(BrowserWindow.findNext),"g"); add(edit,"查找上一个",#selector(BrowserWindow.findPrevious),"g",[.command,.shift])
         let view = menu("显示")
+        add(view,"快速操作…",#selector(BrowserWindow.showCommandPalette),"k")
         add(view,"书签栏",#selector(BrowserWindow.toggleBookmarksBar),"b",[.command,.shift]); add(view,"放大",#selector(BrowserWindow.zoomIn),"+"); add(view,"缩小",#selector(BrowserWindow.zoomOut),"-"); add(view,"实际大小",#selector(BrowserWindow.resetZoom),"0")
         add(view,"进入 / 退出全屏",#selector(NSWindow.toggleFullScreen(_:)),"f",[.command,.control])
         let developer = menu("开发")

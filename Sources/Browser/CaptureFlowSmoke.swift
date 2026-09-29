@@ -54,7 +54,7 @@ enum CaptureFlowSmoke {
         try require(CaptureClipboard.current.string(forType:.string) == sentinel,"disabling auto-copy preserves the clipboard on successful capture")
         browser.copyLatest()
         try require(CaptureClipboard.current.string(forType:CaptureRetention.clipboardType) == browser.latest?.directory.path,"manual copy remains available when auto-copy is disabled")
-        browser.captureResultController?.close()
+        browser.hideCaptureSidebar()
         let reference = result.directory.appendingPathComponent("reference.html")
         try "<!doctype html><title>Script-free preview test</title><body>Preview<script>document.body.dataset.executed='yes'</script>".write(to:reference,atomically:true,encoding:.utf8)
         let preview = try CaptureReferenceController(directory:result.directory); preview.showWindow(nil)
