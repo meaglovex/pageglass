@@ -81,6 +81,8 @@ open dist/Pageglass.app
 
 技术决定见 [architecture.md](docs/architecture.md)，当前开发版验收进度见 [validation-0.7.md](docs/validation-0.7.md)，旧版验证记录见 [validation.md](docs/validation.md)，可复跑的性能对照方法见 [performance.md](docs/performance.md)。本版范围和验收标准见 [0.7 产品体验优化计划](docs/plan-0.7.md)（实施中）。
 
+后续版本见 [0.8 视觉、操作与扩展计划](docs/plan-0.8.md)（计划中，尚未实施）。
+
 ## 开发与开源
 
 ```sh
