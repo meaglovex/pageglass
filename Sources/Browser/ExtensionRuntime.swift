@@ -90,7 +90,7 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
         var candidate:WKWebExtensionContext?
         do {
             let context = try await makeContext(record); candidate = context
-            if let previous { try controller.unload(previous); closeViews(record.id) }
+            if let previous { closeViews(record.id); try controller.unload(previous) }
             try controller.load(context)
             try repository.replace(record)
             contexts[record.id] = context; errors[record.id] = nil
@@ -116,7 +116,7 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
         do {
             if enabled {
                 if previous?.isLoaded != true { let context = try await makeContext(record); try controller.load(context); contexts[id] = context }
-            } else if let previous { try controller.unload(previous); closeViews(id); contexts[id] = nil }
+            } else if let previous { closeViews(id); try controller.unload(previous); contexts[id] = nil }
             record.enabled = enabled; try repository.replace(record); errors[id] = nil
         } catch {
             if enabled,previous == nil,let added = contexts.removeValue(forKey:id) { try? controller.unload(added) }
@@ -129,8 +129,8 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
         guard var record = repository.state.items.first(where:{$0.id == id}) else { return }
         let old = record
         record.enabled = false; try repository.replace(record)
-        if let context = contexts[id] { try controller.unload(context); contexts[id] = nil }
         closeViews(id)
+        if let context = contexts[id] { try controller.unload(context); contexts[id] = nil }
         if let directory = repository.directory(for:record),FileManager.default.fileExists(atPath:directory.path) { try FileManager.default.trashItem(at:directory,resultingItemURL:nil) }
         record.package = nil
         if includingData {
@@ -141,7 +141,8 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
         } else { try repository.replace(record) }
         errors[id] = nil
     }
-    func closeViews(_ id:UUID) { popup?.close(); popup = nil; options.removeValue(forKey:id)?.close() }
+    func closePopup() { popup?.close(); popup = nil }
+    func closeViews(_ id:UUID) { closePopup(); options.removeValue(forKey:id)?.close() }
     static func sitePattern(_ url:URL?)->String? {
         guard let url,let scheme = url.scheme, ["http","https"].contains(scheme),let host = url.host,!host.isEmpty,!host.contains("*"),!host.contains(":") else { return nil }
         return "\(scheme)://\(host)/*"
@@ -186,7 +187,10 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
     func webExtensionController(_ controller:WKWebExtensionController,focusedWindowFor context:WKWebExtensionContext)->(any WKWebExtensionWindow)? { windows.allObjects.first { $0.extensionWindowVisible && $0.window?.isKeyWindow == true } }
     func webExtensionController(_ controller:WKWebExtensionController,presentActionPopup action:WKWebExtension.Action,for context:WKWebExtensionContext,completionHandler:@escaping(Error?)->Void) {
         guard let browser = windows.allObjects.first(where:{$0.window?.isKeyWindow == true && !$0.privateBrowsing}) ?? windows.allObjects.first(where:{!$0.privateBrowsing}) else { completionHandler(ExtensionPackage.Failure(message:"没有可用的普通浏览器窗口")); return }
-        popup?.close(); popup = action.popupPopover
+        closePopup(); popup = action.popupPopover
+        // WebKit's did-close callback accesses the extension context. Complete it
+        // synchronously before a tab, window or extension can release that context.
+        popup?.animates = false
         let button = contexts.first(where:{$0.value === context}).flatMap { browser.extensionActionButtons[$0.key] }
         let anchor = button.flatMap { $0.superview != nil && !browser.extensionActionBar.isHidden ? $0 : nil } ?? browser.extensionButton
         popup?.show(relativeTo:anchor.bounds,of:anchor,preferredEdge:.maxY); completionHandler(nil)

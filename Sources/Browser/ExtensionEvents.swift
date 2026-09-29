@@ -19,6 +19,7 @@ extension ExtensionRuntime {
         windows.add(window); sync(window)
     }
     func closed(_ window:BrowserWindow) {
+        closePopup()
         for snapshot in tabSnapshots.removeValue(forKey:window.id) ?? [] { controller.didCloseTab(snapshot.tab,windowIsClosing:true) }
         activeTabs.removeValue(forKey:window.id)
         if visibleWindows.remove(window.id) != nil { controller.didCloseWindow(window) }

@@ -2,6 +2,7 @@ import AppKit
 
 extension BrowserWindow {
     @objc func showTabList(_ sender:NSButton) {
+        bookmarkPopover?.close()
         tabPopover?.close()
         let controller = TabListController(browser:self)
         let popover = NSPopover(); popover.behavior = .transient; popover.contentViewController = controller
@@ -9,19 +10,16 @@ extension BrowserWindow {
         controller.view.window?.makeFirstResponder(controller.search)
     }
     @objc func showBookmarkOverflow(_ sender:NSButton) {
-        bookmarkPopover?.close()
-        let rows = NSStackView(); rows.orientation = .vertical; rows.alignment = .leading; rows.spacing = 2
-        for record in overflowBookmarks {
-            let button = bookmarkButton(for:record); rows.addArrangedSubview(button)
-            button.widthAnchor.constraint(equalToConstant:300).isActive = true; button.heightAnchor.constraint(equalToConstant:30).isActive = true
-        }
-        let scroll = NSScrollView(frame:NSRect(x:0,y:0,width:316,height:min(400,CGFloat(overflowBookmarks.count)*32+12)))
-        scroll.hasVerticalScroller = true; scroll.drawsBackground = false
-        rows.frame = NSRect(x:6,y:6,width:300,height:CGFloat(overflowBookmarks.count)*32)
-        scroll.documentView = rows
-        let controller = NSViewController(); controller.view = scroll
+        if bookmarkPopover?.isShown == true { dismissBookmarkOverflow(); return }
+        guard !overflowBookmarks.isEmpty else { return }
+        tabPopover?.close()
+        let controller = BookmarkListController(browser:self,records:overflowBookmarks)
         let popover = NSPopover(); popover.behavior = .transient; popover.contentViewController = controller
         bookmarkPopover = popover; popover.show(relativeTo:sender.bounds,of:sender,preferredEdge:.maxY)
+    }
+    func dismissBookmarkOverflow() {
+        bookmarkPopover?.close()
+        if let view = activeWebView { window?.makeFirstResponder(view) }
     }
 }
 

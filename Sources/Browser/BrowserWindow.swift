@@ -121,6 +121,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     }
     func activate(_ index:Int) {
         guard !capturing,tabs.indices.contains(index) else { return }
+        bookmarkPopover?.close(); tabPopover?.close()
         dismissCaptureIntro()
         dismissSuggestions(); commandPalette?.dismiss(restoreFocus:false); hideCaptureSidebar()
         if tabs.indices.contains(activeIndex),let old = tabs[activeIndex].webView {
@@ -214,7 +215,9 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         (NSApp.delegate as? AppDelegate)?.closed(self)
     }
     override func cancelOperation(_ sender:Any?) {
-        if captureSidebar?.isHidden == false { dismissCaptureSidebar() }
+        if bookmarkPopover?.isShown == true { dismissBookmarkOverflow() }
+        else if tabPopover?.isShown == true { tabPopover?.close(); if let view = activeWebView { window?.makeFirstResponder(view) } }
+        else if captureSidebar?.isHidden == false { dismissCaptureSidebar() }
         else if captureIntro != nil { dismissCaptureIntro() }
         else if selecting || capturing { cancelCapture() }
         // NSResponder declares this text action, but NSWindowController does not

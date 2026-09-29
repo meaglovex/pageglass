@@ -174,7 +174,11 @@ enum ExtensionSmoke {
                 let revokedDOM = try await browser.webView.evaluateJavaScript("document.documentElement.dataset.pageglassExtension || ''") as? String
                 try require(!context.hasAccess(to:page) && revokedDOM == "","revocation removes future injection after reload")
                 try runtime.setSite(site,allowed:true,id:id)
+                _ = try await popup(context)
+                let disablingPopup = runtime.popup!
+                let disableClose = ExtensionPopupCloseProbe(disablingPopup,context:context)
                 try await runtime.setEnabled(false,id:id); try await load()
+                try require(!disablingPopup.isShown && runtime.popup == nil && disableClose.loadedWhenClosed == true,"disabling an extension closes its live popup before unloading")
                 let disabledDOM = try await browser.webView.evaluateJavaScript("document.documentElement.dataset.pageglassExtension || ''") as? String
                 try require(!context.isLoaded && disabledDOM == "","disable unloads context and prevents injection")
                 try require(browser.extensionActionButtons[id] == nil && runtime.repository.state.items[0].toolbarVisible == true,"disabling removes the toolbar action while retaining its preference")
@@ -196,7 +200,11 @@ enum ExtensionSmoke {
                     do { try await runtime.install(ExtensionPackage.prepare(source:source,in:runtime.repository.staging),replacing:id); throw CaptureService.Failure.message("registry fault unexpectedly saved") }
                     catch { try require(runtime.repository.state.items[0].version == "1.0" && context.isLoaded,"failed registry save reloads previous running version") }
                 }
+                _ = try await popup(context)
+                let updatingPopup = runtime.popup!
+                let updateClose = ExtensionPopupCloseProbe(updatingPopup,context:context)
                 try await runtime.install(ExtensionPackage.prepare(source:source,in:runtime.repository.staging),replacing:id)
+                try require(!updatingPopup.isShown && runtime.popup == nil && updateClose.loadedWhenClosed == true,"updating an extension closes the previous live popup before replacing its context")
                 context = runtime.contexts[id]!
                 try await load()
                 try await wait("updated content") { try await browser.webView.evaluateJavaScript("document.documentElement.dataset.pageglassExtension") as? String == "2" }
@@ -219,8 +227,10 @@ enum ExtensionSmoke {
             let restoredCount = try await restored.evaluateJavaScript("JSON.parse(document.querySelector('output').textContent).count") as? Int ?? 0
             try require(runtime.errors.isEmpty && runtime.repository.state.items[0].version == "2.0" && restoredCount >= 3,"new host restores version permissions and persistent storage")
             try require(browser.extensionActionButtons[id] != nil,"new host restores the saved toolbar preference")
-            runtime.closeViews(id)
+            let removingPopup = runtime.popup!
+            let removeClose = ExtensionPopupCloseProbe(removingPopup,context:context)
             try await runtime.remove(id:id,includingData:false)
+            try require(!removingPopup.isShown && runtime.popup == nil && removeClose.loadedWhenClosed == true,"removing an extension closes its live popup before releasing its context")
             try require(runtime.contexts[id] == nil && runtime.repository.state.items[0].package == nil,"remove program keeps an explicit data-only record")
             try await runtime.install(ExtensionPackage.prepare(source:source,in:runtime.repository.staging),replacing:id)
             let retained = try await popup(runtime.contexts[id]!)
@@ -264,4 +274,17 @@ enum ExtensionSmoke {
             await cleanup(); throw error
         }
     }
+}
+
+@available(macOS 15.4, *)
+@MainActor
+private final class ExtensionPopupCloseProbe:NSObject {
+    let context:WKWebExtensionContext
+    var loadedWhenClosed:Bool?
+    init(_ popup:NSPopover,context:WKWebExtensionContext) {
+        self.context = context; super.init()
+        NotificationCenter.default.addObserver(self,selector:#selector(didClose(_:)),name:NSPopover.didCloseNotification,object:popup)
+    }
+    @objc private func didClose(_ notification:Notification) { loadedWhenClosed = context.isLoaded }
+    deinit { NotificationCenter.default.removeObserver(self) }
 }

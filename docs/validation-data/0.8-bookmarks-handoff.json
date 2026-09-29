@@ -1,0 +1,217 @@
+{
+  "status": "bookmarks-keyboard-and-lifecycle-regressions-passed-release-incomplete",
+  "date": "2026-09-30",
+  "system": "macOS 27.0, arm64",
+  "version": "0.8.0-alpha.1",
+  "build": 21,
+  "sourceBaseCommit": "5aff275e7bab44917342c086f6287935152a1375",
+  "changes": [
+    "Native bookmark overflow table starts at first row, fits titles and supports arrow keys, Return and Escape",
+    "Right-click menu resolves the clicked record through the existing bookmark actions",
+    "Tab activation closes obsolete bookmark and tab popovers",
+    "Close extension action popovers synchronously before context unload; assert callback ordering for disable/update/remove"
+  ],
+  "unitTestsPassed": 37,
+  "defaultUnitTestsSkipped": 1,
+  "upgradeCopy": {
+    "run": "upgrade-copy-20260930-051552-3043b5",
+    "additionalTestsPassed": 1,
+    "testExitCode": 0,
+    "sourceUnchanged": true,
+    "scope": [
+      "Bookmarks, history and settings save/reload equality",
+      "Session preserved except retired pinning field",
+      "Download states normalize interrupted transfers",
+      "Legacy capture scan, screenshot decoding and unchanged original files"
+    ],
+    "privateDataPublished": false
+  },
+  "pointerDiagnostic": {
+    "temporaryInstrumentationRemoved": true,
+    "accessibilityRightClick": {
+      "eventLocation": [
+        688,
+        225.5
+      ],
+      "eventWindowSize": [
+        342,
+        426
+      ],
+      "tablePoint": [
+        675,
+        187.5
+      ],
+      "tableBounds": [
+        0,
+        0,
+        316,
+        512
+      ]
+    },
+    "coordinateRightClick": {
+      "eventLocation": [
+        625,
+        225
+      ],
+      "eventWindowSize": [
+        342,
+        426
+      ],
+      "tablePoint": [
+        612,
+        188
+      ]
+    },
+    "result": "Pointer events target the popover window but contain main-window coordinates outside its bounds; actual mouse open/edit remains unaccepted",
+    "toolLimitation": "macOS getApp requires an app name, path, or bundle ID; cannot bind this popover by window ID"
+  },
+  "captureHandoff": {
+    "build": 20,
+    "qaBinarySHA256": "e1d9ea13da79e08700344bf619214fa0f1fdeaf6f8cf56582946b326d5186886",
+    "fixture": "Owned bundled demo served on loopback; no third-party page scripts used in the prototype",
+    "captures": [
+      {
+        "packageID": "1790715820-A11C29B0",
+        "mode": "page",
+        "nodeCount": 65,
+        "rect": {
+          "height": 1203,
+          "width": 1280,
+          "x": 0,
+          "y": 0
+        },
+        "outcome": "complete",
+        "sha256": {
+          "capture.json": "5b43fd5746e00871b97d4913d96246ae7fbd2b6065074257bb6645104b3cbb6a",
+          "reference.html": "7da393475a6f56949166b65181afa79b4ba2ee43439dd5ae7bbeb18125d49aa2",
+          "screenshot.png": "06cd03ece2c7f1762a90bec71fd4cd4d645d76a9497bfbda029b5e39c981e359"
+        },
+        "inspection": "Metadata and computed-style reference read; screenshot opened with image tool"
+      },
+      {
+        "packageID": "1790715864-64FF4D6F",
+        "mode": "element",
+        "nodeCount": 1,
+        "rect": {
+          "height": 39,
+          "width": 109.25,
+          "x": 1128.75,
+          "y": 48.5
+        },
+        "outcome": "complete",
+        "sha256": {
+          "capture.json": "16a564a1e08b9934c7a2a983f524443b9df4159812cb3a0710aad802cd1fd049",
+          "reference.html": "c3db5825c3bf3870924be551da8646049fe6d7158ac534b8de50bef2dc3930b7",
+          "screenshot.png": "7b7badf3e7b52fcedd703084de054b431ea1222ae6a03461b07dfc0dbf1c49fc"
+        },
+        "inspection": "Metadata and computed-style reference read; screenshot opened with image tool"
+      }
+    ],
+    "prototype": {
+      "localArtifact": "qa-output/prototype-20260930-050518-60525/prototype.html",
+      "fullPageBaseline": {
+        "height": 1203,
+        "meanAbsoluteRGBError": 0.00662792288388398,
+        "sampledPixels": 385280,
+        "significantPixelRatio": 0.00307828073089701,
+        "width": 1280
+      },
+      "functionalChecks": [
+        "details opens",
+        "details closes",
+        "observed collapse",
+        "observed expand",
+        "network blocked"
+      ],
+      "observedCollapsedState": {
+        "height": 1096,
+        "meanAbsoluteRGBError": 0,
+        "sampledPixels": 493200,
+        "significantPixelRatio": 0,
+        "width": 1800
+      },
+      "status": "passed",
+      "physicalUI": [
+        "Opened standalone file using native Command-O dialog",
+        "Details button opens the added dialog; Escape closes it",
+        "Captured request button collapses and expands the observed notice",
+        "F12 Console showed no errors or warnings in inspected state"
+      ],
+      "scope": "File-based reconstruction of the full-page capture; not receiver paste acceptance"
+    },
+    "receiverPaste": {
+      "status": "requires-human-input",
+      "reason": "Computer Use is not allowed to use the app com.openai.codex for safety reasons",
+      "userQuestionSent": true,
+      "clipboardPackageSuffix": "64FF4D6F",
+      "notBypassed": true
+    },
+    "notComplete": [
+      "Actual button reference paste into Codex and requested prototype modification through that receiver",
+      "Portable package attachment in the target receiving tool"
+    ]
+  },
+  "releaseStatus": "Draft PR; normal installed app unchanged; 0.8 not released",
+  "remainingGates": [
+    "Actual bookmark overflow mouse open and right-click editing",
+    "Full visual matrix, increased contrast, actual IME and VoiceOver",
+    "Public-API audio controls, editor minimum-height UI",
+    "Broader extension functionality, multiple windows/actions and macOS 14/15.4 devices",
+    "Three-round performance and retained 0.7 Chrome memory comparison"
+  ],
+  "sourceDigestSHA256": "d0600e9d9f7431c62d9cc76a5d3db82a3020aad7e8209a9c9c07fad083fc4649",
+  "sourceDigestMethod": "SHA256 of sorted relative path, NUL, raw file SHA256 for Sources/Browser/**/* files and scripts/build.sh",
+  "binarySHA256": "ecf00a17ab4e89fd70f0ad890c20d23a1a05c1052dc145faf238d4f0c726d1fe",
+  "qaBinarySHA256": "e7dc1a2c19d4f3b34463ca3cef7263a24eb4321232a8f38372994a66a2016f37",
+  "smokeRun": "20260930-053406",
+  "smokeChecksPassed": 269,
+  "extensionPopupLifecycle": {
+    "observedFailure": {
+      "crash": "Pageglass-2026-09-30-052948.ips",
+      "exception": "EXC_BAD_ACCESS / KERN_INVALID_ADDRESS at 0x48",
+      "frames": [
+        "WebKit::WebExtensionAction::closePopup()",
+        "-[_WKWebExtensionActionPopover popoverDidClose:]",
+        "_NSPopoverSendDidCloseNotification",
+        "NSWindow closing animation cleanup"
+      ]
+    },
+    "assessment": "Lifecycle-order diagnosis from the local crash, host unload-before-close implementation and upstream callback accessing extensionContext; not an assertion about every OS WebKit version",
+    "reference": "https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/Extensions/Cocoa/WebExtensionActionCocoa.mm",
+    "fix": [
+      "Disable animation on system-provided extension action popovers using public NSPopover API",
+      "Close views before update, disable or removal unloads the context",
+      "Close the action popup before publishing browser-window close events"
+    ],
+    "regression": [
+      "Live popup disable",
+      "Live popup update",
+      "Live popup remove"
+    ],
+    "assertion": "Observe NSPopover.didCloseNotification and require the original context to still be loaded at that instant"
+  },
+  "physicalUI": {
+    "build": 21,
+    "qaBinarySHA256": "e7dc1a2c19d4f3b34463ca3cef7263a24eb4321232a8f38372994a66a2016f37",
+    "widthPoints": 900,
+    "themes": [
+      "Aqua",
+      "DarkAqua"
+    ],
+    "isolation": "Owned QA profile with 20 synthetic bookmarks and bundled sample extension; normal app unchanged",
+    "observed": [
+      "Both themes show the first overflow bookmark selected and titles using the full available width",
+      "Opaque semantic backgrounds keep titles readable over a light webpage in dark appearance",
+      "Arrow keys scroll to the last bookmark; Return opens bookmark-20; another selection opens bookmark-07",
+      "Address bar and actual page URL match the selected record; Escape closes and returns focus to the page",
+      "Native file chooser installs the owned 2.0 extension; site access rejected; popup shows count=1, worker pong=true, capture bridge=false",
+      "Extension popup closes with Escape; management disable shows disabled state and disables action controls",
+      "Normal quit and restart preserve the disabled extension (no toolbar action); final QA process exits 0"
+    ],
+    "notAccepted": [
+      "Actual mouse open or right-click editing in bookmark popover",
+      "Complete visual/VoiceOver/IME matrix",
+      "All real extension lifecycle paths on this final build"
+    ]
+  }
+}
