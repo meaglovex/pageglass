@@ -31,6 +31,7 @@ extension BrowserWindow {
     @objc func editBookmarkFromMenu(_ item:NSMenuItem) { if let id = bookmarkID(item) { editBookmark(id:id) } }
     func editBookmark(id:UUID) {
         guard let record = store.state.bookmarks.first(where:{$0.id == id}) else { return }
+        bookmarkPopover?.close()
         let alert = NSAlert();alert.messageText = "编辑书签"
         alert.informativeText = "修改书签名称和网址。";alert.addButton(withTitle:"保存");alert.addButton(withTitle:"取消")
         let title = NSTextField(string:record.title),address = NSTextField(string:record.url)

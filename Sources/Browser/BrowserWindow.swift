@@ -57,10 +57,14 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
 
     init(privateBrowsing:Bool = false,store:BrowserStore = .shared,session:SavedWindow? = nil,dataStore:WKWebsiteDataStore? = nil) {
         self.privateBrowsing = privateBrowsing; self.store = store
-        websiteDataStore = dataStore ?? (privateBrowsing || CommandLine.arguments.contains("--smoke") ? .nonPersistent() : .default())
+        websiteDataStore = dataStore ?? (privateBrowsing || CommandLine.arguments.contains("--smoke") ? .nonPersistent() : QAProfile.current.map { WKWebsiteDataStore(forIdentifier:$0.websiteDataID) } ?? .default())
         let window = NSWindow(contentRect:NSRect(x:0,y:0,width:1280,height:860),styleMask:[.titled,.closable,.miniaturizable,.resizable,.fullSizeContentView],backing:.buffered,defer:false)
         window.title = "Pageglass"
         window.minSize = NSSize(width:820,height:520)
+        if let qa = QAProfile.current {
+            if let width = qa.width { window.setContentSize(NSSize(width:width,height:860)) }
+            if let appearance = qa.appearance { window.appearance = NSAppearance(named:appearance == "Aqua" ? .aqua : .darkAqua) }
+        }
         window.titleVisibility = .hidden; window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false; window.isMovableByWindowBackground = false
         super.init(window:window)

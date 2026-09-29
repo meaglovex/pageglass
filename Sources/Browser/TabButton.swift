@@ -112,7 +112,10 @@ final class TabButton: NSView {
 }
 
 final class HeaderBackground: NSView {
-    override func draw(_ dirtyRect:NSRect) { NSColor.windowBackgroundColor.setFill(); bounds.fill() }
+    override func draw(_ dirtyRect:NSRect) {
+        let color = effectiveAppearance.bestMatch(from:[.darkAqua,.aqua]) == .darkAqua ? NSColor.windowBackgroundColor : NSColor(calibratedWhite:0.92,alpha:1)
+        color.setFill(); bounds.fill()
+    }
     override func viewDidChangeEffectiveAppearance() { super.viewDidChangeEffectiveAppearance(); needsDisplay = true }
     override var mouseDownCanMoveWindow: Bool { true }
     override func mouseDown(with event:NSEvent) { window?.performDrag(with:event) }

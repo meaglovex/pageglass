@@ -22,7 +22,7 @@ final class CaptureService {
     static let world = WKContentWorld.world(name:"dev.pageglass.capture")
     static let script = (try? String(contentsOf:Resources.bundle.url(forResource:"capture",withExtension:"js",subdirectory:"Resources")!,encoding:.utf8)) ?? ""
     static var root: URL {
-        FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Pageglass/Captures",isDirectory:true)
+        (QAProfile.current?.directory ?? FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Pageglass")).appendingPathComponent("Captures",isDirectory:true)
     }
     enum Failure: LocalizedError {
         case message(String)

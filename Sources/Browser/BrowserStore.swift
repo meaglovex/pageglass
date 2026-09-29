@@ -28,7 +28,7 @@ struct BrowserSettings: Codable {
 
 /// 仅保存浏览器功能数据；无痕窗口不写访问记录、下载记录和会话。
 final class BrowserStore {
-    static let shared = BrowserStore(directory:FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Pageglass"))
+    static let shared = BrowserStore(directory:QAProfile.current?.directory ?? FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("Pageglass"))
     struct State: Codable {
         var bookmarks: [PageRecord] = []
         var history: [PageRecord] = []
