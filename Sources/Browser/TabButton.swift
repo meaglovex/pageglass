@@ -122,7 +122,7 @@ final class HeaderBackground: NSView {
     override func mouseDown(with event:NSEvent) { window?.performDrag(with:event) }
 }
 
-final class ChromeStackView:NSStackView {
+class ChromeStackView:NSStackView {
     var surfaceColor:NSColor = .controlBackgroundColor
     var cornerRadius:CGFloat = 0
     var showsBorder = false

@@ -54,7 +54,7 @@ extension BrowserWindow {
     }
     @objc func showCaptureMenu(_ sender:NSButton) {
         let menu = NSMenu()
-        let actions:[(String,Selector)] = [("捕获元素",#selector(selectElement)),("捕获已加载整页",#selector(capturePage)),(interactionRecording?.isRecording == true ? "停止交互记录" : "记录交互",#selector(toggleInteractionRecording)),("捕获历史…",#selector(showCaptureHistory))]
+        let actions:[(String,Selector)] = [("捕获元素",#selector(selectElement)),("捕获已加载整页",#selector(capturePage)),(interactionRecording?.isRecording == true ? "停止交互记录" : "记录交互",#selector(toggleInteractionRecording)),("捕获历史…",#selector(showCaptureHistory)),("捕获入门…",#selector(showCaptureIntro))]
         for (title,action) in actions {
             let item = NSMenuItem(title:title,action:action,keyEquivalent:""); item.target = self; item.isEnabled = !capturing || action == #selector(showCaptureHistory); menu.addItem(item)
         }

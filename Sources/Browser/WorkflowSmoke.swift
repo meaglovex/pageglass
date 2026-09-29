@@ -11,6 +11,16 @@ enum WorkflowSmoke {
         for _ in 0..<100 { if !browser.webView.isLoading,browser.webView.title == "工作台 · 捕获练习" { break }; try await Task.sleep(for:.milliseconds(50)) }
         let view = browser.webView
         browser.window?.makeKeyAndOrderFront(nil); browser.window?.makeFirstResponder(view)
+        browser.window?.contentView?.layoutSubtreeIfNeeded()
+        let introViewport = view.bounds.size, originalTab = browser.tabs[browser.activeIndex], originalCount = browser.tabs.count
+        browser.showCaptureIntro(); browser.window?.contentView?.layoutSubtreeIfNeeded()
+        try require(browser.captureIntro != nil && view.bounds.size == introViewport && browser.window?.firstResponder === view,"capture introduction neither resizes the page nor steals typing focus")
+        try require(browser.store.state.settings.captureIntroSeen == true && !browser.canOfferCaptureIntro,"displayed introduction is not offered automatically again")
+        browser.cancelOperation(nil)
+        try require(browser.captureIntro == nil && browser.window?.firstResponder === view,"Escape dismisses capture introduction while preserving page focus")
+        browser.showCaptureIntro(); browser.startCapturePractice()
+        try require(browser.captureIntro == nil && browser.tabs.count == originalCount+1 && browser.tabs.contains(where:{$0 === originalTab}),"capture practice opens separately without discarding an existing page")
+        browser.close(at:browser.activeIndex)
         let tab = BrowserTab(url:fixture); tab.title = "快速操作专用标签"; browser.tabs.append(tab); browser.renderTabs()
         let palette = CommandPaletteController(browser:browser); palette.search.stringValue = "快速操作专用"; palette.refresh()
         try require(palette.results.count == 1,"quick action search filters an existing tab without navigating")

@@ -161,6 +161,7 @@ final class CaptureService {
 extension BrowserWindow {
     @objc func selectElement() {
         guard !capturing else { return }
+        dismissCaptureIntro()
         hideCaptureSidebar()
         if let recorder = interactionRecording,recorder.isRecording {
             let view = webView
@@ -183,6 +184,7 @@ extension BrowserWindow {
     @objc func capturePage() { performCapture(mode:"page") }
     func performCapture(mode:String) {
         guard !capturing else { return }
+        dismissCaptureIntro()
         hideCaptureSidebar()
         capturing = true; selecting = false; captureProgress = "准备捕获…"; syncChrome()
         let view = webView

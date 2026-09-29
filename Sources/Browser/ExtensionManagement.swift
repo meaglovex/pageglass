@@ -34,6 +34,7 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
     private let feedback = NSTextField(wrappingLabelWithString:"")
     private let installButton = NSButton(), updateButton = NSButton(), enableButton = NSButton(), removeButton = NSButton(), actionButton = NSButton(), optionsButton = NSButton()
     private let allowButton = NSButton(), revokeButton = NSButton(), reloadButton = NSButton(), sites = NSPopUpButton()
+    private let toolbarCheck = NSButton(checkboxWithTitle:"显示在工具栏（窄窗口自动收入扩展菜单）",target:nil,action:nil)
     private var rows:[InstalledExtension] = [], observer:NSObjectProtocol?, importing = false
     private var selected:InstalledExtension? { rows.indices.contains(table.selectedRow) ? rows[table.selectedRow] : nil }
     init(browser:BrowserWindow) {
@@ -53,7 +54,8 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
         details.font = BrowserStyle.caption; details.textColor = BrowserStyle.supportingText; details.isSelectable = true; details.maximumNumberOfLines = 9
         feedback.font = BrowserStyle.caption; feedback.textColor = BrowserStyle.supportingText; feedback.maximumNumberOfLines = 3
         sites.setAccessibilityLabel("已设置的网站权限")
-        for view in [title,description,NSStackView(views:[installButton,updateButton,enableButton,removeButton]),scroll,details,NSStackView(views:[actionButton,optionsButton,allowButton]),NSStackView(views:[sites,revokeButton]),feedback,reloadButton] {
+        toolbarCheck.target = self; toolbarCheck.action = #selector(toggleToolbar)
+        for view in [title,description,NSStackView(views:[installButton,updateButton,enableButton,removeButton]),scroll,details,toolbarCheck,NSStackView(views:[actionButton,optionsButton,allowButton]),NSStackView(views:[sites,revokeButton]),feedback,reloadButton] {
             root.addArrangedSubview(view); view.widthAnchor.constraint(equalTo:root.widthAnchor,constant:-48).isActive = true
         }
         observer = NotificationCenter.default.addObserver(forName:ExtensionRuntime.changed,object:runtime,queue:.main) { [weak self] _ in self?.refresh() }
@@ -83,7 +85,10 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
         enableButton.isEnabled = usable && record?.package != nil
         let loaded = record.flatMap { runtime.contexts[$0.id] }
         enableButton.title = loaded?.isLoaded == true ? "停用" : "启用"
-        actionButton.isEnabled = usable && loaded != nil; optionsButton.isEnabled = usable && loaded?.optionsPageURL != nil
+        let action = record.flatMap { record in browser.flatMap { runtime.action(record.id,browser:$0) } }
+        actionButton.isEnabled = usable && action?.isEnabled == true; optionsButton.isEnabled = usable && loaded?.optionsPageURL != nil
+        toolbarCheck.state = record?.toolbarVisible == true ? .on : .off
+        toolbarCheck.isEnabled = usable && record?.package != nil && (action != nil || loaded == nil)
         allowButton.isEnabled = usable && loaded != nil && ExtensionRuntime.sitePattern(browser?.activeWebView?.url) != nil
         sites.removeAllItems(); sites.addItems(withTitles:record?.sites.keys.sorted().map { (record?.sites[$0] == true ? "已允许 · " : "已拒绝 · ")+$0 } ?? [])
         revokeButton.isEnabled = usable && sites.numberOfItems > 0
@@ -91,6 +96,11 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
         details.stringValue = "来源：\(record.sourceName)\n请求权限：\(record.permissions.isEmpty ? "无额外 API 权限" : record.permissions.joined(separator:", "))\n网站范围：\(record.hosts.isEmpty ? "未声明" : record.hosts.joined(separator:", "))\n\(runtime.errors[record.id] ?? "停用或撤权后，刷新网页才能清除已经改变的页面内容。")"
     }
     @objc private func importNew() { importPackage(replacing:nil) }
+    @objc private func toggleToolbar() {
+        guard let id = selected?.id else { return }
+        do { try runtime.setToolbarVisible(toolbarCheck.state == .on,id:id) }
+        catch { feedback.stringValue = error.localizedDescription; updateDetail() }
+    }
     @objc private func updateSelected() { if let id = selected?.id { importPackage(replacing:id) } }
     private func importPackage(replacing id:UUID?) {
         let panel = NSOpenPanel(); panel.canChooseDirectories = true; panel.canChooseFiles = true; panel.allowsMultipleSelection = false; panel.message = "选择含 manifest.json 的扩展目录，或兼容 ZIP 文件"

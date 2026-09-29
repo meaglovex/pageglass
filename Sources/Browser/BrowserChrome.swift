@@ -47,7 +47,8 @@ extension BrowserWindow {
         let more = tool("ellipsis","更多",#selector(showMore(_:)))
         toolbarTools = [.home:home,.downloads:downloadButton,.settings:profile,.recording:recordInteraction]
         address.widthAnchor.constraint(greaterThanOrEqualToConstant:180).isActive = true
-        for v in [back,forward,refresh,home,omnibox,captureGroup,extensionButton,recordInteraction,downloadButton,profile,more] { toolbar.addArrangedSubview(v) }
+        extensionActionBar.spacing = 4; extensionActionBar.detachesHiddenViews = true
+        for v in [back,forward,refresh,home,omnibox,captureGroup,extensionActionBar,extensionButton,recordInteraction,downloadButton,profile,more] { toolbar.addArrangedSubview(v) }
         omnibox.heightAnchor.constraint(equalToConstant:32).isActive = true
         bookmarkRow.spacing = 12; bookmarkRow.edgeInsets = NSEdgeInsets(top:3,left:16,bottom:3,right:16)
         buildFindBar(); buildErrorBar(); buildCaptureBar()
@@ -77,6 +78,7 @@ extension BrowserWindow {
     }
     func tool(_ symbol:String,_ label:String,_ action:Selector)->NSButton { let b = ChromeButton(); configure(b,symbol,label,action); return b }
     func updateToolbarLayout() {
+        updateExtensionActions()
         let compact = (window?.frame.width ?? 1280) < 1040
         let visible = Set(store.state.settings.toolbarTools ?? ToolbarTool.defaults)
         for (tool,view) in toolbarTools {

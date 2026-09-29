@@ -7,6 +7,7 @@ struct InstalledExtension:Codable,Identifiable {
     var permissions:[String],hosts:[String]
     var enabled:Bool
     var sites:[String:Bool] = [:]
+    var toolbarVisible:Bool? = nil
 }
 
 /// Separate registry: browser bookmarks/history/session formats do not change.
@@ -43,6 +44,6 @@ final class ExtensionRepository {
         try save(items)
     }
     func adopt(_ prepared:ExtensionPackage,replacing old:InstalledExtension?)->InstalledExtension {
-        InstalledExtension(id:old?.id ?? UUID(),package:UUID(),name:prepared.name,version:prepared.version,sourceName:prepared.sourceName,digest:prepared.digest,permissions:prepared.permissions,hosts:prepared.hosts,enabled:true,sites:old?.sites ?? [:])
+        InstalledExtension(id:old?.id ?? UUID(),package:UUID(),name:prepared.name,version:prepared.version,sourceName:prepared.sourceName,digest:prepared.digest,permissions:prepared.permissions,hosts:prepared.hosts,enabled:true,sites:old?.sites ?? [:],toolbarVisible:old?.toolbarVisible)
     }
 }

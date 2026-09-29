@@ -52,6 +52,22 @@ final class StoreTests:XCTestCase {
         XCTAssertNotNil(store.error)
         XCTAssertEqual(try String(contentsOf:file,encoding:.utf8),"unreadable original")
     }
+    func testCaptureIntroIsPersistedWithoutTreatingLegacyProfileAsFresh() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at:directory) }
+        let store = BrowserStore(directory:directory)
+        XCTAssertTrue(store.isFreshProfile)
+        var settings = store.state.settings; settings.captureIntroSeen = true
+        store.updateSettings(settings); store.flush()
+        let reopened = BrowserStore(directory:directory)
+        XCTAssertFalse(reopened.isFreshProfile); XCTAssertEqual(reopened.state.settings.captureIntroSeen,true)
+        let file = directory.appendingPathComponent("browser.json")
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:file)) as? [String:Any])
+        var oldSettings = try XCTUnwrap(legacy["settings"] as? [String:Any]); oldSettings.removeValue(forKey:"captureIntroSeen"); legacy["settings"] = oldSettings
+        try JSONSerialization.data(withJSONObject:legacy).write(to:file)
+        let migrated = BrowserStore(directory:directory)
+        XCTAssertNil(migrated.error); XCTAssertFalse(migrated.isFreshProfile); XCTAssertNil(migrated.state.settings.captureIntroSeen)
+    }
     func testDownloadStatusPersistsByIdentifier() {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let store = BrowserStore(directory:directory)

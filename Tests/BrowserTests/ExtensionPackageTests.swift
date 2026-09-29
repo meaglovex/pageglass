@@ -105,12 +105,13 @@ final class ExtensionPackageTests:XCTestCase {
     }
     func testRepositoryPersistsIdentityAndFailedSavePreservesState() throws {
         let package = try prepare(source()),repository = ExtensionRepository(directory:root.appendingPathComponent("profile"))
-        var record = repository.adopt(package,replacing:nil); record.sites["https://example.test/*"] = false
+        var record = repository.adopt(package,replacing:nil); record.sites["https://example.test/*"] = false; record.toolbarVisible = true
         try repository.replace(record)
         let reopened = ExtensionRepository(directory:root.appendingPathComponent("profile"))
         XCTAssertEqual(reopened.state.controllerID,repository.state.controllerID)
         let updated = reopened.adopt(package,replacing:reopened.state.items.first)
         XCTAssertEqual(updated.id,record.id); XCTAssertEqual(updated.sites,record.sites); XCTAssertNotEqual(updated.package,record.package)
+        XCTAssertEqual(updated.toolbarVisible,true)
         let file = repository.root.appendingPathComponent("extensions.json")
         try Data("corrupt-original".utf8).write(to:file)
         let broken = ExtensionRepository(directory:root.appendingPathComponent("profile"))
@@ -120,6 +121,16 @@ final class ExtensionPackageTests:XCTestCase {
         try FileManager.default.createSymbolicLink(at:file,withDestinationURL:root.appendingPathComponent("missing"))
         let dangling = ExtensionRepository(directory:root.appendingPathComponent("profile"))
         XCTAssertNotNil(dangling.readError); XCTAssertThrowsError(try dangling.save([]))
+    }
+
+    func testLegacyRegistryDoesNotAddUnrequestedToolbarActions() throws {
+        let repository = ExtensionRepository(directory:root.appendingPathComponent("profile"))
+        let record = repository.adopt(try prepare(source()),replacing:nil)
+        try repository.replace(record)
+        let bytes = try ExtensionPackage.read("extensions.json",from:repository.root)
+        XCTAssertFalse(String(decoding:bytes,as:UTF8.self).contains("toolbarVisible"))
+        let reopened = ExtensionRepository(directory:root.appendingPathComponent("profile"))
+        XCTAssertNil(reopened.readError); XCTAssertNil(reopened.state.items.first?.toolbarVisible)
     }
 
     private struct Entry {

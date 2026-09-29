@@ -25,6 +25,8 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     var toolbarTools:[ToolbarTool:NSView] = [:]
     var tabScrollWidth:NSLayoutConstraint?
     let captureMenuButton = ChromeButton(), downloadButton = ChromeButton(), extensionButton = ChromeButton()
+    let extensionActionBar = NSStackView()
+    var extensionActionButtons:[UUID:ChromeButton] = [:]
     weak var omnibox:ChromeStackView?
     let errorBar = NSStackView(), errorLabel = NSTextField(labelWithString:"")
     let bookmarkRow = NSStackView()
@@ -46,6 +48,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     let captureBar = ChromeStackView(), captureLabel = NSTextField(labelWithString:"")
     let cancelCaptureButton = NSButton(), parentCaptureButton = NSButton()
     var captureSidebar:CaptureSidebar?
+    var captureIntro:CaptureIntroView?
     var captureLibraryController: CaptureLibraryController?
     var downloads: [ObjectIdentifier: WKDownload] = [:]
     var downloadRecords: [ObjectIdentifier:DownloadRecord] = [:]
@@ -118,6 +121,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     }
     func activate(_ index:Int) {
         guard !capturing,tabs.indices.contains(index) else { return }
+        dismissCaptureIntro()
         dismissSuggestions(); commandPalette?.dismiss(restoreFocus:false); hideCaptureSidebar()
         if tabs.indices.contains(activeIndex),let old = tabs[activeIndex].webView {
             if index != activeIndex { tabs[activeIndex].recording.pause(old) }
@@ -179,6 +183,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         return url.absoluteString
     }
     func load(_ url:URL) {
+        dismissCaptureIntro()
         dismissSuggestions()
         tabs[activeIndex].pendingURL = url
         tabs[activeIndex].failure = nil
@@ -210,6 +215,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     }
     override func cancelOperation(_ sender:Any?) {
         if captureSidebar?.isHidden == false { dismissCaptureSidebar() }
+        else if captureIntro != nil { dismissCaptureIntro() }
         else if selecting || capturing { cancelCapture() }
         else { super.cancelOperation(sender) }
     }
@@ -218,7 +224,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         let focused = window?.isKeyWindow == true && editor != nil && window?.firstResponder === editor
         if omnibox?.showsFocus != focused { omnibox?.showsFocus = focused }
     }
-    func windowDidBecomeKey(_ notification:Notification) { if #available(macOS 15.4,*) { extensions?.controller.didFocusWindow(extensionWindowVisible ? self : nil) } }
+    func windowDidBecomeKey(_ notification:Notification) { if #available(macOS 15.4,*) { extensions?.controller.didFocusWindow(extensionWindowVisible ? self : nil) }; offerCaptureIntroIfNeeded() }
     func windowDidResignKey(_ notification:Notification) {
         dismissSuggestions(); omnibox?.showsFocus = false
         if #available(macOS 15.4,*) { extensions?.controller.didFocusWindow(nil) }

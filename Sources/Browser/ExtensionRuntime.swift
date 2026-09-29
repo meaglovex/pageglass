@@ -32,7 +32,15 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
         controller = WKWebExtensionController(configuration:config)
         super.init(); controller.delegate = self
     }
-    func changed() { NotificationCenter.default.post(name:Self.changed,object:self) }
+    func changed() {
+        for browser in windows.allObjects { browser.updateExtensionActions() }
+        NotificationCenter.default.post(name:Self.changed,object:self)
+    }
+    func setToolbarVisible(_ visible:Bool,id:UUID) throws {
+        try begin(); defer { end() }
+        guard var record = repository.state.items.first(where:{$0.id == id}),record.package != nil else { throw ExtensionPackage.Failure(message:"扩展程序已移除") }
+        record.toolbarVisible = visible; try repository.replace(record)
+    }
     func begin() throws {
         guard !busy,repository.readError == nil else { throw ExtensionPackage.Failure(message:repository.readError ?? "扩展操作正在进行，请稍候") }
         guard !windows.allObjects.contains(where:{$0.capturing}) else { throw ExtensionPackage.Failure(message:"请等待捕获结束后再更改扩展") }
@@ -158,7 +166,8 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
         return allowed
     }
     func performAction(_ id:UUID,browser:BrowserWindow) {
-        guard !browser.privateBrowsing,!browser.capturing,let context = contexts[id],context.isLoaded else { return }
+        guard !busy,!browser.privateBrowsing,!browser.capturing,let context = contexts[id],context.isLoaded else { return }
+        guard action(id,browser:browser)?.isEnabled == true else { return }
         if let url = browser.activeWebView?.url,context.webExtension.allRequestedMatchPatterns.contains(where:{$0.matches(url)}),!context.hasAccess(to:url) {
             _ = grantCurrentSite(id,browser:browser)
         }
@@ -176,7 +185,12 @@ final class ExtensionRuntime:NSObject,WKWebExtensionControllerDelegate {
     func webExtensionController(_ controller:WKWebExtensionController,presentActionPopup action:WKWebExtension.Action,for context:WKWebExtensionContext,completionHandler:@escaping(Error?)->Void) {
         guard let browser = windows.allObjects.first(where:{$0.window?.isKeyWindow == true && !$0.privateBrowsing}) ?? windows.allObjects.first(where:{!$0.privateBrowsing}) else { completionHandler(ExtensionPackage.Failure(message:"没有可用的普通浏览器窗口")); return }
         popup?.close(); popup = action.popupPopover
-        popup?.show(relativeTo:browser.extensionButton.bounds,of:browser.extensionButton,preferredEdge:.maxY); completionHandler(nil)
+        let button = contexts.first(where:{$0.value === context}).flatMap { browser.extensionActionButtons[$0.key] }
+        let anchor = button.flatMap { $0.superview != nil && !browser.extensionActionBar.isHidden ? $0 : nil } ?? browser.extensionButton
+        popup?.show(relativeTo:anchor.bounds,of:anchor,preferredEdge:.maxY); completionHandler(nil)
+    }
+    func webExtensionController(_ controller:WKWebExtensionController,didUpdate action:WKWebExtension.Action,forExtensionContext context:WKWebExtensionContext) {
+        for browser in windows.allObjects { browser.updateExtensionActions() }
     }
     func webExtensionController(_ controller:WKWebExtensionController,openOptionsPageFor context:WKWebExtensionContext,completionHandler:@escaping(Error?)->Void) {
         do { guard let id = contexts.first(where:{$0.value === context})?.key else { throw ExtensionPackage.Failure(message:"扩展已停用") }; try showOptions(id); completionHandler(nil) } catch { completionHandler(error) }
