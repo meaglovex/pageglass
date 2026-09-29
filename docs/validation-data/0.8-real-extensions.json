@@ -1,0 +1,99 @@
+{
+  "status": "two-scoped-real-extension-flows-passed-release-incomplete",
+  "date": "2026-09-30",
+  "system": "macOS 27.0 (26A428), arm64",
+  "version": "0.8.0-alpha.1",
+  "build": 20,
+  "sourceBaseCommit": "c5e595ed40388924d68121252e7ca1c5b46acce3",
+  "sourceState": "Extension management feedback invalidation committed with this report",
+  "sourceDigestSHA256": "b01a549319b8219c9b6d387ad0493313517bceeebf889e89fabbfdaa0a59dff9",
+  "sourceDigestMethod": "SHA256 of sorted relative path, NUL, raw file SHA256 for Sources/Browser/**/* files and scripts/build.sh",
+  "binarySHA256": "29ffddd49c8e958ee467f70eeded384501632af9c180236538d28fe48dfd5116",
+  "qaBinarySHA256": "e1d9ea13da79e08700344bf619214fa0f1fdeaf6f8cf56582946b326d5186886",
+  "smokeRun": "20260930-045339",
+  "smokeChecksPassed": 259,
+  "unitTestsPassed": 37,
+  "unitTestsSkipped": 1,
+  "newChecks": [
+    "same extension refresh preserves the current install result",
+    "external permission change clears obsolete management feedback and refreshes the site state"
+  ],
+  "physicalUI": {
+    "isolation": "Independent signed-out QA profiles; normal installed app and real browser profile unchanged",
+    "lifecycleBuild": 19,
+    "lifecycleSourceCommit": "c5e595ed40388924d68121252e7ca1c5b46acce3",
+    "lifecycleQABinarySHA256": "dd904752c3b1ded9096bb5386982a0eeb51f235d40628a1f51d625722e1f421f",
+    "wideGitHub": {
+      "upstream": "https://github.com/xthexder/wide-github",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "1.7.3",
+          "commit": "3d29df23e70544b9be9c8f1c4176a2c311a288ad",
+          "zipSHA256": "5520665ad88798c8d4095da3136d71e3d2372d61b2c5f0cf88d59f3aacb98bab"
+        },
+        {
+          "version": "1.7.4",
+          "commit": "5540c3fcab9322fa8e593316cd426349ab168bec",
+          "zipSHA256": "7f8be029e57913b930f9a86f069e9a622be914aef478eb68c49079c0cd0a091c"
+        }
+      ],
+      "packaging": "Ten original tag files mapped to Chrome package paths following upstream Makefile; no source edits or upstream build-script execution",
+      "page": "https://github.com/meaglovex/pageglass",
+      "viewportCSSPixels": 1440,
+      "appearance": "dark",
+      "permissions": "No additional API permissions. Only https://github.com/* explicitly allowed; Gist never granted",
+      "observed": [
+        "Native ZIP selection and install review show correct version, permissions and hosts; no website grant on install",
+        "Reject GitHub: permission denied, reload leaves content at 1280px/max-width 1280px",
+        "Toolbar action permission grant and toggle: content expands from 1280px to 1440px/max-width none, verified with screenshot and read-only computed layout query",
+        "Update to 1.7.4 preserves extension identity, GitHub grant and toolbar preference; reload content remains 1440px",
+        "Revoke GitHub: denied state and reload restore content to 1280px",
+        "Allow again then disable: toolbar and running action removed; normal quit process exit 0 and restart preserve disabled state with 1280px content",
+        "Re-enable and reload: content 1440px; normal quit process exit 0 and restart preserve enabled 1.7.4, grant, toolbar and expanded content",
+        "Uninstall without deleting data: visible data-retained state, action removed, reload content 1280px; exit 0 and registry has enabled false and no package"
+      ],
+      "limits": [
+        "Only signed-out public repository home widening and action path accepted; Gist, all GitHub routes, signed-in state and multiwindow propagation not tested",
+        "Upstream worker stores toggle only in a variable; worker restart defaults true, not host-persisted toggle preference",
+        "CUA typeText lost punctuation in a diagnostic expression; corrected via accessibility setValue. Tool-input SyntaxError is not counted as an extension failure"
+      ]
+    },
+    "ghuxFollowUp": {
+      "version": "0.7.0",
+      "commit": "f99c5ca5d8e41553000442cb81c40d1837aab52f",
+      "page": "https://github.com/meaglovex/pageglass/commit/5262c44e69b0274c35c1710414ce12a3988277ab",
+      "observed": [
+        "At 1280pt after restart the unified diff was readable and popup word-wrap changed line wrapping; earlier vertical-layout failure did not reproduce in this run",
+        "After grant and reload WebKit Console reported SyntaxError: Can't create duplicate variable: PR_PAGE_RE; cause unresolved",
+        "Disable made action unavailable; uninstall retained data, removed action and page marker after reload; final registry disabled and package absent"
+      ],
+      "result": "Not accepted as compatible; no GHUX-specific source change, unresolved earlier failure and script error retained"
+    },
+    "finalBuild20Observed": [
+      "Native update of retained Wide GitHub record reinstalls 1.7.4 with prior identity, toolbar and GitHub grant",
+      "Successful install feedback remains visible after completion",
+      "Revoke through manager, refresh, allow through toolbar, reopen manager: allowed site displayed and obsolete revoke feedback absent",
+      "Dark management window screenshot inspected and QA process exits normally with code 0"
+    ]
+  },
+  "scopeStatus": {
+    "acceptedFeatureFlows": [
+      "YouTube Shorts Blocker homepage navigation hiding (prior build 17 report)",
+      "Wide GitHub public repository home widening and action toggle (build 19)"
+    ],
+    "notAccepted": [
+      "GHUX full compatibility",
+      "All features of the two scoped extensions",
+      "General Chrome extension compatibility",
+      "M3 or complete 0.8 release"
+    ]
+  },
+  "notComplete": [
+    "Full visual matrix, increased contrast, VoiceOver and actual IME",
+    "Actual capture paste into Codex and portable receiver attachment/prototype reconstruction",
+    "More extension pages, multiple windows/actions and macOS 14/15.4 devices",
+    "Public-API tab audio controls and remaining editor minimum-height physical UI",
+    "Three-round performance, real-data-copy migration and retained 0.7 gates"
+  ]
+}

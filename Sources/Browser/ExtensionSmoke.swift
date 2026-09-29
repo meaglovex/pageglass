@@ -238,6 +238,11 @@ enum ExtensionSmoke {
             try await manager.installReviewed(ExtensionPackage.prepare(source:contentSource,in:runtime.repository.staging))
             guard let contentID = runtime.repository.state.items.first(where:{$0.name == "Content-only fixture"})?.id else { throw CaptureService.Failure.message("content-only install missing") }
             try require(manager.selected?.id == contentID,"install selects the newly installed extension instead of the previous row")
+            let installFeedback = manager.feedbackText
+            manager.selectExtension(contentID)
+            try require(installFeedback.contains("Content-only fixture") && manager.feedbackText == installFeedback,"same extension refresh preserves the current install result")
+            try runtime.setSite(site,allowed:false,id:contentID)
+            try require(manager.feedbackText.isEmpty && manager.selected?.sites[site] == false,"external permission change clears obsolete management feedback and refreshes the site state")
             try runtime.setToolbarVisible(true,id:contentID)
             try require(runtime.action(contentID,browser:browser) == nil && browser.extensionActionButtons[contentID] == nil,"content-only extension has no synthetic runnable toolbar action")
             let contentItem = browser.extensionMenu().items.first { $0.representedObject as? String == contentID.uuidString }

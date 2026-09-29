@@ -46,8 +46,9 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
     private let installButton = NSButton(), updateButton = NSButton(), enableButton = NSButton(), removeButton = NSButton(), actionButton = NSButton(), optionsButton = NSButton()
     private let allowButton = NSButton(), revokeButton = NSButton(), reloadButton = NSButton(), sites = NSPopUpButton()
     private let toolbarCheck = NSButton(checkboxWithTitle:"显示在工具栏（窄窗口自动收入扩展菜单）",target:nil,action:nil)
-    private var rows:[InstalledExtension] = [], observer:NSObjectProtocol?, importing = false
+    private var rows:[InstalledExtension] = [], observer:NSObjectProtocol?, importing = false, refreshingSelection = false
     var selected:InstalledExtension? { rows.indices.contains(table.selectedRow) ? rows[table.selectedRow] : nil }
+    var feedbackText:String { feedback.stringValue }
     init(browser:BrowserWindow) {
         self.browser = browser; runtime = browser.extensions!
         let window = NSWindow(contentRect:NSRect(x:0,y:0,width:760,height:740),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
@@ -69,21 +70,33 @@ final class ExtensionManagementController:NSWindowController,NSTableViewDataSour
         for view in [title,description,NSStackView(views:[installButton,updateButton,enableButton,removeButton]),scroll,details,toolbarCheck,NSStackView(views:[actionButton,optionsButton,allowButton]),NSStackView(views:[sites,revokeButton]),feedback,reloadButton] {
             root.addArrangedSubview(view); view.widthAnchor.constraint(equalTo:root.widthAnchor,constant:-48).isActive = true
         }
-        observer = NotificationCenter.default.addObserver(forName:ExtensionRuntime.changed,object:runtime,queue:.main) { [weak self] _ in self?.refresh() }
+        observer = NotificationCenter.default.addObserver(forName:ExtensionRuntime.changed,object:runtime,queue:.main) { [weak self] _ in
+            // Permission and lifecycle changes can originate from another window or toolbar.
+            self?.feedback.stringValue = ""; self?.refresh()
+        }
         refresh()
     }
     required init?(coder:NSCoder) { fatalError() }
     deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
+    override func showWindow(_ sender:Any?) {
+        feedback.stringValue = ""; refresh(); super.showWindow(sender)
+    }
     @objc func closeTab() { close() }
     func selectExtension(_ id:UUID) { refresh(selecting:id) }
     private func refresh(selecting preferredID:UUID? = nil) {
-        let id = preferredID ?? selected?.id; rows = runtime.repository.state.items
+        let previousID = selected?.id, id = preferredID ?? previousID; rows = runtime.repository.state.items
+        refreshingSelection = true
         table.reloadData()
         if let index = rows.firstIndex(where:{$0.id == id}) ?? (rows.isEmpty ? nil : 0) { table.selectRowIndexes(IndexSet(integer:index),byExtendingSelection:false) }
+        refreshingSelection = false
+        if selected?.id != previousID { feedback.stringValue = "" }
         updateDetail()
     }
     func numberOfRows(in tableView:NSTableView)->Int { rows.count }
-    func tableViewSelectionDidChange(_ notification:Notification) { updateDetail() }
+    func tableViewSelectionDidChange(_ notification:Notification) {
+        guard !refreshingSelection else { return }
+        feedback.stringValue = ""; updateDetail()
+    }
     func tableView(_ tableView:NSTableView,viewFor tableColumn:NSTableColumn?,row:Int)->NSView? {
         let record = rows[row],cell = NSTableCellView()
         let state = record.package == nil ? "已移除 · 数据保留" : runtime.errors[record.id] != nil ? "启用失败" : runtime.contexts[record.id]?.isLoaded == true ? "已启用" : "已停用"
