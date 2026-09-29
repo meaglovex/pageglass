@@ -56,7 +56,7 @@ enum CaptureCatalog {
         let date = date ?? Date(timeIntervalSince1970:Double(directory.lastPathComponent.prefix(10)) ?? 0)
         do {
             let data = try metadata(in:directory)
-            for name in ["screenshot.png","reference.html","PROMPT.txt"] { _ = try file(name,in:directory) }
+            try validateSupportingFiles(in:directory)
             return CaptureRecord(directory:directory,date:date,title:String((data["title"] as? String ?? "未命名页面").prefix(512)),source:String((data["url"] as? String ?? "本地页面").prefix(2048)),mode:data["mode"] as? String ?? "element",bytes:size(of:directory),metadata:data,problem:nil)
         } catch {
             return CaptureRecord(directory:directory,date:date,title:directory.lastPathComponent,source:"文件缺失或记录损坏",mode:"",bytes:size(of:directory),metadata:[:],problem:error.localizedDescription)
@@ -77,7 +77,12 @@ enum CaptureCatalog {
     }
     static func validate(_ directory:URL) throws {
         _ = try metadata(in:directory)
-        for name in ["screenshot.png","reference.html","PROMPT.txt"] { _ = try file(name,in:directory) }
+        try validateSupportingFiles(in:directory)
+    }
+    private static func validateSupportingFiles(in directory:URL) throws {
+        for name in ["reference.html","PROMPT.txt"] { _ = try file(name,in:directory) }
+        let screenshot = try file("screenshot.png",in:directory)
+        guard let source = CGImageSourceCreateWithURL(screenshot as CFURL,nil),validDimensions(source),CGImageSourceGetStatus(source) == .statusComplete else { throw CaptureService.Failure.message("截图已损坏或尺寸超出限制，请重新捕获") }
     }
     static func copyPrompt(_ directory:URL) throws {
         try validate(directory)
@@ -88,7 +93,8 @@ enum CaptureCatalog {
     static func copyImage(_ directory:URL) throws {
         try validate(directory)
         let path = try file("screenshot.png",in:directory)
-        guard let source = CGImageSourceCreateWithURL(path as CFURL,nil),validDimensions(source),let image = NSImage(contentsOf:path) else { throw CaptureService.Failure.message("截图无法读取或尺寸超出限制") }
+        guard let source = CGImageSourceCreateWithURL(path as CFURL,nil),validDimensions(source),let raster = CGImageSourceCreateImageAtIndex(source,0,nil) else { throw CaptureService.Failure.message("截图无法读取或尺寸超出限制") }
+        let image = NSImage(cgImage:raster,size:NSSize(width:raster.width,height:raster.height))
         NSPasteboard.general.clearContents(); NSPasteboard.general.writeObjects([image])
         NSPasteboard.general.setString(directory.path,forType:CaptureRetention.clipboardType)
     }

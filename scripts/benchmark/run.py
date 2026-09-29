@@ -91,15 +91,23 @@ def run_one(engine,server,helper,output,iterations,workload="speedometer",tabs=1
         if workload=='memory':
             if any(t.get('rows')!=1000 or not t.get('ready') for t in result['tabs'].values()):raise RuntimeError('not all memory fixture tabs loaded')
             time.sleep(5)
+            # Loading bars can resize the page after load; use settled viewport reports.
+            with server.results_lock: result=json.loads(json.dumps(server.results[run]))
+            visible=[t for t in result['tabs'].values() if t.get('visible')]
+            if len(visible)!=1:raise RuntimeError('memory fixture must have exactly one visible tab')
+            viewport=visible[0]['viewport']
             for _ in range(5):
                 state=environment(helper);states.append(state)
                 if blockers(state) or state['frontmostPID']!=pid:raise RuntimeError('memory sample invalidated: desktop state or foreground changed')
                 samples.append(measure(pid,engine,profile if engine=='chrome' else None));time.sleep(1)
+            with server.results_lock: settled=json.loads(json.dumps(server.results[run]))
+            if [t['viewport'] for t in settled['tabs'].values() if t.get('visible')]!=[viewport]:raise RuntimeError('memory sample invalidated: visible viewport changed')
+            result=settled;result['measuredViewport']=viewport
             result['memorySamples']=samples;result['status']='completed'
         memory=samples[-1] if samples else measure(pid,engine,profile if engine=='chrome' else None)
         result.update({'engine':engine,'environment':states,'memoryAfterBenchmark':memory,'elapsedSeconds':time.monotonic()-started})
         (folder/'result.json').write_text(json.dumps(result,indent=2))
-        return {'run':run,'engine':engine,'workload':workload,'tabs':tabs,'score':score.get('mean'),'iterations':iterations if workload=='speedometer' else None,'physicalFootprintBytes':statistics.median(s['physicalFootprintBytes'] for s in samples) if samples else memory['physicalFootprintBytes']}
+        return {'run':run,'engine':engine,'workload':workload,'tabs':tabs,'score':score.get('mean'),'iterations':iterations if workload=='speedometer' else None,'viewport':result.get('measuredViewport',result.get('viewport')),'physicalFootprintBytes':statistics.median(s['physicalFootprintBytes'] for s in samples) if samples else memory['physicalFootprintBytes']}
     finally:
         (folder/'environment.json').write_text(json.dumps(states,indent=2))
         if process is not None:
@@ -129,7 +137,7 @@ def main():
     preflight={'environment':env,'blockers':blockers(env),'source':provenance,'mode':'run' if args.run else 'prepare-only'}
     (output/'preflight.json').write_text(json.dumps(preflight,indent=2));print(json.dumps({'output':str(output),**preflight}),flush=True)
     if not args.run:return
-    if preflight['blockers']:print('Benchmark not started; unlock the desktop before running.',file=sys.stderr);sys.exit(2)
+    if preflight['blockers']:print('Benchmark not started: '+'; '.join(preflight['blockers']),file=sys.stderr);sys.exit(2)
     if not CHROME.is_file() or not APP.is_dir():raise RuntimeError('build Pageglass and install official Chrome first')
     server=BenchmarkServer(source,output);threading.Thread(target=server.serve_forever,daemon=True).start()
     results=[]
@@ -144,6 +152,8 @@ def main():
             comparison={'medianScore':means,'pageglassToChromeScoreRatio':means['pageglass']/means['chrome'] if len(engines)==2 else None,'scope':'Speedometer 3.1 responsiveness only; post-benchmark footprint is not a multi-tab memory comparison'}
         else:
             comparison={'medianPhysicalFootprintBytes':{str(tabs):{e:statistics.median(r['physicalFootprintBytes'] for r in results if r['engine']==e and r['tabs']==tabs) for e in engines} for tabs in [1,5,10]},'scope':'1/5/10 fully loaded same-origin PM fixture tabs; not representative of all websites; compare recorded viewports before acceptance'}
+        if args.workload=='memory' and len({json.dumps(r['viewport'],sort_keys=True) for r in results})!=1:
+            raise RuntimeError('viewports differ; calibrate window heights before accepting a comparison (raw samples retained)')
         report={'status':'completed','source':provenance,'runs':results,**comparison}
         (output/'summary.json').write_text(json.dumps(report,indent=2));print(json.dumps(report),flush=True)
     finally:server.shutdown();server.server_close()

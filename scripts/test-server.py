@@ -2,15 +2,32 @@
 """仅回环的浏览器实机验收站：跳转、下载、上传和存储；不记录请求内容。"""
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
-import argparse, json, time, struct, zlib
+import argparse, json, time, struct, zlib, threading
 
 ROOT = Path(__file__).resolve().parents[1] / 'Sources/Browser/Resources'
+slow_requests = set()
+slow_lock = threading.Lock()
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self,*args,**kwargs): super().__init__(*args,directory=str(ROOT),**kwargs)
     def log_message(self,*args): pass
     def send_fixture(self,data,mime):
         self.send_response(200); self.send_header('Content-Type',mime); self.send_header('Content-Length',str(len(data))); self.end_headers(); self.wfile.write(data)
     def do_GET(self):
+        if self.path.startswith('/slow-state/'):
+            with slow_lock: active = self.path.removeprefix('/slow-state/') in slow_requests
+            self.send_fixture(json.dumps({'active':active}).encode(),'application/json'); return
+        if self.path.startswith('/slow-image/'):
+            token = self.path.removeprefix('/slow-image/')
+            with slow_lock: slow_requests.add(token)
+            try:
+                self.send_response(200); self.send_header('Content-Type','image/png'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length','1024'); self.end_headers()
+                self.wfile.write(b'\x89PNG\r\n\x1a\n'); self.wfile.flush()
+                time.sleep(5)
+                self.wfile.write(b'0'*1016)
+            except (BrokenPipeError,ConnectionResetError): pass
+            finally:
+                with slow_lock: slow_requests.discard(token)
+            return
         if self.path.startswith('/broken-navigation'):
             self.close_connection = True
             self.connection.close()

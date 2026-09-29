@@ -69,7 +69,7 @@ final class CaptureDetailView:NSView {
             summary.toolTip = record.source
             notes.stringValue = record.problem ?? record.warnings.map { "• "+$0 }.joined(separator:"\n")
             image.image = thumbnail
-            feedback.stringValue = browser?.privateBrowsing == true ? "无痕窗口的本次捕获已主动保存到本机。复制为本机文件引用。" : "复制给 Codex 的内容是本机文件引用；复制截图是独立操作。"
+            feedback.stringValue = browser?.privateBrowsing == true ? "捕获已保存到本机，不会随无痕窗口关闭而删除。复制为本机文件引用。" : "复制给 Codex 的内容是本机文件引用；复制截图是独立操作。"
             for button in actions { button.isEnabled = record.problem == nil }
         }
     }

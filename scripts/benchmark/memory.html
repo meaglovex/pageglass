@@ -7,4 +7,5 @@ const svg=document.querySelector('#chart');for(let i=0;i<200;i++){const bar=docu
 document.querySelector('#document').value=('产品需求与交互说明：保留页面状态和输入内容。\n').repeat(400);
 function report(){fetch('/__bench/result/'+run,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'memory',tab,ready:true,rows:rows.rows.length,nodes:document.querySelectorAll('*').length,viewport:{width:innerWidth,height:innerHeight},visible:!document.hidden,userAgent:navigator.userAgent})});}
 window.addEventListener('load',()=>setTimeout(report,100));document.addEventListener('visibilitychange',report);
+let resizeReport;window.addEventListener('resize',()=>{clearTimeout(resizeReport);resizeReport=setTimeout(report,150);});
 </script>

@@ -60,6 +60,7 @@ enum SmokeTest {
             checks += try await DeveloperToolsSmoke.run(browser)
             checks += try await ExperienceSmoke.run(output:output)
             checks += try await CaptureFlowSmoke.run(browser,output:output)
+            checks += try await CaptureLibrarySmoke.run(browser,output:output)
             let report: [String:Any] = ["passed":checks,"gpu":gpu ?? NSNull(),"element":element.directory.path,"page":page.directory.path,"cleanPage":cleanPage.directory.path,"viewport":["width":view.bounds.width,"height":view.bounds.height],"status":"passed"]
             try JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]).write(to:output.appendingPathComponent("report.json"))
             browser.latest = page; browser.status.stringValue = "实机自动检查通过：\(checks.count) 项"

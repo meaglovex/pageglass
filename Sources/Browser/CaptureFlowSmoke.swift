@@ -52,6 +52,41 @@ enum CaptureFlowSmoke {
         try require(executed == "","reference preview blocks scripts even if package HTML is modified")
         preview.close()
         try require(!(preview.window?.contentView is WKWebView),"closing reference preview releases its WebView")
+        guard let argument = CommandLine.arguments.firstIndex(of:"--asset-test-url"),CommandLine.arguments.count > argument+1,let base = URL(string:CommandLine.arguments[argument+1]) else { throw CaptureService.Failure.message("capture flow checks require the local fixture server") }
+        browser.load(base.appendingPathComponent("demo.html"))
+        for _ in 0..<100 { if view.url == base.appendingPathComponent("demo.html"),!view.isLoading { break }; try await Task.sleep(for:.milliseconds(50)) }
+        _ = try await view.evaluateJavaScript("document.querySelector('#metric-card').style.backgroundImage='url(/not-an-image)'")
+        _ = try await service.js(view,"globalThis.__pageglass.selectForTest('#metric-card')")
+        let partial = try await service.capture(view,mode:"element",destination:root) { _ in }
+        try require(partial.metadata["outcome"] as? String == "partial" && (partial.metadata["qualityIssues"] as? [String])?.contains("missing-assets") == true,"failed asset is a structured partial capture with a usable screenshot")
+        let partialRecord = CaptureCatalog.record(partial.directory)
+        try require(partialRecord.outcome == "部分捕获" && !partialRecord.warnings.isEmpty && partialRecord.problem == nil,"history distinguishes partial results from unreadable packages")
+        _ = try await view.evaluateJavaScript("document.querySelector('#metric-card').style.cssText='position:fixed;top:20px;left:20px;width:400px;height:1500px;background:white'")
+        _ = try await service.js(view,"globalThis.__pageglass.selectForTest('#metric-card')")
+        let clipped = try await service.capture(view,mode:"element",destination:root) { _ in }
+        try require((clipped.metadata["qualityIssues"] as? [String])?.contains("element-clipped") == true && clipped.metadata["outcome"] as? String == "partial","clipped element reports partial capture instead of complete")
+        let token = UUID().uuidString
+        _ = try await view.evaluateJavaScript("document.querySelector('#metric-card').style.cssText='background-image:url(/slow-image/\(token))'")
+        _ = try await service.js(view,"globalThis.__pageglass.selectForTest('#metric-card')")
+        let existing = Set((try? FileManager.default.contentsOfDirectory(atPath:browser.captureRoot.path)) ?? [])
+        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(sentinel,forType:.string)
+        browser.performCapture(mode:"element"); let inFlight = browser.captureTask
+        var fetching = false
+        for _ in 0..<300 {
+            if browser.captureTask == nil { break }
+            if browser.captureProgress == "正在保存图片与字体…",(try await service.js(view,"typeof globalThis.__pageglassAbortAssets === 'function'")) as? Bool == true {
+                let (data,_) = try await URLSession.shared.data(from:base.appendingPathComponent("slow-state/\(token)"))
+                fetching = (try JSONSerialization.jsonObject(with:data) as? [String:Bool])?["active"] == true
+                if fetching { break }
+            }
+            try await Task.sleep(for:.milliseconds(50))
+        }
+        let phaseAtCancel = browser.captureProgress
+        let cancelledAt = Date(); browser.cancelCapture(); await inFlight?.value
+        try require(fetching,"cancel check reaches an actual resource response still in flight (phase: \(phaseAtCancel))")
+        try require(Date().timeIntervalSince(cancelledAt)<4 && !browser.capturing,"cancelling aborts the resource stream without waiting for its five-second response")
+        try require((try await service.js(view,"typeof globalThis.__pageglassAbortAssets")) as? String == "undefined","resource cancellation removes its isolated abort hook")
+        try require(Set((try? FileManager.default.contentsOfDirectory(atPath:browser.captureRoot.path)) ?? []) == existing && NSPasteboard.general.string(forType:.string) == sentinel,"in-flight cancellation leaves no package and preserves clipboard")
         return checks
     }
 }

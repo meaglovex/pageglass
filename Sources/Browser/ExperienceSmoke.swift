@@ -8,6 +8,17 @@ enum ExperienceSmoke {
         func require(_ value:Bool,_ message:String) throws { if !value { throw CaptureService.Failure.message(message) }; checks.append(message) }
         let fixture = Resources.bundle.url(forResource:"demo",withExtension:"html",subdirectory:"Resources")!
         let store = BrowserStore(directory:output.appendingPathComponent("experience-store"))
+        for count in [1,10] {
+            let session = SavedWindow(tabs:(0..<count).map { SavedTab(url:fixture.absoluteString,title:"标签 \($0)") },active:0)
+            let sample = BrowserWindow(store:store,session:session); sample.showWindow(nil)
+            for width in [900.0,1280.0,1440.0] {
+                sample.window?.setContentSize(NSSize(width:width,height:860)); sample.activate(count-1)
+                sample.window?.contentView?.layoutSubtreeIfNeeded()
+                let active = sample.tabButtons[sample.tabs[count-1].id]!
+                try require(active.visibleRect.width >= active.bounds.width-1,"active tab is visible among \(count) tabs at width \(Int(width))")
+            }
+            sample.window?.close()
+        }
         let session = SavedWindow(tabs:(0..<30).map { SavedTab(url:fixture.absoluteString,title:"标签 \($0)") },active:0)
         let browser = BrowserWindow(store:store,session:session); browser.showWindow(nil)
         defer { browser.window?.close() }
