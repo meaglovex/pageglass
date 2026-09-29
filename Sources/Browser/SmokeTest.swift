@@ -63,6 +63,7 @@ enum SmokeTest {
             checks += try await CaptureFlowSmoke.run(browser,output:output)
             checks += try await WorkflowSmoke.run(browser,output:output)
             checks += try await CaptureLibrarySmoke.run(browser,output:output)
+            checks += try await CaptureEditingSmoke.run(browser,output:output)
             if #available(macOS 15.4,*),let index = CommandLine.arguments.firstIndex(of:"--asset-test-url"),CommandLine.arguments.count > index+1,let base = URL(string:CommandLine.arguments[index+1]) {
                 checks += try await ExtensionSmoke.run(base:base,output:output)
             }

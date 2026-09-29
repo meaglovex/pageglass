@@ -82,3 +82,9 @@ F12 / ⌥⌘I 切换检查器，⌥⌘J 直接打开 Console，开发菜单和�
 macOS 15.4+ 使用公开 WKWebExtension API；旧系统入口说明不可用原因。`ExtensionPackage` / `ExtensionZIP` 在受限暂存目录验证和复制，`ExtensionRepository` 单独存储身份、程序版本及站点授权，`ExtensionRuntime` 负责控制器、事务与权限，`ExtensionBridge` / `ExtensionEvents` 桥接普通窗口与标签，`ExtensionManagement` 提供原生管理界面。捕获桥仍只存在于独立 WKContentWorld，扩展设置和 action 使用扩展自己的配置。
 
 不向扩展返回受保护页面作为活动页的窗口，避免违反 WebKit 标签列表必须包含活动标签的约束；返回普通网页后恢复事件。无痕不附加控制器，网站访问逐站保存。稳定 UUID 保持 storage 数据；更新先校验新副本再切换，登记失败尝试恢复旧上下文。可安装能力、包上限及尚未验收项见 [extensions-0.8.md](extensions-0.8.md)，不得以原生 API 存在或自有样本成功推断任意第三方插件兼容。
+
+## 捕获编辑与可携带交付
+
+`CaptureEdits` 保存兼容旧捕获的独立 `pageglass.json`，不改原页面证据。标注坐标使用 PNG 左上角起的 0–1 比例，类型与数值逐项验证；目录锁、修订比较及同目录原子更名保护保存，损坏数据拒绝覆盖。`CaptureEditor` 使用原生 AppKit 与 UndoManager；编辑窗口独立保留，应用退出前检查未保存修改。`CaptureAnnotationDrawing` 共用画布和 PNG 绘制逻辑，导出使用原像素尺寸。
+
+`CapturePortable` 只读取已知捕获文件，使用逐级 `openat` / `O_NOFOLLOW` 和数量 / 字节预算，不追随元数据中的任意路径。暂存副本去除机器文件地址、重新生成相对交付提示和哈希清单；HTML 增加禁脚本 CSP。ZIP 仅对该副本调用系统 ditto，没有 shell 插值或第三方归档依赖。原始包不改写，导出不会覆盖已有目标；此路径不上传，也不等于接收工具已读到内容。

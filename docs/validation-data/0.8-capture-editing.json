@@ -1,0 +1,100 @@
+{
+  "status": "passed-owned-checks-ui-partial",
+  "date": "2026-09-30",
+  "system": "macOS 27.0 (26A428), arm64",
+  "version": "0.8.0-alpha.1",
+  "build": 14,
+  "sourceBaseCommit": "db69a55916892bbbdac5ccfd0ee2a85ee6fd3ea7",
+  "sourceState": "M4 initial implementation committed together with this report",
+  "sourceDigestSHA256": "aa8eabb870e54dbee789c658c819784ee6fee3b3e96182ea33fe3c10c2700554",
+  "sourceDigestMethod": "SHA256 of sorted relative path, NUL, raw file SHA256 for Sources/Browser/**/* files and scripts/build.sh",
+  "binarySHA256": "9e32dd96c35796a1ab368294b4cf8a8e4d84de166d943560197120df3a026289",
+  "qaBinarySHA256": "e48dcdcdafad3bc44c09374495f49076671e8c6632d25e176a206dce12aab35a",
+  "uiObservedBinarySHA256": "cdcfdef6aeb938a99678487ec93ad0a08e210c5ad758e1377b968e4d079fb267",
+  "uiObservedBuildNote": "Earlier build 14 iteration, before UndoManager button-state notification and final export boundary/resource fixes; do not treat physical UI observations as exact-final-binary acceptance.",
+  "smokeRun": "20260930-025434",
+  "smokeChecksPassed": 223,
+  "unitTestsPassed": 35,
+  "unitTestsSkipped": 1,
+  "captureEditingChecks": [
+    "annotation editor accepts four editable shape types",
+    "annotation undo restores the preceding document",
+    "annotation redo restores shape coordinates and text",
+    "save updates capture display metadata without leaving a false dirty state",
+    "reopening reads editable annotation data and notes from disk",
+    "annotations and notes preserve the original PNG HTML JSON and prompt bytes",
+    "Codex copy includes saved user notes and the annotation sidecar reference",
+    "annotated PNG retains original pixel dimensions and includes visible edits",
+    "annotation raster preserves top-left coordinates and original image orientation",
+    "moved portable folder contains the original evidence and annotated PNG",
+    "portable folder preserves editable marks and notes",
+    "moved reference opens in a real WebKit preview with page scripts disabled",
+    "native annotation canvas and moved reference have nonzero visible layout"
+  ],
+  "libraryChecks": [
+    "history searches saved notes among 200 capture records",
+    "history type filter excludes element captures when whole-page is selected",
+    "history combines note search type and date filters"
+  ],
+  "pixelDiagnostic": {
+    "top": [
+      1,
+      0.9999999403953552,
+      1
+    ],
+    "line": [
+      0.9055081605911255,
+      0.21498101949691772,
+      0.2336529791355133
+    ],
+    "bottom": [
+      0,
+      0,
+      0
+    ]
+  },
+  "unitCoverage": [
+    "saved edits preserve original evidence and appear in search/handoff",
+    "stale revisions rejected; corrupt or future sidecars not overwritten",
+    "symlink, special file, count/text/coordinate constraints and missing originals rejected",
+    "annotation movement stays within image coordinates",
+    "portable folder survives relocation and source deletion",
+    "system ZIP extraction with relative paths and metadata",
+    "existing destination and nested export rejected",
+    "all supported capture asset suffixes preserved",
+    "missing declared assets and interaction frames disclosed"
+  ],
+  "uiObserved": [
+    "light capture history with filters, saved name/notes and editor entry",
+    "four saved mark types rendered in native editor",
+    "mouse drag creates rectangle; Command-Z and Command-Shift-Z undo/redo",
+    "native name edit and Save show five saved annotations"
+  ],
+  "retainedFailures": [
+    {
+      "run": "20260930-024124",
+      "reason": "annotation orientation test fixture used incompatible dynamic colors; replaced fixture with explicit device RGB while preserving pixel assertions"
+    },
+    {
+      "run": "20260930-024810",
+      "reason": "extension popup presentation timeout"
+    },
+    {
+      "run": "20260930-025019",
+      "reason": "popup diagnostic: app inactive, browser not key, context loaded; host popup not yet presented"
+    }
+  ],
+  "testRepair": "Extension popup test now restores and asserts application/browser focus, as required by an actual toolbar click; popup visibility and script assertions retained. Full runs 20260930-025210 and 20260930-025434 then passed.",
+  "uiPending": [
+    "manual reopen and export/save dialogs",
+    "manual arrow/text editing and unsaved-close branches",
+    "exact-final-binary UI after final small fixes",
+    "dark theme, minimum size, IME and VoiceOver"
+  ],
+  "limits": [
+    "Physical UI later returned noWindowsAvailable/timeoutReached; rebinding briefly restored browser, later calls timed out. Process sample was idle but does not prove absence of UI bugs.",
+    "Filesystem relocation and disabled-script WebKit preview do not replace actual receiver attachment and prototype recreation.",
+    "No resize handles yet; long annotation text may clip at image edges.",
+    "Two real third-party extensions, full visual matrix, real macOS 14/15.4 devices, migration, actual Codex paste and three-round performance gates remain open."
+  ]
+}

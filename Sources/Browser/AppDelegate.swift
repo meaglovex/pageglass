@@ -65,6 +65,7 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
         if !normal.isEmpty { BrowserStore.shared.saveWindows(normal.map { $0.savedWindow() }) }
     }
     func applicationShouldHandleReopen(_ sender:NSApplication,hasVisibleWindows:Bool)->Bool { if !hasVisibleWindows && !starting { createWindow() }; return true }
+    func applicationShouldTerminate(_ sender:NSApplication)->NSApplication.TerminateReply { CaptureEditorController.prepareToQuit() ? .terminateNow : .terminateCancel }
     func applicationWillTerminate(_ notification:Notification) { saveSessions(); if !BenchmarkMode.enabled && !CommandLine.arguments.contains("--smoke") { BrowserStore.shared.flush() } }
 
     private func makeMenus() {

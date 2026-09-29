@@ -21,6 +21,8 @@ enum CaptureLibrarySmoke {
             packages.append(directory)
         }
         let expected = try CaptureRetention(root:root).packages().count
+        var edited = CaptureEdits(); edited.name = "备注检索样本"; edited.notes = "筛选工作流专用备注"
+        try edited.save(in:packages[199],expectedRevision:nil)
         let controller = CaptureLibraryController(browser:browser); controller.showWindow(nil); controller.refresh()
         defer { controller.close() }
         let started = Date()
@@ -37,6 +39,12 @@ enum CaptureLibrarySmoke {
         } else { throw CaptureService.Failure.message("history layout check requires a real page capture") }
         controller.search.stringValue = "example.test/history/199"; controller.filter()
         try require(controller.filtered.count == 1 && controller.filtered[0].directory == packages[199],"history searches source URLs and selects the matching capture")
+        controller.search.stringValue = "工作流专用备注"; controller.filter()
+        try require(controller.filtered.count == 1 && controller.filtered[0].title == "备注检索样本","history searches saved notes among 200 capture records")
+        controller.scope.selectItem(at:2); controller.filter(); try require(controller.filtered.isEmpty,"history type filter excludes element captures when whole-page is selected")
+        controller.scope.selectItem(at:1); controller.period.selectItem(at:2); controller.filter()
+        try require(controller.filtered.count == 1,"history combines note search type and date filters")
+        controller.scope.selectItem(at:0); controller.period.selectItem(at:0)
         try CaptureCatalog.copyPrompt(packages[199])
         try require(CaptureClipboard.current.string(forType:.string)?.contains(packages[199].path) == true,"legacy capture is reusable after reopening history")
         controller.search.stringValue = ""; controller.filter()

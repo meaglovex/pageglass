@@ -12,12 +12,14 @@ extension BrowserWindow {
 final class CaptureLibraryController:NSWindowController,NSTableViewDataSource,NSTableViewDelegate,NSSearchFieldDelegate,NSWindowDelegate {
     weak var browser:BrowserWindow?
     let search = NSSearchField(), table = NSTableView(), summary = NSTextField(labelWithString:"")
+    let scope = NSPopUpButton(), period = NSPopUpButton()
     let detail:CaptureDetailView
     let remove = NSButton(title:"移入废纸篓…",target:nil,action:nil)
     var records:[CaptureRecord] = [], filtered:[CaptureRecord] = []
     private let thumbnails = NSCache<NSURL,NSImage>()
     private var generation = UUID()
     private var observer:NSObjectProtocol?
+    private var editObserver:NSObjectProtocol?
     private var watcher:DispatchSourceFileSystemObject?
     private var refreshWork:DispatchWorkItem?
     init(browser:BrowserWindow) {
@@ -26,10 +28,13 @@ final class CaptureLibraryController:NSWindowController,NSTableViewDataSource,NS
         window.title = "捕获历史"; window.isReleasedWhenClosed = false; window.minSize = NSSize(width:980,height:680)
         super.init(window:window); window.appearance = browser.window?.appearance; window.delegate = self; window.center(); thumbnails.countLimit = 48
         let root = NSView(); window.contentView = root
-        search.placeholderString = "搜索标题或网址"; search.delegate = self; search.setAccessibilityLabel("搜索捕获记录")
+        search.placeholderString = "搜索名称、网址或备注"; search.delegate = self; search.setAccessibilityLabel("搜索捕获记录")
+        scope.addItems(withTitles:["全部类型","元素","整页"]); scope.setAccessibilityLabel("按捕获类型筛选")
+        period.addItems(withTitles:["全部日期","今天","最近 7 天","最近 30 天"]); period.setAccessibilityLabel("按捕获日期筛选")
+        for menu in [scope,period] { menu.target = self; menu.action = #selector(filter) }
         let reload = NSButton(title:"刷新",target:self,action:#selector(refresh)); reload.bezelStyle = .rounded
         remove.target = self; remove.action = #selector(removeSelected); remove.bezelStyle = .rounded; remove.isEnabled = false
-        let controls = NSStackView(views:[search,reload,remove]); controls.spacing = 8
+        let controls = NSStackView(views:[search,scope,period,reload,remove]); controls.spacing = 8
         let split = NSSplitView(); split.isVertical = true; split.dividerStyle = .thin
         let scroll = NSScrollView(); scroll.hasVerticalScroller = true
         table.addTableColumn(NSTableColumn(identifier:.init("capture"))); table.headerView = nil; table.rowHeight = 72
@@ -48,9 +53,10 @@ final class CaptureLibraryController:NSWindowController,NSTableViewDataSource,NS
         observer = NotificationCenter.default.addObserver(forName:CaptureRetention.changed,object:nil,queue:.main) { [weak self] notification in
             guard let self,window.isVisible,let root = notification.object as? URL,root == self.browser?.captureRoot else { return }; self.refresh()
         }
+        editObserver = NotificationCenter.default.addObserver(forName:CaptureEdits.changed,object:nil,queue:.main) { [weak self] _ in guard let self,window.isVisible else { return }; self.refresh() }
     }
     required init?(coder:NSCoder) { fatalError() }
-    deinit { if let observer { NotificationCenter.default.removeObserver(observer) }; watcher?.cancel(); refreshWork?.cancel() }
+    deinit { if let observer { NotificationCenter.default.removeObserver(observer) }; if let editObserver { NotificationCenter.default.removeObserver(editObserver) }; watcher?.cancel(); refreshWork?.cancel() }
     func windowDidBecomeKey(_ notification:Notification) { refresh() }
     func windowWillClose(_ notification:Notification) { watcher?.cancel(); watcher = nil; generation = UUID(); detail.closePreviews() }
     @objc func refresh() {
@@ -79,10 +85,12 @@ final class CaptureLibraryController:NSWindowController,NSTableViewDataSource,NS
             }
         }
     }
-    func filter() {
+    @objc func filter() {
         let selected = Set(table.selectedRowIndexes.compactMap { filtered.indices.contains($0) ? filtered[$0].directory : nil })
         let query = search.stringValue.trimmingCharacters(in:.whitespacesAndNewlines)
-        filtered = records.filter { query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) || $0.source.localizedCaseInsensitiveContains(query) }
+        let mode:String? = scope.indexOfSelectedItem == 1 ? "element" : scope.indexOfSelectedItem == 2 ? "page" : nil
+        let since:Date? = period.indexOfSelectedItem == 1 ? Calendar.current.startOfDay(for:Date()) : period.indexOfSelectedItem > 1 ? Date().addingTimeInterval(-Double(period.indexOfSelectedItem == 2 ? 7 : 30)*86400) : nil
+        filtered = records.filter { CaptureRecordFilter.matches($0,query:query,mode:mode,since:since) }
         table.reloadData()
         let indexes = IndexSet(filtered.indices.filter { selected.contains(filtered[$0].directory) })
         table.selectRowIndexes(indexes,byExtendingSelection:false)

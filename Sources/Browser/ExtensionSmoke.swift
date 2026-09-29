@@ -58,10 +58,19 @@ enum ExtensionSmoke {
             } } catch { throw CaptureService.Failure.message("\(error.localizedDescription); actual=\(browser.webView.url?.absoluteString ?? "nil"); expected=\(page.absoluteString); loading=\(browser.webView.isLoading); title=\(browser.webView.title ?? "nil"); failure=\(String(describing:browser.tabs[browser.activeIndex].failure))") }
         }
         func popup(_ context:WKWebExtensionContext) async throws->WKWebView {
+            // A real toolbar click activates the app; closing a test-only options window can return focus to another app.
+            NSApp.activate(ignoringOtherApps:true)
             browser.window?.makeKeyAndOrderFront(nil)
+            try await wait("browser focus for extension action") { NSApp.isActive && browser.window?.isKeyWindow == true }
             let tab = browser.tabs[browser.activeIndex]
             context.performAction(for:tab.extensionVisible ? tab : nil)
-            try await wait("popup presentation") { runtime.popup?.isShown == true }
+            do { try await wait("popup presentation") { runtime.popup?.isShown == true } }
+            catch {
+                let action = context.action(for:tab.extensionVisible ? tab : nil)
+                let diagnostic:[String:Any] = ["stageChecks":checks,"applicationActive":NSApp.isActive,"windowVisible":browser.window?.isVisible ?? false,"windowKey":browser.window?.isKeyWindow ?? false,"buttonHidden":browser.extensionButton.isHidden,"buttonBounds":NSStringFromRect(browser.extensionButton.bounds),"contextLoaded":context.isLoaded,"tabVisible":tab.extensionVisible,"hostPopoverExists":runtime.popup != nil,"hostPopoverShown":runtime.popup?.isShown ?? false,"actionPresentsPopup":action?.presentsPopup ?? false,"popupLoading":action?.popupWebView?.isLoading ?? false,"popupURL":action?.popupWebView?.url?.absoluteString ?? "nil","extensionErrors":context.webExtension.errors.map{$0.localizedDescription}]
+                try? JSONSerialization.data(withJSONObject:diagnostic,options:[.prettyPrinted,.sortedKeys]).write(to:root.appendingPathComponent("popup-presentation-failure.json"))
+                throw error
+            }
             guard let view = context.action(for:tab.extensionVisible ? tab : nil)?.popupWebView else { throw CaptureService.Failure.message("popup view missing") }
             do { try await wait("popup script") { try await view.evaluateJavaScript("document.body?.dataset.ready") as? String == "true" } }
             catch {
