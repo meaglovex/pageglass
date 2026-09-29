@@ -24,6 +24,9 @@ struct BrowserSettings: Codable {
     var defaultZoom = 1.0
     // Optional preserves older browser.json files; nil means never expire.
     var captureRetentionDays: Int? = nil
+    var appearance:String? = nil
+    var toolbarTools:[String]? = nil
+    var autoCopyCapture:Bool? = nil
 }
 
 /// 仅保存浏览器功能数据；无痕窗口不写访问记录、下载记录和会话。

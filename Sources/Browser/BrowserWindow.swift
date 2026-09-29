@@ -20,13 +20,16 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     var renderedBookmarks: [PageRecord]?
     var renderedBookmarkWidth: CGFloat = 0
     var renderedBookmarksVisible = false
-    var compactTools: [NSView] = []
+    var toolbarTools:[ToolbarTool:NSView] = [:]
+    var tabScrollWidth:NSLayoutConstraint?
+    let captureMenuButton = ChromeButton(), downloadButton = ChromeButton()
+    weak var omnibox:ChromeStackView?
     let errorBar = NSStackView(), errorLabel = NSTextField(labelWithString:"")
     let bookmarkRow = NSStackView()
     let address = NSTextField()
     let status = BrowserNotice(labelWithString: "")
-    let back = NSButton(), forward = NSButton(), refresh = NSButton(), bookmarkButton = NSButton(), siteButton = NSButton()
-    let pick = NSButton(), captureAll = NSButton(), recordInteraction = NSButton()
+    let back = ChromeButton(), forward = ChromeButton(), refresh = ChromeButton(), bookmarkButton = ChromeButton(), siteButton = ChromeButton()
+    let pick = ChromeButton(), captureAll = ChromeButton(), recordInteraction = ChromeButton()
     let progress = NSProgressIndicator()
     let findBar = NSStackView(), findField = NSSearchField(), findResult = NSTextField(labelWithString:"")
     let captureService = CaptureService()
@@ -68,7 +71,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         window.titleVisibility = .hidden; window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false; window.isMovableByWindowBackground = false
         super.init(window:window)
-        window.delegate = self; window.center(); buildInterface()
+        window.delegate = self; window.center(); buildInterface(); applyAppearance()
         if let session, !privateBrowsing {
             tabs = session.tabs.map { saved in
                 let tab = BrowserTab(url:saved.url.flatMap(URL.init(string:))); tab.title = saved.title; return tab
@@ -77,7 +80,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         if tabs.isEmpty { tabs = [BrowserTab()] }
         activate(max(0,min(session?.active ?? 0,tabs.count-1)))
         storeObserver = NotificationCenter.default.addObserver(forName:BrowserStore.changed,object:store,queue:.main) { [weak self] _ in
-            self?.renderBookmarks(); self?.syncChrome()
+            self?.applyAppearance(); self?.renderBookmarks(); self?.updateToolbarLayout(); self?.syncChrome()
         }
     }
     required init?(coder:NSCoder) { fatalError() }
@@ -136,7 +139,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         if window?.firstResponder !== address.currentEditor() { address.stringValue = displayURL(view.url) }
         back.isEnabled = view.canGoBack && !capturing; forward.isEnabled = view.canGoForward && !capturing
         progress.doubleValue = view.estimatedProgress; progress.isHidden = !view.isLoading
-        pick.isEnabled = !capturing; captureAll.isEnabled = !capturing; address.isEnabled = !capturing
+        pick.isEnabled = !capturing; captureAll.isEnabled = !capturing; captureMenuButton.isEnabled = !capturing; address.isEnabled = !capturing
         recordInteraction.isEnabled = !capturing && !selecting
         let recording = interactionRecording?.isRecording == true
         recordInteraction.image = NSImage(systemSymbolName:recording ? "stop.circle.fill" : "record.circle",accessibilityDescription:recording ? "停止交互记录" : "记录交互")
@@ -147,6 +150,9 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         refresh.image = NSImage(systemSymbolName:view.isLoading ? "xmark" : "arrow.clockwise",accessibilityDescription:view.isLoading ? "停止加载" : "重新加载")
         pick.toolTip = selecting ? "取消捕获（Esc）" : "捕获元素（⌘⇧C）"
         pick.contentTintColor = selecting ? .systemBlue : .labelColor
+        pick.title = selecting ? "选取中" : "捕获"
+        pick.setAccessibilityLabel(selecting ? "取消选取（Esc）" : "捕获元素（⌘⇧C）")
+        updateToolbarLayout()
         let marked = view.url.map { store.bookmark(for:$0.absoluteString) != nil } ?? false
         bookmarkButton.image = NSImage(systemSymbolName:marked ? "star.fill" : "star",accessibilityDescription:marked ? "移除书签" : "添加书签")
         bookmarkButton.contentTintColor = marked ? .systemBlue : .secondaryLabelColor
@@ -195,7 +201,12 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         for tab in tabs { tab.release() }
         (NSApp.delegate as? AppDelegate)?.closed(self)
     }
-    func windowDidResignKey(_ notification:Notification) { dismissSuggestions() }
+    func windowDidUpdate(_ notification:Notification) {
+        let editor = address.currentEditor()
+        let focused = window?.isKeyWindow == true && editor != nil && window?.firstResponder === editor
+        if omnibox?.showsFocus != focused { omnibox?.showsFocus = focused }
+    }
+    func windowDidResignKey(_ notification:Notification) { dismissSuggestions(); omnibox?.showsFocus = false }
     func windowDidResize(_ notification:Notification) { renderTabs(revealActive:true); renderBookmarks(); updateToolbarLayout(); dismissSuggestions(); tabPopover?.close(); bookmarkPopover?.close() }
     @objc func newTab() { guard !capturing else { return }; tabs.append(BrowserTab()); activate(tabs.count-1); address.stringValue = ""; focusAddress() }
     func openTab(_ url:URL,inBackground:Bool = false) {

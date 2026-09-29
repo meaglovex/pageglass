@@ -1,0 +1,178 @@
+{
+  "cases": [
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 530,
+      "primaryControlsReachable": true,
+      "tabs": 1,
+      "tabStripWidth": 230,
+      "theme": "light",
+      "windowWidth": 900
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 910,
+      "primaryControlsReachable": true,
+      "tabs": 1,
+      "tabStripWidth": 230,
+      "theme": "light",
+      "windowWidth": 1280
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 1070,
+      "primaryControlsReachable": true,
+      "tabs": 1,
+      "tabStripWidth": 230,
+      "theme": "light",
+      "windowWidth": 1440
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 530,
+      "primaryControlsReachable": true,
+      "tabs": 10,
+      "tabStripWidth": 746,
+      "theme": "light",
+      "windowWidth": 900
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 910,
+      "primaryControlsReachable": true,
+      "tabs": 10,
+      "tabStripWidth": 1126,
+      "theme": "light",
+      "windowWidth": 1280
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 1070,
+      "primaryControlsReachable": true,
+      "tabs": 10,
+      "tabStripWidth": 1286,
+      "theme": "light",
+      "windowWidth": 1440
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 530,
+      "primaryControlsReachable": true,
+      "tabs": 30,
+      "tabStripWidth": 746,
+      "theme": "light",
+      "windowWidth": 900
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 910,
+      "primaryControlsReachable": true,
+      "tabs": 30,
+      "tabStripWidth": 1126,
+      "theme": "light",
+      "windowWidth": 1280
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 1070,
+      "primaryControlsReachable": true,
+      "tabs": 30,
+      "tabStripWidth": 1286,
+      "theme": "light",
+      "windowWidth": 1440
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 530,
+      "primaryControlsReachable": true,
+      "tabs": 1,
+      "tabStripWidth": 230,
+      "theme": "dark",
+      "windowWidth": 900
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 910,
+      "primaryControlsReachable": true,
+      "tabs": 1,
+      "tabStripWidth": 230,
+      "theme": "dark",
+      "windowWidth": 1280
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 1070,
+      "primaryControlsReachable": true,
+      "tabs": 1,
+      "tabStripWidth": 230,
+      "theme": "dark",
+      "windowWidth": 1440
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 530,
+      "primaryControlsReachable": true,
+      "tabs": 10,
+      "tabStripWidth": 746,
+      "theme": "dark",
+      "windowWidth": 900
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 910,
+      "primaryControlsReachable": true,
+      "tabs": 10,
+      "tabStripWidth": 1126,
+      "theme": "dark",
+      "windowWidth": 1280
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 1070,
+      "primaryControlsReachable": true,
+      "tabs": 10,
+      "tabStripWidth": 1286,
+      "theme": "dark",
+      "windowWidth": 1440
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 530,
+      "primaryControlsReachable": true,
+      "tabs": 30,
+      "tabStripWidth": 746,
+      "theme": "dark",
+      "windowWidth": 900
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 910,
+      "primaryControlsReachable": true,
+      "tabs": 30,
+      "tabStripWidth": 1126,
+      "theme": "dark",
+      "windowWidth": 1280
+    },
+    {
+      "activeCloseVisible": true,
+      "addressWidth": 1070,
+      "primaryControlsReachable": true,
+      "tabs": 30,
+      "tabStripWidth": 1286,
+      "theme": "dark",
+      "windowWidth": 1440
+    }
+  ],
+  "scope": "Native frame checks; not a substitute for screenshots, IME or VoiceOver acceptance",
+  "status": "passed",
+  "provenance": {
+    "version": "0.8.0-alpha.1",
+    "build": 11,
+    "baseCommit": "ee573c01d4b7ed2fbb1c118f0fe6c23147f4742e",
+    "sourceState": "M1 working tree; committed with this report",
+    "binarySHA256": "cf585bbfea52ccfb7adcd4b1aa3f31fda07e4e1583d4ec64e2f281b9d830b307",
+    "smokeChecks": 161,
+    "system": "macOS 27.0 (26A428), arm64",
+    "date": "2026-09-30"
+  }
+}

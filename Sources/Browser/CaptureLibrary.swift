@@ -24,7 +24,7 @@ final class CaptureLibraryController:NSWindowController,NSTableViewDataSource,NS
         self.browser = browser; detail = CaptureDetailView(browser:browser,showsHistory:false)
         let window = NSWindow(contentRect:NSRect(x:0,y:0,width:1020,height:700),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
         window.title = "捕获历史"; window.isReleasedWhenClosed = false; window.minSize = NSSize(width:980,height:680)
-        super.init(window:window); window.delegate = self; window.center(); thumbnails.countLimit = 48
+        super.init(window:window); window.appearance = browser.window?.appearance; window.delegate = self; window.center(); thumbnails.countLimit = 48
         let root = NSView(); window.contentView = root
         search.placeholderString = "搜索标题或网址"; search.delegate = self; search.setAccessibilityLabel("搜索捕获记录")
         let reload = NSButton(title:"刷新",target:self,action:#selector(refresh)); reload.bezelStyle = .rounded

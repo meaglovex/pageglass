@@ -42,6 +42,19 @@ enum CaptureFlowSmoke {
         try require(record.problem == nil && CaptureCatalog.thumbnail(result.directory) != nil,"saved capture is discoverable with a decoded preview")
         try CaptureCatalog.copyPrompt(result.directory)
         try require(CaptureClipboard.current.string(forType:.string) == result.prompt,"capture history can recopy original local handoff")
+        let originalSettings = browser.store.state.settings
+        var manualCopySettings = originalSettings; manualCopySettings.autoCopyCapture = false
+        browser.store.updateSettings(manualCopySettings)
+        CaptureClipboard.current.clearContents(); CaptureClipboard.current.setString(sentinel,forType:.string)
+        _ = try await service.js(view,"globalThis.__pageglass.selectForTest('#metric-card')")
+        let previousResult = browser.latest?.directory
+        browser.performCapture(mode:"element"); await browser.captureTask?.value
+        browser.store.updateSettings(originalSettings)
+        try require(browser.latest?.directory != previousResult && browser.latest != nil && !browser.capturing,"capture with auto-copy disabled still saves a completed package")
+        try require(CaptureClipboard.current.string(forType:.string) == sentinel,"disabling auto-copy preserves the clipboard on successful capture")
+        browser.copyLatest()
+        try require(CaptureClipboard.current.string(forType:CaptureRetention.clipboardType) == browser.latest?.directory.path,"manual copy remains available when auto-copy is disabled")
+        browser.captureResultController?.close()
         let reference = result.directory.appendingPathComponent("reference.html")
         try "<!doctype html><title>Script-free preview test</title><body>Preview<script>document.body.dataset.executed='yes'</script>".write(to:reference,atomically:true,encoding:.utf8)
         let preview = try CaptureReferenceController(directory:result.directory); preview.showWindow(nil)

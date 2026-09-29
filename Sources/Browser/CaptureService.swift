@@ -191,8 +191,10 @@ extension BrowserWindow {
                 let history = await interactionRecording?.finish(view)
                 try Task.checkCancellation()
                 let result = try await captureService.capture(view,mode:mode,destination:captureRoot,interactionHistory:history) { [weak self] text in self?.captureProgress = text; self?.syncCaptureBar() }
-                latest = result; result.copyForCodex()
-                status.stringValue = "已复制本机文件引用 · 可在本机 Codex 粘贴"
+                latest = result
+                if store.state.settings.autoCopyCapture != false {
+                    result.copyForCodex(); status.stringValue = "已复制本机文件引用 · 可在本机 Codex 粘贴"
+                } else { status.stringValue = "捕获已保存 · 可检查后复制给 Codex" }
                 showCaptureResult(result)
                 NotificationCenter.default.post(name:CaptureRetention.changed,object:captureRoot)
             } catch {

@@ -58,6 +58,7 @@ enum SmokeTest {
             checks += try await BrowserFeatureSmoke.run(browser)
             if let index = CommandLine.arguments.firstIndex(of:"--asset-test-url"),CommandLine.arguments.count > index+1,let base = URL(string:CommandLine.arguments[index+1]) { checks += try await CaptureAssetSmoke.run(browser,base:base,output:output); checks += try await InteractionSmoke.run(browser,base:base,output:output) }
             checks += try await DeveloperToolsSmoke.run(browser)
+            checks += try await ChromeLayoutSmoke.run(output:output)
             checks += try await ExperienceSmoke.run(output:output)
             checks += try await CaptureFlowSmoke.run(browser,output:output)
             checks += try await CaptureLibrarySmoke.run(browser,output:output)

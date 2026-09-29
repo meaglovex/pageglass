@@ -15,7 +15,7 @@ final class LibraryController: NSWindowController, NSTableViewDataSource, NSTabl
         self.browser = browser
         let window = NSWindow(contentRect:NSRect(x:0,y:0,width:780,height:540),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
         window.title = "资料库"; window.isReleasedWhenClosed = false; window.minSize = NSSize(width:600,height:350)
-        super.init(window:window); window.center()
+        super.init(window:window); window.appearance = browser.window?.appearance; window.center()
         let root = NSStackView(); root.orientation = .vertical; root.spacing = 14; root.edgeInsets = NSEdgeInsets(top:20,left:20,bottom:20,right:20); window.contentView = root
         tabs.target = self; tabs.action = #selector(selectSection)
         search.placeholderString = "搜索标题或网址"; search.target = self; search.action = #selector(searchChanged); search.sendsSearchStringImmediately = true

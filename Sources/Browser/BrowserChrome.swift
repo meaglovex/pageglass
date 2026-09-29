@@ -14,29 +14,38 @@ extension BrowserWindow {
         scroll.documentView = tabRow; scroll.translatesAutoresizingMaskIntoConstraints = false
         tabRow.translatesAutoresizingMaskIntoConstraints = false; tabRow.spacing = 0
         header.addSubview(scroll)
-        let tabActions = NSStackView(views:[tool("plus","新建标签页（⌘T）",#selector(newTab)),tool("chevron.down","搜索标签页",#selector(showTabList(_:)))])
-        tabActions.spacing = 4; tabActions.translatesAutoresizingMaskIntoConstraints = false; header.addSubview(tabActions)
-        NSLayoutConstraint.activate([tabActions.trailingAnchor.constraint(equalTo:header.trailingAnchor,constant:-8),tabActions.centerYAnchor.constraint(equalTo:header.centerYAnchor)])
-        NSLayoutConstraint.activate([scroll.leadingAnchor.constraint(equalTo:header.leadingAnchor,constant:78),scroll.trailingAnchor.constraint(equalTo:tabActions.leadingAnchor,constant:-4),scroll.topAnchor.constraint(equalTo:header.topAnchor,constant:4),scroll.bottomAnchor.constraint(equalTo:header.bottomAnchor,constant:-3),tabRow.heightAnchor.constraint(equalTo:scroll.heightAnchor)])
+        let newTabButton = tool("plus","新建标签页（⌘T）",#selector(newTab))
+        let tabSearch = tool("chevron.down","搜索标签页",#selector(showTabList(_:)))
+        for view in [newTabButton,tabSearch] { view.translatesAutoresizingMaskIntoConstraints = false; header.addSubview(view) }
+        tabScrollWidth = scroll.widthAnchor.constraint(equalToConstant:230); tabScrollWidth?.isActive = true
+        NSLayoutConstraint.activate([
+            tabSearch.trailingAnchor.constraint(equalTo:header.trailingAnchor,constant:-8),tabSearch.centerYAnchor.constraint(equalTo:header.centerYAnchor),
+            newTabButton.leadingAnchor.constraint(equalTo:scroll.trailingAnchor,constant:4),newTabButton.centerYAnchor.constraint(equalTo:header.centerYAnchor),
+            newTabButton.trailingAnchor.constraint(lessThanOrEqualTo:tabSearch.leadingAnchor,constant:-4),
+            scroll.leadingAnchor.constraint(equalTo:header.leadingAnchor,constant:78),scroll.topAnchor.constraint(equalTo:header.topAnchor,constant:4),scroll.bottomAnchor.constraint(equalTo:header.bottomAnchor,constant:-3),tabRow.heightAnchor.constraint(equalTo:scroll.heightAnchor)
+        ])
         let toolbar = ChromeStackView(); toolbar.spacing = 6; toolbar.edgeInsets = NSEdgeInsets(top:5,left:8,bottom:5,right:8)
         toolbar.wantsLayer = true
         configure(back,"chevron.left","后退",#selector(goBack)); configure(forward,"chevron.right","前进",#selector(goForward)); configure(refresh,"arrow.clockwise","重新加载",#selector(reload))
         let home = tool("house","主页",#selector(goHome))
-        let omnibox = ChromeStackView(); omnibox.spacing = 5; omnibox.edgeInsets = NSEdgeInsets(top:0,left:8,bottom:0,right:6)
-        omnibox.wantsLayer = true; omnibox.cornerRadius = 16; omnibox.surfaceColor = NSColor.quaternaryLabelColor.withAlphaComponent(0.10)
+        let omnibox = ChromeStackView(); self.omnibox = omnibox; omnibox.spacing = 5; omnibox.edgeInsets = NSEdgeInsets(top:0,left:8,bottom:0,right:6)
+        omnibox.wantsLayer = true; omnibox.cornerRadius = 16; omnibox.surfaceColor = .windowBackgroundColor; omnibox.showsBorder = true
         configure(siteButton,"lock","网站信息",#selector(siteInfo)); configure(bookmarkButton,"star","添加或移除书签（⌘D）",#selector(toggleBookmark))
         address.placeholderString = "搜索或输入网址"; address.font = .systemFont(ofSize:13); address.isBordered = false; address.drawsBackground = false; address.focusRingType = .none
         address.target = self; address.action = #selector(navigate); address.delegate = self; address.setAccessibilityLabel("地址栏")
         address.setContentHuggingPriority(.defaultLow,for:.horizontal)
         omnibox.addArrangedSubview(siteButton); omnibox.addArrangedSubview(address); omnibox.addArrangedSubview(bookmarkButton)
         configure(recordInteraction,"record.circle","记录交互（⌘⇧I）",#selector(toggleInteractionRecording))
-        configure(pick,"viewfinder","捕获元素（⌘⇧C）",#selector(selectElement)); configure(captureAll,"rectangle.dashed","捕获全部（⌘⇧A）",#selector(capturePage))
-        let downloads = tool("arrow.down.circle","下载",#selector(showDownloads))
+        configure(pick,"viewfinder","捕获元素（⌘⇧C）",#selector(selectElement),width:74); pick.title = "捕获"; pick.imagePosition = .imageLeading; pick.font = BrowserStyle.body; configure(captureAll,"rectangle.dashed","捕获全部（⌘⇧A）",#selector(capturePage))
+        configure(downloadButton,"arrow.down.circle","下载（⌘J）",#selector(showDownloads))
+        configure(captureMenuButton,"chevron.down","更多捕获操作",#selector(showCaptureMenu(_:)))
+        let captureGroup = ChromeStackView(views:[pick,captureMenuButton]); captureGroup.spacing = 0
+        captureGroup.cornerRadius = BrowserStyle.cornerRadius; captureGroup.surfaceColor = .windowBackgroundColor; captureGroup.showsBorder = true
         let profile = tool(privateBrowsing ? "eye.slash" : "gearshape",privateBrowsing ? "无痕窗口" : "浏览器设置",#selector(showSettings))
         let more = tool("ellipsis","更多",#selector(showMore(_:)))
-        compactTools = [home,downloads,profile]
+        toolbarTools = [.home:home,.downloads:downloadButton,.settings:profile,.recording:recordInteraction]
         address.widthAnchor.constraint(greaterThanOrEqualToConstant:180).isActive = true
-        for v in [back,forward,refresh,home,omnibox,recordInteraction,pick,captureAll,downloads,profile,more] { toolbar.addArrangedSubview(v) }
+        for v in [back,forward,refresh,home,omnibox,captureGroup,recordInteraction,downloadButton,profile,more] { toolbar.addArrangedSubview(v) }
         omnibox.heightAnchor.constraint(equalToConstant:32).isActive = true
         bookmarkRow.spacing = 12; bookmarkRow.edgeInsets = NSEdgeInsets(top:3,left:16,bottom:3,right:16)
         buildFindBar(); buildErrorBar(); buildCaptureBar()
@@ -55,15 +64,20 @@ extension BrowserWindow {
         NSLayoutConstraint.activate([status.leadingAnchor.constraint(equalTo:content.leadingAnchor,constant:12),status.bottomAnchor.constraint(equalTo:content.bottomAnchor,constant:-12),status.widthAnchor.constraint(lessThanOrEqualTo:content.widthAnchor,constant:-24)])
         renderBookmarks(); updateToolbarLayout()
     }
-    func configure(_ button:NSButton,_ symbol:String,_ label:String,_ action:Selector) {
+    func configure(_ button:NSButton,_ symbol:String,_ label:String,_ action:Selector,width:CGFloat = BrowserStyle.controlSize) {
         button.title = ""; button.image = NSImage(systemSymbolName:symbol,accessibilityDescription:label); button.imagePosition = .imageOnly
         button.isBordered = false; button.target = self; button.action = action; button.toolTip = label; button.setAccessibilityLabel(label)
-        button.widthAnchor.constraint(equalToConstant:28).isActive = true; button.heightAnchor.constraint(equalToConstant:28).isActive = true
+        button.symbolConfiguration = NSImage.SymbolConfiguration(pointSize:BrowserStyle.iconSize,weight:.regular)
+        button.widthAnchor.constraint(equalToConstant:width).isActive = true; button.heightAnchor.constraint(equalToConstant:BrowserStyle.controlSize).isActive = true
     }
-    func tool(_ symbol:String,_ label:String,_ action:Selector)->NSButton { let b = NSButton(); configure(b,symbol,label,action); return b }
+    func tool(_ symbol:String,_ label:String,_ action:Selector)->NSButton { let b = ChromeButton(); configure(b,symbol,label,action); return b }
     func updateToolbarLayout() {
         let compact = (window?.frame.width ?? 1280) < 1040
-        for view in compactTools { view.isHidden = compact }
+        let visible = Set(store.state.settings.toolbarTools ?? ToolbarTool.defaults)
+        for (tool,view) in toolbarTools {
+            let active = (tool == .recording && interactionRecording?.isRecording == true) || (tool == .downloads && downloadRecords.values.contains { $0.state.hasPrefix("下载中") || $0.state == "等待保存" })
+            view.isHidden = !active && (!visible.contains(tool.rawValue) || (compact && tool != .downloads))
+        }
     }
     func updateTabAppearance(_ tab:BrowserTab) {
         tabButtons[tab.id]?.update(tab,selected:tabs.indices.contains(activeIndex) && tabs[activeIndex].id == tab.id)
@@ -76,6 +90,7 @@ extension BrowserWindow {
         }
         let available = max(200,(window?.frame.width ?? 1280)-154)
         let width = min(230,max(110,available/Double(max(1,tabs.count))))
+        tabScrollWidth?.constant = min(available,width*Double(max(1,tabs.count)))
         for (index,tab) in tabs.enumerated() {
             let item:TabButton
             if let existing = tabButtons[tab.id] { item = existing }

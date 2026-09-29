@@ -96,6 +96,6 @@ extension BrowserWindow {
         guard var record = downloadRecords[key] else { return }
         record.state = state; if let path { record.path = path }; downloadRecords[key] = record
         if !privateBrowsing && !isTesting { store.saveDownload(record) }
-        libraryController?.refresh()
+        libraryController?.refresh(); syncDownloadIndicator()
     }
 }

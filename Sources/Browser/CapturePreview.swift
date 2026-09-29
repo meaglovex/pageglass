@@ -6,6 +6,7 @@ final class CapturePreviewController:NSWindowController,NSWindowDelegate {
         let window = NSPanel(contentRect:NSRect(x:0,y:0,width:480,height:680),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
         window.title = "捕获结果"; window.isReleasedWhenClosed = false; window.minSize = NSSize(width:460,height:640)
         super.init(window:window)
+        window.appearance = browser.window?.appearance
         let detail = CaptureDetailView(browser:browser); window.contentView = detail
         window.delegate = self
         detail.show(directory); window.center()
@@ -88,7 +89,7 @@ final class CaptureDetailView:NSView {
     @objc private func reveal() { perform({ NSWorkspace.shared.activateFileViewerSelecting([$0]) },message:"") }
     @objc private func openImage() { perform({ NSWorkspace.shared.open(try CaptureCatalog.file("screenshot.png",in:$0)) },message:"") }
     @objc private func openReference() {
-        perform({ directory in reference?.close(); reference = try CaptureReferenceController(directory:directory); reference?.showWindow(nil); reference?.window?.makeKeyAndOrderFront(nil) },message:"参考预览禁止运行网页脚本")
+        perform({ directory in reference?.close(); reference = try CaptureReferenceController(directory:directory); reference?.window?.appearance = browser?.window?.appearance; reference?.showWindow(nil); reference?.window?.makeKeyAndOrderFront(nil) },message:"参考预览禁止运行网页脚本")
     }
 }
 
