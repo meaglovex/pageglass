@@ -4,6 +4,7 @@ import WebKit
 @MainActor
 final class BrowserTab: NSObject {
     let id = UUID()
+    weak var owner:BrowserWindow?
     let container = NSView()
     var webView: WKWebView?
     var url: URL?

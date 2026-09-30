@@ -8,9 +8,8 @@ struct CaptureResult {
     let prompt: String
     let metadata: [String: Any]
 
-    func copyForCodex() {
+    func copyForCodex(pasteboard:NSPasteboard = CaptureClipboard.current) {
         // 只写文本，避免接收端优先消费 PNG 后丢弃代码。文本引用同机的完整捕获包。
-        let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(prompt, forType:.string)
         pasteboard.setString(directory.path,forType:CaptureRetention.clipboardType)
@@ -162,6 +161,8 @@ final class CaptureService {
 extension BrowserWindow {
     @objc func selectElement() {
         guard !capturing else { return }
+        dismissCaptureIntro()
+        hideCaptureSidebar()
         if let recorder = interactionRecording,recorder.isRecording {
             let view = webView
             capturing = true; captureProgress = "正在保存最后一次交互…"; syncChrome()
@@ -174,7 +175,7 @@ extension BrowserWindow {
             return
         }
         selecting.toggle(); selectionDescription = ""; syncChrome()
-        status.stringValue = selecting ? "移动鼠标选择元素，↑ 扩大到父级，点击或 Enter 捕获，Esc 取消" : "已取消捕获"
+        status.stringValue = selecting ? "" : "已取消捕获"
         webView.evaluateJavaScript("globalThis.__pageglass.\(selecting ? "start" : "stop")()",in:nil,in:CaptureService.world) { [weak self] result in
             if case .failure = result { self?.selecting = false; self?.status.stringValue = "页面未准备好，请加载完成后重试"; self?.syncChrome() }
         }
@@ -183,6 +184,8 @@ extension BrowserWindow {
     @objc func capturePage() { performCapture(mode:"page") }
     func performCapture(mode:String) {
         guard !capturing else { return }
+        dismissCaptureIntro()
+        hideCaptureSidebar()
         capturing = true; selecting = false; captureProgress = "准备捕获…"; syncChrome()
         let view = webView
         captureTask = Task { @MainActor [weak self] in
@@ -192,8 +195,10 @@ extension BrowserWindow {
                 let history = await interactionRecording?.finish(view)
                 try Task.checkCancellation()
                 let result = try await captureService.capture(view,mode:mode,destination:captureRoot,interactionHistory:history) { [weak self] text in self?.captureProgress = text; self?.syncCaptureBar() }
-                latest = result; result.copyForCodex()
-                status.stringValue = "已复制本机文件引用 · 可在本机 Codex 粘贴"
+                latest = result
+                if store.state.settings.autoCopyCapture != false {
+                    result.copyForCodex(); status.stringValue = "已复制本机文件引用 · 可在本机 Codex 粘贴"
+                } else { status.stringValue = "捕获已保存 · 可检查后复制给 Codex" }
                 showCaptureResult(result)
                 NotificationCenter.default.post(name:CaptureRetention.changed,object:captureRoot)
             } catch {

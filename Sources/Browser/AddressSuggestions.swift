@@ -1,12 +1,17 @@
 import AppKit
 
 extension BrowserWindow {
+    func controlTextDidBeginEditing(_ notification:Notification) {
+        if notification.object as? NSTextField === address {
+            tabPopover?.close(); bookmarkPopover?.close(); omnibox?.showsFocus = true
+        }
+    }
     func controlTextDidChange(_ notification:Notification) {
         guard notification.object as? NSTextField === address else { return }
         guard (address.currentEditor() as? NSTextView)?.hasMarkedText() != true else { dismissSuggestions(); return }
         suggestions = store.suggestions(address.stringValue); selectedSuggestion = -1; showSuggestions()
     }
-    func controlTextDidEndEditing(_ notification:Notification) { if notification.object as? NSTextField === address { dismissSuggestions() } }
+    func controlTextDidEndEditing(_ notification:Notification) { if notification.object as? NSTextField === address { dismissSuggestions(); omnibox?.showsFocus = false } }
     func control(_ control:NSControl,textView:NSTextView,doCommandBy selector:Selector)->Bool {
         guard control === address,!textView.hasMarkedText() else { return false }
         if selector == #selector(NSResponder.moveDown(_:)),!suggestions.isEmpty { selectedSuggestion = min(suggestions.count-1,selectedSuggestion+1); showSuggestions(); return true }
@@ -25,7 +30,7 @@ extension BrowserWindow {
         if let existing = suggestionPanel { panel = existing }
         else {
             panel = NSPanel(contentRect:.zero,styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false)
-            panel.isFloatingPanel = false; panel.becomesKeyOnlyIfNeeded = true; panel.hasShadow = true; panel.backgroundColor = .controlBackgroundColor
+            panel.isFloatingPanel = false; panel.becomesKeyOnlyIfNeeded = true; panel.hasShadow = true; panel.backgroundColor = .controlBackgroundColor; panel.appearance = window.appearance
             suggestionPanel = panel; window.addChildWindow(panel,ordered:.above)
         }
         let row = NSStackView(); row.orientation = .vertical; row.spacing = 0; row.edgeInsets = NSEdgeInsets(top:6,left:6,bottom:6,right:6)

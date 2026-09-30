@@ -1,0 +1,73 @@
+{
+  "date": "2026-09-30",
+  "status": "keyboard-regressions-passed-release-incomplete",
+  "version": "0.8.0-alpha.1",
+  "build": 24,
+  "sourceBaseCommit": "6466a925a5c6a270cb614b9566b1fae964374bfb",
+  "sourceDigestSHA256": "a52a02e557c06222c9f27a9003ab752171ba13816e8444b8453ff3bb52b01945",
+  "sourceDigestMethod": "Sorted Sources/Browser files and scripts/build.sh: relative path, NUL, raw SHA256 for each file",
+  "binarySHA256": {
+    "release": "fdc25187a3a1c44a488fb39f0eda507a352666324e00d9ee7bcf2950a68c2fbe",
+    "qa": "3d334cd2b39a1a305f8952e2a1e6e53b91e06c5f8a84215454549878d8deb663"
+  },
+  "smokeRun": "20260930-061006",
+  "smokePassed": 284,
+  "unitPassed": 37,
+  "defaultUnitSkipped": 1,
+  "newChecks": [
+    "closing developer tools through the toggle restores webpage keyboard focus",
+    "address shortcut dismisses bookmark overflow and focuses its editor",
+    "tab search titles fill the visible list without clipping: cell=360.0, content=360.0, table=360.0",
+    "empty tab search explains no results and cannot navigate",
+    "address shortcut closes tab search and preserves the input draft",
+    "address menu action routes out of quick actions without discarding the draft",
+    "address fixture produces a real suggestion panel before switching search",
+    "opening tab search removes stale address suggestions",
+    "dismissing tab search restores webpage focus",
+    "arrow selection in the focused tab table does not navigate prematurely",
+    "Return from the tab table opens the selected tab",
+    "Escape from the tab table restores webpage focus",
+    "arrow selection in quick action results does not execute a command",
+    "Return from the quick action table opens the selected tab",
+    "Escape from quick action results restores webpage focus"
+  ],
+  "actualUI": {
+    "profile": "owned isolated temporary profile; 10 synthetic file tabs",
+    "build23": [
+      "900 pt Aqua and DarkAqua: tab search full-width titles, semantic backgrounds and focus ring",
+      "Empty search explains no results; Return leaves current page unchanged",
+      "Tab then arrows then Return opens selected tab in tab search and quick actions",
+      "Command-L dismisses stale popup and quick actions while preserving address draft",
+      "Escape from results returns page focus",
+      "F12 bottom docking inspected in both appearances"
+    ],
+    "build24": [
+      "DarkAqua: F12 opens the native console; toggling closed restores AX focus to webpage",
+      "Tab-table Return opens tab-2; quick-action table Return opens tab-3",
+      "Command-L closes the old popup; quick-action Command-L restores verified-24 draft",
+      "Normal application quit, no system clipboard writes"
+    ]
+  },
+  "audioAPIProbe": {
+    "PublicPlayback": {
+      "exit": 0,
+      "diagnostics": ""
+    },
+    "MissingAudioOutput": {
+      "exit": 1,
+      "diagnostics": "qa-output/audio-api-20260930/MissingAudioOutput.swift:3:14: error: value of type 'WKWebView' has no member 'isPlayingAudio'\n1 | import WebKit\n2 | @MainActor func probe(_ view: WKWebView) {\n3 |     _ = view.isPlayingAudio\n  |              `- error: value of type 'WKWebView' has no member 'isPlayingAudio'\n4 |     view.isMuted = true\n5 | }\n\nqa-output/audio-api-20260930/MissingAudioOutput.swift:4:10: error: value of type 'WKWebView' has no member 'isMuted'\n2 | @MainActor func probe(_ view: WKWebView) {\n3 |     _ = view.isPlayingAudio\n4 |     view.isMuted = true\n  |          `- error: value of type 'WKWebView' has no member 'isMuted'\n5 | }\n6 | \n"
+    },
+    "sdk": "27.0",
+    "swift": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.0.0"
+  },
+  "audioPrivateAPIsInvoked": false,
+  "audioDecision": "Awaiting explicit scope decision; existing private API exception covers inspector only",
+  "limits": [
+    "Full visual and accessibility matrix remains incomplete",
+    "Real IME and VoiceOver not validated",
+    "Actual bookmark overflow pointer input still blocked by CUA coordinate mapping",
+    "Actual Codex paste and receiver attachment remain unaccepted",
+    "macOS 14 / 15.4 device testing and three-round performance remain incomplete",
+    "Inspector native Close-button focus path not included in the F12-toggle acceptance"
+  ]
+}

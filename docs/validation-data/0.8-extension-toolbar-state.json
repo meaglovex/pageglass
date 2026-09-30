@@ -1,0 +1,65 @@
+{
+  "date": "2026-09-30",
+  "version": "0.8.0-alpha.1",
+  "build": 28,
+  "status": "extension-toolbar-availability-fixed-release-incomplete",
+  "sourceBaseCommit": "4f572dabed3d9fcfe51adbd8859f6235210d6fc8",
+  "sourceDigestSHA256": "1151f3a8daf8dd516595f2f4510d2f5eefcec3ff1324f22782da5cf6870a3a04",
+  "sourceDigestMethod": "Python pathlib Path-component sorting of Sources/Browser files, followed by scripts/build.sh: relative path, NUL, raw SHA256 for each file",
+  "binarySHA256": {
+    "release": "7b436a6f4b1b5b37cb4152753784d75a15ac716b84d3e5a7a38a08f36ec2197d",
+    "qa": "250e3f47277c27bc251b3d6a14cddb89987c0cf3854616af82b72fcdae01a68d"
+  },
+  "smokeRun": "20260930-075308",
+  "smokePassed": 315,
+  "unitPassed": 37,
+  "defaultUnitSkipped": 1,
+  "newChecks": [
+    "extension host: loaded action extension exposes its saved toolbar choice",
+    "extension host: disabled action extension preserves its choice without offering an ineffective toolbar control",
+    "extension host: stale toolbar requests cannot change a disabled extension preference",
+    "extension host: reenabling an action extension restores its saved toolbar choice and button",
+    "extension host: content-only extensions reject toolbar choices and disable the unavailable setting",
+    "extension host: disabling a content-only extension does not enable the unavailable toolbar setting",
+    "extension host: reenabling content-only extensions keeps toolbar settings unavailable"
+  ],
+  "implementation": {
+    "scope": "ExtensionManagement control availability and text; ExtensionRuntime rejects unavailable toolbar updates",
+    "availability": "Loaded context and declared manifest action are required; disabled action extensions preserve the saved preference",
+    "resources": "No schema change, package reinspection on refresh, polling or new background task"
+  },
+  "environment": {
+    "os": "macOS 27.0 (26A428)",
+    "architecture": "arm64",
+    "browserWidthPt": 900,
+    "profiles": "owned temporary QA profile; automatic capture copy disabled; no site access granted"
+  },
+  "actualUI": [
+    {
+      "appearance": "light",
+      "result": "Imported owned content-only fixture; unavailable toolbar checkbox disabled. After disable and real process quit, final build restored disabled/off, then reenable kept control disabled."
+    },
+    {
+      "appearance": "light",
+      "result": "Imported owned action fixture; enabled toolbar checkbox from off to on. Real toolbar button opened popup with storage count 1 and pong response. Disable removed the button and preserved disabled/on in manager."
+    },
+    {
+      "appearance": "dark",
+      "result": "Final build quit with exit 0 and relaunched with same isolated profile. Action extension remained disabled and toolbar absent. Manager checkbox disabled/on; reenable restored enabled/on and actual toolbar button."
+    },
+    {
+      "appearance": "dark",
+      "result": "Restored toolbar action opened real popup with storage count 2 and pong response. Esc closed popup; final QA process exited normally."
+    }
+  ],
+  "issuesCorrectedDuringValidation": [
+    "Initial disabled-state text promised an entry after enable even for content-only extensions. Final text asks users to enable to check availability, and no-record tooltip asks to import an extension first. Rebuilt and reran unit, smoke and actual final UI after correction."
+  ],
+  "limits": [
+    "Existing legacy preferences are not silently rewritten; content-only action is never exposed, including if a legacy stored toolbar preference is true",
+    "No new third-party extension compatibility, multiwindow or three-action acceptance claimed",
+    "Favicon intermittent cause, full visual and accessibility, real IME, bookmark pointer and system-version acceptance remain open",
+    "Audio scope, actual Codex paste, receiver attachment and remaining performance requirements retain full plan scope",
+    "Normal app and prepared capture clipboard untouched; QA sessions exited normally; no 0.8 release"
+  ]
+}

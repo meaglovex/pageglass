@@ -1,0 +1,104 @@
+{
+  "date": "2026-09-30",
+  "version": "0.8.0-alpha.1",
+  "build": 29,
+  "status": "icon-retention-and-bookmark-navigation-improved-release-incomplete",
+  "sourceBaseCommit": "1695afb624718aa6c98325445725584a7b4b2041",
+  "sourceDigestSHA256": "fc207a588bdbf4354ee02a6d93eec6701659f7d7b5aeea221e1c1253c373cc17",
+  "sourceDigestMethod": "Python pathlib Path-component sorting of Sources/Browser files, followed by scripts/build.sh: relative path, NUL, raw SHA256 for each file",
+  "binarySHA256": {
+    "release": "ce428c2b08b35f4dbf57ddc99b4981f38cbf6454020266ccf0631151ec700de3",
+    "qa": "78ebdbc0a4c080a0e47469c53b55c36a93b36e0068a11cf0933ad98189059b96"
+  },
+  "smokeRuns": [
+    {
+      "run": "20260930-084518",
+      "status": "passed",
+      "passed": 321
+    },
+    {
+      "run": "20260930-084552",
+      "status": "passed",
+      "passed": 321
+    },
+    {
+      "run": "20260930-084617",
+      "status": "passed",
+      "passed": 321
+    }
+  ],
+  "smokePassed": 321,
+  "unitPassed": 42,
+  "defaultUnitSkipped": 1,
+  "newChecks": [
+    "another bookmark path reuses the same origin icon without visiting the page",
+    "bookmark bar navigation replaces empty address editing with the actual URL and webpage focus",
+    "bookmark bar navigation replaces unfinished address editing with the actual URL and webpage focus",
+    "bookmark button uses the loaded page's declared icon rather than its fallback symbol",
+    "icon propagation neither changes another origin nor loads its restored tab",
+    "restored same-origin tab receives its icon without loading a WebView"
+  ],
+  "removedChecks": [],
+  "implementation": {
+    "cache": "Per-window explicit least-recently-used working set of 128 origin icons, downsampled to at most 32 pixels; no disk cache, added background task, or request-policy change",
+    "reuse": "Newly loaded declared icon updates same-origin tabs that lack an icon, including sleeping tabs without creating a WebView; existing icons are preserved",
+    "bookmark": "Clicking a bookmark ends active address editing and focuses the webpage before navigation, so an empty field or unfinished address draft is replaced by the actual navigated URL",
+    "diagnostics": "Inspector smoke failures now include app activation, key-window and responder class; other-window failure also prints before/after focus booleans. Assertions and waits are unchanged; DeveloperTools runtime is unchanged"
+  },
+  "unitCoverage": [
+    "Declared icon reuse without a second download and actual ImageIO downsampling",
+    "128-entry least-recently-used eviction with a recently read entry retained",
+    "Replacement preserves unrelated origins at capacity",
+    "Origin scheme/host/port isolation and local URL rejection",
+    "Failed replacement retains the last working image"
+  ],
+  "environment": {
+    "os": "macOS 27.0 (26A428)",
+    "architecture": "arm64",
+    "browserWidthPt": 900,
+    "profile": "owned temporary QA profile; automatic capture copy disabled"
+  },
+  "actualUI": [
+    {
+      "appearance": "light",
+      "result": "Cold restore initially showed fallback icons as expected without a disk cache. Visiting the owned declared-icon page populated all three same-origin tabs, including a sleeping restored tab and another live tab; bookmark bar and overflow showed the blue icon."
+    },
+    {
+      "appearance": "light",
+      "result": "From a new tab with the address editor focused and empty, clicking the ordinary bookmark immediately displayed the navigated fixture URL and focused HTML without needing Esc."
+    },
+    {
+      "appearance": "dark",
+      "result": "From an unfinished address draft, clicking the ordinary bookmark replaced the draft with the actual fixture URL and returned HTML focus. Tab icons, bookmark icons and readable overflow labels were observed."
+    }
+  ],
+  "evidenceLimits": [
+    "Actual UI used the final product behavior of build 29; subsequent changes only added smoke failure diagnostics. These diagnostics are not invoked by normal QA startup.",
+    "Owned HTTP fixture declared PNG returned 200 while its default favicon.ico returned 404, proving the observed bookmark icon was reused from the declared icon path.",
+    "NSCache may discard entries, but no memory-pressure reproduction proved the historical transient failure. An isolated old-cache capacity probe retained 128 entries and evicted the expected oldest one; it did not reproduce that failure.",
+    "Three final passing smoke runs do not establish the cause or resolution of the two inspector focus failures. Keep this regression concern open.",
+    "No actual overflow pointer opening/right-editing, real IME/VoiceOver, additional extension compatibility, system-version, audio, Codex paste, receiver attachment or performance acceptance is implied.",
+    "Normal installed app and prepared capture clipboard unchanged; owned manual QA and fixture-server sessions stopped; 0.8 remains an unreleased alpha."
+  ],
+  "issuesDuringValidation": [
+    {
+      "run": "20260930-081430",
+      "result": "Earlier build 29 product smoke passed all 321 before diagnostic-only additions."
+    },
+    {
+      "run": "20260930-081721",
+      "result": "Repeat failed: closing an inspector does not steal focus from another window. No pre/post focus diagnostic was present; cause remains unknown. The chained next run did not start."
+    },
+    {
+      "run": "20260930-084432",
+      "result": "Diagnostic attempt failed earlier: native inspector close notification restores webpage keyboard focus. The newly added other-window diagnostic was not reached; cause remains unknown."
+    },
+    {
+      "result": "Extended failure diagnostics without changing waits, assertions or product focus behavior. Final three full runs all passed 321; no removal of prior checks after normalizing volatile object addresses."
+    }
+  ],
+  "references": [
+    "https://developer.apple.com/documentation/Foundation/NSCache",
+    "https://developer.apple.com/documentation/foundation/nscache/countlimit"
+  ]
+}

@@ -12,6 +12,17 @@ enum BrowserFeatureSmoke {
         }
         let fixture = Resources.bundle.url(forResource:"demo",withExtension:"html",subdirectory:"Resources")!
         let original = browser.webView, count = browser.tabs.count
+        browser.showSettings()
+        guard let settings = browser.settingsController,let settingsWindow = settings.window else { throw CaptureService.Failure.message("settings window missing") }
+        settingsWindow.makeKeyAndOrderFront(nil)
+        settingsWindow.makeFirstResponder(settings.homepage)
+        try await Task.sleep(for:.milliseconds(80))
+        let closeAction = #selector(BrowserWindow.closeTab)
+        try require(NSApp.target(forAction:closeAction) as? SettingsController === settings,"close shortcut resolves to settings while its text field is focused")
+        try require(NSApp.sendAction(closeAction,to:nil,from:nil),"settings accepts the shared close shortcut through the responder chain")
+        try await Task.sleep(for:.milliseconds(80))
+        try require(!settingsWindow.isVisible && browser.window?.isVisible == true && browser.tabs.count == count && browser.webView === original,"closing settings preserves all browser tabs and their live page")
+        browser.window?.makeKeyAndOrderFront(nil)
         browser.newTab(); try await loaded(browser.webView)
         try require(browser.tabs.count == count+1 && browser.webView !== original,"new tab has an independent live WebView")
         browser.closeTab()

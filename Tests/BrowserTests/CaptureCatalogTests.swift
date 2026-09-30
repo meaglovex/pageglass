@@ -12,10 +12,10 @@ final class CaptureCatalogTests:XCTestCase {
         defer { try? FileManager.default.removeItem(at:root) }
         try FileManager.default.createDirectory(at:root,withIntermediateDirectories:true)
         for name in ["capture.json","reference.html","PROMPT.txt","screenshot.png"] { try Data("{}".utf8).write(to:root.appendingPathComponent(name)) }
-        let clipboard = NSPasteboard.general
+        let clipboard = NSPasteboard.withUniqueName(); defer { clipboard.releaseGlobally() }
         clipboard.clearContents(); clipboard.setString("keep valid clipboard",forType:.string)
         XCTAssertNotNil(CaptureCatalog.record(root).problem)
-        XCTAssertThrowsError(try CaptureCatalog.copyPrompt(root))
+        XCTAssertThrowsError(try CaptureCatalog.copyPrompt(root,pasteboard:clipboard))
         XCTAssertEqual(clipboard.string(forType:.string),"keep valid clipboard")
     }
     func testCatalogLoadsLegacyPartialAndCorruptRecordsWithoutFollowingLinks() throws {

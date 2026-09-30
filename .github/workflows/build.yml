@@ -14,6 +14,8 @@ jobs:
         run: swift test
       - name: Verify benchmark CPU counter
         run: python3 scripts/benchmark/test_cpu_time.py
+      - name: Verify memory comparison evidence
+        run: python3 scripts/benchmark/test_compare_memory.py
       - name: Build ARM64 app
         run: scripts/build.sh
       - name: Verify signature and architecture

@@ -19,6 +19,9 @@ WebKit 支持系统 GPU 路径，但不保证所有网站都比 Chromium 快。�
 
 - `BrowserWindow` / `BrowserChrome`：标签生命周期、两行原生工具栏、地址栏、查找栏与临时回执。
 - `BrowserActions` / `TabButton` / `AddressSuggestions`：导航菜单、标签排序/恢复与本地地址建议。
+- `CommandPalette`：本地快速操作，按类型搜索并分发到现有浏览器动作；组合输入不执行命令。
+- `CaptureSidebar` / `CapturePreview` / `CaptureImagePreview`：不改变网页视口的结果覆盖面板、共享详情与原生缩放预览。
+- `CaptureIntro`：仅新配置自动显示一次的本地捕获练习提示；手动入口复用同一原生覆盖视图。
 - `BrowserStore`：原子写入浏览器数据，延迟合并保存；损坏文件不会被空数据覆盖。
 - `LibraryController` / `SettingsController`：书签、历史、下载资料库与设置窗口。
 - `WebDelegates`：导航、下载、JS 对话框、文件上传和权限提示。
@@ -66,10 +69,29 @@ Chrome 级验收仍需要相同电脑、相同窗口尺寸/网络/页面集、�
 
 ## 网站图标、捕获清理与检查器
 
-标签和书签按站点显示图标。读取页面声明的 icon，再回退同源 favicon.ico；独立无 Cookie URLSession 限制单图 256 KiB、8 秒，ImageIO 缩至 32 像素，内存缓存最多 128 站点。不使用第三方图标服务。
+标签和书签按站点显示图标。读取页面声明的 icon，再回退同源 favicon.ico；独立无 Cookie URLSession 限制单图 256 KiB、8 秒，ImageIO 缩至 32 像素，不使用第三方图标服务。每个浏览器窗口明确保留最近使用的 128 个站点图标，超限只移除最久未用的一项。页面图标加载后供同源书签及缺图标的同源标签复用，休眠标签不因此创建 WebView；已有不同图标不覆盖。缓存不落盘，重新启动后需要重新获取图标。
+
+此小型工作集不再使用可自行移除对象的 [NSCache](https://developer.apple.com/documentation/Foundation/NSCache)，其 [countLimit](https://developer.apple.com/documentation/foundation/nscache/countlimit) 也不是严格上限。这明确了近期图标的保留条件，但尚未复现旧 smoke 偶发失败的精确触发过程，不能将缓存策略变更当作旧原因的证明。
 
 捕获清理仅枚举 Captures 的直接子目录，要求符合本程序命名及完成标志 capture.json，跳过符号链接；不执行或信任网页元数据中的路径。自动按创建时刻计算保留天数，默认关闭，手动和自动都移入系统废纸篓；失败保留并报告。自有剪贴板类型标记所属包，清理不碰其他复制内容。旧设置没有保留期限字段时仍可完整解码。
 
 所有 WebView 开启公开的 isInspectable。用户于 2026-09-29 授权本地版使用私有接口打开真正的检查器，例外集中在 DeveloperTools.swift：配置 _setDeveloperExtrasEnabled:，取得 _inspector，再调用 show / showConsole / attach / close。每次调用都先检查方法存在、参数数量和返回/参数类型，接口不兼容则显示 Safari 备用路径。没有使用 KVC 盲发未知 key，也不调整 WebKit 沙箱、TLS 或页面捕获世界。检查器仅在用户主动打开时加载；关闭标签时关闭其检查器。每个标签使用独立 autoresizing 容器，让 WebKit 给页面和停靠面板分配空间，避免四边 Auto Layout 约束把面板覆盖；切换标签隐藏整个容器。
 
 F12 / ⌥⌘I 切换检查器，⌥⌘J 直接打开 Console，开发菜单和更多菜单也提供入口。WebKit 自带元素、样式、网络、源代码、控制台面板；没有自建仿制面板。实现参照官方 WebKit 的 [_WKInspector](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/_WKInspector.h) 和 [_WKInspectorIBActions](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/_WKInspectorIBActions.h) 方法声明，不复制上游实现。此例外仅适用于本地版，不作为 App Store API 合规保证。
+
+检查器自身关闭后的焦点恢复也集中在 `DeveloperTools.swift`，使用 [WKUIDelegatePrivate 的关闭通知](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/WKUIDelegatePrivate.h)。仅当加载中的协议与本地回调的 Objective-C 类型编码完全相同时注册，不替换已有方法。WebKit 拆除面板后，在主线程执行一次恢复：要求仍为原活动页、检查器已关闭、浏览器窗口为 key window、没有 sheet 且焦点未被其他输入占用。弱引用不延长页面和窗口寿命，不增加轮询；缺少兼容回调时不注册，现有显式快捷键关闭路径仍保留。
+
+独立检查器窗口不包含浏览器控制器的响应链，由同一文件中的应用代理扩展接收 F12 / ⌥⌘I / ⌥⌘J。通过经 ABI 检查的 `isFront` 从已有标签中确定实际检查器；WebKit 的 [macOS 实现](https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/Inspector/mac/WebInspectorUIProxyMac.mm) 按检查器所属 main window 判断，因此额外要求 key / main 为同一窗口、没有 sheet 且不是普通浏览器窗口，避免设置或临时面板误用后台检查器。只接受唯一匹配，不按窗口标题或第一个浏览器猜测；后台被检查标签仍可正确匹配。没有匹配时菜单禁用，普通浏览器命令继续由原窗口处理，不增加事件监听或常驻任务。
+
+
+## 扩展宿主（0.8 开发预览）
+
+macOS 15.4+ 使用公开 WKWebExtension API；旧系统入口说明不可用原因。`ExtensionPackage` / `ExtensionZIP` 在受限暂存目录验证和复制，`ExtensionRepository` 单独存储身份、程序版本及站点授权，`ExtensionRuntime` 负责控制器、事务与权限，`ExtensionBridge` / `ExtensionEvents` 桥接普通窗口与标签，`ExtensionManagement` 提供原生管理界面，`ExtensionToolbar` 将可选 action 按窗口宽度展示并接收 WebKit 状态更新；选择单独持久化，不授予网站权限。仅已加载且声明 action 的扩展可修改工具栏偏好；停用保留选择，管理控件与运行时写入均检查可用性。捕获桥仍只存在于独立 WKContentWorld，扩展设置和 action 使用扩展自己的配置。
+
+不向扩展返回受保护页面作为活动页的窗口，避免违反 WebKit 标签列表必须包含活动标签的约束；返回普通网页后恢复事件。无痕不附加控制器，网站访问逐站保存。稳定 UUID 保持 storage 数据；更新先校验新副本再切换，登记失败尝试恢复旧上下文。可安装能力、包上限及尚未验收项见 [extensions-0.8.md](extensions-0.8.md)，不得以原生 API 存在或自有样本成功推断任意第三方插件兼容。
+
+## 捕获编辑与可携带交付
+
+`CaptureEdits` 保存兼容旧捕获的独立 `pageglass.json`，不改原页面证据。标注坐标使用 PNG 左上角起的 0–1 比例，类型与数值逐项验证；目录锁、修订比较及同目录原子更名保护保存，损坏数据拒绝覆盖。`CaptureEditor` 使用原生 AppKit 与 UndoManager；编辑窗口独立保留，应用退出前检查未保存修改。`CaptureAnnotationDrawing` 共用画布和 PNG 绘制逻辑，导出使用原像素尺寸。
+
+`CapturePortable` 只读取已知捕获文件，使用逐级 `openat` / `O_NOFOLLOW` 和数量 / 字节预算，不追随元数据中的任意路径。暂存副本去除机器文件地址、重新生成相对交付提示和哈希清单；HTML 增加禁脚本 CSP。ZIP 仅对该副本调用系统 ditto，没有 shell 插值或第三方归档依赖。原始包不改写，导出不会覆盖已有目标；此路径不上传，也不等于接收工具已读到内容。

@@ -25,6 +25,7 @@ final class StoreTests:XCTestCase {
         store.visit(title:"第二次",url:"https://example.test/docs")
         store.visit(title:"本地不计历史",url:"file:///tmp/test.html")
         var settings = BrowserSettings(); settings.searchEngine = "Bing"; settings.showBookmarksBar = true
+        settings.appearance = "dark"; settings.toolbarTools = []; settings.autoCopyCapture = false
         store.updateSettings(settings)
         store.saveWindows([SavedWindow(tabs:[SavedTab(url:"https://example.test/docs",title:"文档"),SavedTab(url:nil,title:"新标签页")],active:1)])
         store.flush()
@@ -34,6 +35,7 @@ final class StoreTests:XCTestCase {
         XCTAssertEqual(reopened.state.history.count,1)
         XCTAssertEqual(reopened.state.history.first?.title,"第二次")
         XCTAssertEqual(reopened.state.settings.searchEngine,"Bing")
+        XCTAssertEqual(reopened.state.settings.appearance,"dark"); XCTAssertEqual(reopened.state.settings.toolbarTools,[]); XCTAssertEqual(reopened.state.settings.autoCopyCapture,false)
         XCTAssertEqual(reopened.state.windows.first?.active,1)
         XCTAssertEqual(reopened.state.windows.first?.tabs.first?.title,"文档")
         XCTAssertEqual(reopened.suggestions("example").count,1)
@@ -49,6 +51,22 @@ final class StoreTests:XCTestCase {
         store.toggleBookmark(title:"new",url:"https://example.test"); store.flush()
         XCTAssertNotNil(store.error)
         XCTAssertEqual(try String(contentsOf:file,encoding:.utf8),"unreadable original")
+    }
+    func testCaptureIntroIsPersistedWithoutTreatingLegacyProfileAsFresh() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at:directory) }
+        let store = BrowserStore(directory:directory)
+        XCTAssertTrue(store.isFreshProfile)
+        var settings = store.state.settings; settings.captureIntroSeen = true
+        store.updateSettings(settings); store.flush()
+        let reopened = BrowserStore(directory:directory)
+        XCTAssertFalse(reopened.isFreshProfile); XCTAssertEqual(reopened.state.settings.captureIntroSeen,true)
+        let file = directory.appendingPathComponent("browser.json")
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:file)) as? [String:Any])
+        var oldSettings = try XCTUnwrap(legacy["settings"] as? [String:Any]); oldSettings.removeValue(forKey:"captureIntroSeen"); legacy["settings"] = oldSettings
+        try JSONSerialization.data(withJSONObject:legacy).write(to:file)
+        let migrated = BrowserStore(directory:directory)
+        XCTAssertNil(migrated.error); XCTAssertFalse(migrated.isFreshProfile); XCTAssertNil(migrated.state.settings.captureIntroSeen)
     }
     func testDownloadStatusPersistsByIdentifier() {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

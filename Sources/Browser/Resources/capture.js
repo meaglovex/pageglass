@@ -50,10 +50,11 @@
   function key(e) {
     if (!active) return;
     if (e.key === 'Escape') { block(e); stop(); bridge({type:'cancelled'}); }
-    if (e.key === 'ArrowUp' && selected?.parentElement) { block(e); pinned = true; paint(selected.parentElement); }
+    if (e.key === 'ArrowUp' && selected?.parentElement) { block(e); selectParent(); }
     if (e.key === 'ArrowDown' && selected?.firstElementChild) { block(e); pinned = true; paint(selected.firstElementChild); }
     if (e.key === 'Enter') click(e);
   }
+  function selectParent() { if (!active || !selected?.parentElement) return false; pinned = true; paint(selected.parentElement); return true; }
   function update() { if (active && selected) paint(selected); }
   function removeListeners() {
     document.removeEventListener('pointermove', move, true);
@@ -239,5 +240,5 @@
     for (const [e,value,priority] of restore.fixed) if (value) e.style.setProperty('visibility',value,priority); else e.style.removeProperty('visibility');
     window.scrollTo(restore.x,restore.y); restore.sheet.remove(); restore=null;
   }
-  globalThis.__pageglass = {start,stop,extract,tile,finish,selectForTest:(query)=>{selected=document.querySelector(query);}};
+  globalThis.__pageglass = {start,stop,extract,tile,finish,selectParent,selectForTest:(query)=>{selected=document.querySelector(query);}};
 })();

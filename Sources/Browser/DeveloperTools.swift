@@ -6,6 +6,19 @@ import ObjectiveC
 /// check their ABI before dispatch, and fall back instead of sending unknown selectors.
 @MainActor
 enum DeveloperTools {
+    // Advertise this optional delegate callback only when the loaded WebKit protocol
+    // exactly matches our Objective-C ABI. Do not replace an existing implementation.
+    static let closeCallbackAvailable:Bool = {
+        let selector = NSSelectorFromString("_webView:willCloseLocalInspector:")
+        guard let proto = objc_getProtocol("WKUIDelegatePrivate"),
+              let expected = protocol_getMethodDescription(proto,selector,false,true).types,
+              let callback = class_getInstanceMethod(BrowserWindow.self,#selector(BrowserWindow.inspectorWillClose(_:inspector:))),
+              let actual = method_getTypeEncoding(callback),strcmp(expected,actual) == 0 else { return false }
+        return class_addMethod(BrowserWindow.self,selector,method_getImplementation(callback),actual)
+    }()
+
+    static func prepareDelegate() { _ = closeCallbackAvailable }
+
     private static func method(_ object:NSObject,_ name:String,returns:String,args:[String] = [])->IMP? {
         let selector = NSSelectorFromString(name)
         guard object.responds(to:selector),let cls = object_getClass(object),
@@ -33,9 +46,15 @@ enum DeveloperTools {
         return view.perform(NSSelectorFromString("_inspector"))?.takeUnretainedValue() as? NSObject
     }
     static func visible(_ inspector:NSObject)->Bool? {
-        guard let imp = method(inspector,"isVisible",returns:"Bc") else { return nil }
+        flag(inspector,"isVisible")
+    }
+    static func front(_ inspector:NSObject)->Bool? {
+        flag(inspector,"isFront")
+    }
+    private static func flag(_ inspector:NSObject,_ name:String)->Bool? {
+        guard let imp = method(inspector,name,returns:"Bc") else { return nil }
         typealias Getter = @convention(c) (AnyObject,Selector)->Bool
-        return unsafeBitCast(imp,to:Getter.self)(inspector,NSSelectorFromString("isVisible"))
+        return unsafeBitCast(imp,to:Getter.self)(inspector,NSSelectorFromString(name))
     }
     @discardableResult
     static func call(_ inspector:NSObject,_ name:String)->Bool {
@@ -46,7 +65,11 @@ enum DeveloperTools {
     }
     static func open(_ view:WKWebView,console:Bool = false,toggle:Bool = true)->Bool {
         guard enable(view.configuration.preferences),let inspector = inspector(for:view),let shown = visible(inspector) else { return false }
-        if shown && toggle && !console { return call(inspector,"close") }
+        if shown && toggle && !console {
+            guard call(inspector,"close") else { return false }
+            view.window?.makeFirstResponder(view)
+            return true
+        }
         guard call(inspector,console ? "showConsole" : "show") else { return false }
         if !shown { _ = call(inspector,"attach") }
         return true
@@ -57,7 +80,52 @@ enum DeveloperTools {
     }
 }
 
+// A detached inspector does not include BrowserWindow in its responder chain.
+// AppKit falls back to the application delegate; resolve the actual front inspector
+// instead of acting on the first browser window or its currently selected tab.
+extension AppDelegate:NSMenuItemValidation {
+    func frontInspectedPage()->(browser:BrowserWindow,view:WKWebView)? {
+        guard let key = NSApp.keyWindow,key === NSApp.mainWindow,key.attachedSheet == nil,
+              !windows.contains(where:{$0.window === key}) else { return nil }
+        var result:(browser:BrowserWindow,view:WKWebView)?
+        for browser in windows {
+            for tab in browser.tabs {
+                guard let view = tab.webView,let inspector = DeveloperTools.inspector(for:view),
+                      DeveloperTools.visible(inspector) == true,DeveloperTools.front(inspector) == true else { continue }
+                guard result == nil else { return nil }
+                result = (browser,view)
+            }
+        }
+        return result
+    }
+    func validateMenuItem(_ item:NSMenuItem)->Bool {
+        switch item.action {
+        case #selector(showDeveloperTools),#selector(showJavaScriptConsole): return frontInspectedPage() != nil
+        default: return true
+        }
+    }
+    @objc func showDeveloperTools() { openFrontInspector(console:false) }
+    @objc func showJavaScriptConsole() { openFrontInspector(console:true) }
+    private func openFrontInspector(console:Bool) {
+        guard let page = frontInspectedPage() else { return }
+        if !DeveloperTools.open(page.view,console:console) { page.browser.showInspectorHelp() }
+    }
+}
+
 extension BrowserWindow {
+    @objc(pageglassInspectorWillClose:inspector:)
+    func inspectorWillClose(_ view:WKWebView,inspector:NSObject) {
+        // WebKit calls before removing the inspector. Restore focus after that
+        // synchronous teardown, unless another input, tab or window has taken it.
+        DispatchQueue.main.async { [weak self,weak view,weak inspector] in
+            guard let self,let view,let inspector,self.activeWebView === view,
+                  DeveloperTools.visible(inspector) == false,
+                  let window = view.window,window.isKeyWindow,window.attachedSheet == nil,
+                  window.firstResponder == nil || window.firstResponder === window else { return }
+            window.makeFirstResponder(view)
+        }
+    }
+
     @objc func showDeveloperTools() { openDeveloperTools(console:false) }
     @objc func showJavaScriptConsole() { openDeveloperTools(console:true) }
     private func openDeveloperTools(console:Bool) {

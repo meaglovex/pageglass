@@ -1,0 +1,73 @@
+{
+  "status": "passed-owned-checks-ui-partial",
+  "date": "2026-09-30",
+  "system": "macOS 27.0 (26A428), arm64",
+  "version": "0.8.0-alpha.1",
+  "build": 15,
+  "sourceBaseCommit": "81ef22bd56696c36ffff83266fd7c73f82415b07",
+  "sourceState": "Capture introduction and extension toolbar implementation committed with this report",
+  "sourceDigestSHA256": "3eec60d4eefe3a2725dfd15fa2d8e59e78593678e8bf1d2c10a2048758bb2545",
+  "sourceDigestMethod": "SHA256 of sorted relative path, NUL, raw file SHA256 for Sources/Browser/**/* files and scripts/build.sh",
+  "binarySHA256": "789f61e9ceb8b211d63170c7c28c779c67a2bed9bd063a63ac061a0e835bd92b",
+  "qaBinarySHA256": "57294d4fbc1e1a5eb1f7a35075466c1b0929833fdd49c2f9fa96f6e44ff61dbd",
+  "smokeRun": "20260930-031956",
+  "smokeChecksPassed": 237,
+  "unitTestsPassed": 37,
+  "unitTestsSkipped": 1,
+  "newChecks": [
+    "capture introduction neither resizes the page nor steals typing focus",
+    "displayed introduction is not offered automatically again",
+    "Escape dismisses capture introduction while preserving page focus",
+    "capture practice opens separately without discarding an existing page",
+    "extension host: installation does not add an unrequested toolbar action",
+    "extension host: toolbar preference reveals the action without granting site access",
+    "extension host: toolbar action adapts at 820 pt without compressing the address field",
+    "extension host: toolbar action adapts at 900 pt without compressing the address field",
+    "extension host: action API updates native toolbar title and disabled state",
+    "extension host: private windows do not expose toolbar extension actions",
+    "extension host: disabling removes the toolbar action while retaining its preference",
+    "extension host: updating preserves the optional toolbar action",
+    "extension host: new host restores the saved toolbar preference",
+    "extension host: hiding toolbar action leaves the extension enabled"
+  ],
+  "physicalUI": {
+    "isolation": "Temporary QA profiles; normal browser profile and installed app unchanged",
+    "finalBinaryObserved": [
+      "Dark appearance at 900 pt: new-profile introduction appears with webpage focus intact; Escape closes it and preserves focus",
+      "Real application exit and relaunch restores owned extension toolbar button and popup; storage count increases from 1 to 2 and background reply is pong true",
+      "Toolbar preference can be unchecked without disabling the extension; button disappears from browser chrome",
+      "No automatic introduction after relaunch of the existing QA profile"
+    ],
+    "earlierBuild15Observed": [
+      "Light appearance: introduction starts local practice; next new tab does not repeat it",
+      "Local directory import permission review and successful owned extension installation",
+      "Toolbar checkbox, native action click and popup positioned below the action; Escape closes popup"
+    ],
+    "earlierQABinarySHA256": "4eaf2ececabe5b402804f27097fb1f19e9a272c557eeb8ba0863474a77715148",
+    "earlierNote": "Early light introduction/practice observation preceded this hash capture. Exact final binary was separately checked for fresh-profile introduction and Escape in dark appearance. The identified previous binary differs from final only in action label deduplication."
+  },
+  "failuresBeforeFix": [
+    {
+      "run": "20260930-031256",
+      "error": "popup script failed: Optional(Loading); url=webkit-extension://2c47396f-1d0a-45ca-87b4-b256bd9cc7fe/popup.html"
+    },
+    {
+      "run": "20260930-031348",
+      "error": "popup script failed: Optional(Loading); url=webkit-extension://cb57c70f-6238-4585-a57e-f5d392012722/popup.html"
+    },
+    {
+      "run": "20260930-031448",
+      "error": "popup script failed: Optional({\"output\":\"Loading\",\"phase\":\"worker-message\",\"loading\":\"complete\"}); url=webkit-extension://19982934-f1c2-4662-8114-7363eca5de6b/popup.html"
+    }
+  ],
+  "failureResolution": "Persistent-host restore kept old popup/context locals alive; after scoping pre-restore checks so references end before restoration, standalone and full smoke passed. Popup phase diagnostics retained. Production permission and worker behavior unchanged.",
+  "notComplete": [
+    "Two real open-source extensions and full permission/update/removal UI matrix",
+    "Multiwindow and three toolbar actions at all widths",
+    "VoiceOver, IME, increased contrast and full theme matrix",
+    "macOS 14 and 15.4 real devices",
+    "Actual Codex paste and editable prototype handoff",
+    "Three-round performance and real-data-copy migration",
+    "True tab audio indicator/mute under public API constraints"
+  ]
+}

@@ -27,7 +27,7 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
         // A failed or cancelled navigation can leave the old document alive.
         webView.evaluateJavaScript("globalThis.__pageglass?.stop();globalThis.__pageglassRecorder?.stop(false)",in:nil,in:CaptureService.world)
         tabs.first(where:{$0.webView === webView})?.recording.reset()
-        if webView === self.activeWebView { selecting = false; status.stringValue = "正在加载…"; syncChrome() }
+        if webView === self.activeWebView { hideCaptureSidebar(); dismissCaptureIntro(); selecting = false; status.stringValue = "正在加载…"; syncChrome() }
     }
     func webView(_ webView:WKWebView,didCommit navigation:WKNavigation!) {
         if let tab = tabs.first(where:{$0.webView === webView}) { tab.favicon = nil; updateTabAppearance(tab) }
@@ -41,7 +41,7 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
             webView.callAsyncJavaScript("document.querySelector('#search').action=endpoint;document.querySelector('#search input').name=queryName;document.querySelector('#private').style.display=isPrivate?'block':'none';",arguments:["endpoint":endpoint.string!,"queryName":queryName,"isPrivate":privateBrowsing],in:nil,in:CaptureService.world) { _ in }
         }
         if !privateBrowsing, !isTesting, let url = webView.url { store.visit(title:webView.title.flatMap { $0.isEmpty ? nil : $0 } ?? url.host ?? "网页",url:url.absoluteString) }
-        if webView === self.activeWebView { status.stringValue = "就绪 · \(webView.url?.scheme == "https" ? "HTTPS" : "本地 / HTTP") · ⌘⇧C 捕获元素"; syncChrome(); saveSession() }
+        if webView === self.activeWebView { status.stringValue = "就绪 · \(webView.url?.scheme == "https" ? "HTTPS" : "本地 / HTTP") · ⌘⇧C 捕获元素"; syncChrome(); saveSession(); offerCaptureIntroIfNeeded() }
     }
     func webView(_ webView:WKWebView,didFailProvisionalNavigation navigation:WKNavigation!,withError error:Error) { report(error,view:webView) }
     func webView(_ webView:WKWebView,didFail navigation:WKNavigation!,withError error:Error) { report(error,view:webView) }

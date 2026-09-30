@@ -24,6 +24,10 @@ struct BrowserSettings: Codable {
     var defaultZoom = 1.0
     // Optional preserves older browser.json files; nil means never expire.
     var captureRetentionDays: Int? = nil
+    var appearance:String? = nil
+    var toolbarTools:[String]? = nil
+    var autoCopyCapture:Bool? = nil
+    var captureIntroSeen:Bool? = nil
 }
 
 /// 仅保存浏览器功能数据；无痕窗口不写访问记录、下载记录和会话。
@@ -38,12 +42,17 @@ final class BrowserStore {
     }
     private(set) var state = State()
     private(set) var error: String?
+    let directory:URL
+    let isFreshProfile:Bool
+    var extensionRuntime:AnyObject?
     private let file: URL
     private var saveWork: DispatchWorkItem?
     static let changed = Notification.Name("PageglassStoreChanged")
 
     init(directory:URL) {
+        self.directory = directory
         file = directory.appendingPathComponent("browser.json")
+        isFreshProfile = !FileManager.default.fileExists(atPath:file.path)
         if FileManager.default.fileExists(atPath:file.path) {
             do {
                 state = try JSONDecoder().decode(State.self,from:Data(contentsOf:file))

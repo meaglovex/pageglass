@@ -4,12 +4,15 @@ import ImageIO
 struct CaptureRecord {
     let directory:URL
     let date:Date
-    let title:String
+    let originalTitle:String
     let source:String
     let mode:String
     let bytes:Int64
     let metadata:[String:Any]
     let problem:String?
+    var edits = CaptureEdits()
+    var editProblem:String?
+    var title:String { edits.name.isEmpty ? originalTitle : edits.name }
     var scope:String { mode == "page" ? "当前已加载整页" : "元素可见区域" }
     var displaySource:String {
         guard let url = URL(string:source) else { return source }
@@ -57,9 +60,11 @@ enum CaptureCatalog {
         do {
             let data = try metadata(in:directory)
             try validateSupportingFiles(in:directory)
-            return CaptureRecord(directory:directory,date:date,title:String((data["title"] as? String ?? "未命名页面").prefix(512)),source:String((data["url"] as? String ?? "本地页面").prefix(2048)),mode:data["mode"] as? String ?? "element",bytes:size(of:directory),metadata:data,problem:nil)
+            var record = CaptureRecord(directory:directory,date:date,originalTitle:String((data["title"] as? String ?? "未命名页面").prefix(512)),source:String((data["url"] as? String ?? "本地页面").prefix(2048)),mode:data["mode"] as? String ?? "element",bytes:size(of:directory),metadata:data,problem:nil)
+            do { record.edits = try CaptureEdits.load(in:directory) } catch { record.editProblem = error.localizedDescription }
+            return record
         } catch {
-            return CaptureRecord(directory:directory,date:date,title:directory.lastPathComponent,source:"文件缺失或记录损坏",mode:"",bytes:size(of:directory),metadata:[:],problem:error.localizedDescription)
+            return CaptureRecord(directory:directory,date:date,originalTitle:directory.lastPathComponent,source:"文件缺失或记录损坏",mode:"",bytes:size(of:directory),metadata:[:],problem:error.localizedDescription)
         }
     }
     static func scan(_ root:URL) throws->[CaptureRecord] {
@@ -84,18 +89,23 @@ enum CaptureCatalog {
         let screenshot = try file("screenshot.png",in:directory)
         guard let source = CGImageSourceCreateWithURL(screenshot as CFURL,nil),validDimensions(source),CGImageSourceGetStatus(source) == .statusComplete else { throw CaptureService.Failure.message("截图已损坏或尺寸超出限制，请重新捕获") }
     }
-    static func copyPrompt(_ directory:URL) throws {
+    static func copyPrompt(_ directory:URL,pasteboard:NSPasteboard = CaptureClipboard.current) throws {
         try validate(directory)
-        let prompt = try String(contentsOf:file("PROMPT.txt",in:directory,limit:2*1024*1024),encoding:.utf8)
-        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(prompt,forType:.string)
-        NSPasteboard.general.setString(directory.path,forType:CaptureRetention.clipboardType)
+        var prompt = try String(contentsOf:file("PROMPT.txt",in:directory,limit:2*1024*1024),encoding:.utf8)
+        let edits = try CaptureEdits.load(in:directory)
+        if !edits.name.isEmpty || !edits.notes.isEmpty || !edits.annotations.isEmpty {
+            prompt += "\n\n用户整理与标注：\(directory.appendingPathComponent(CaptureEdits.filename).path)\n此文件的 name、notes 与 annotations 为用户另存的编辑内容；标注坐标相对于 screenshot.png 左上角，范围 0–1。请结合原截图读取。原网页证据未修改。\n"
+            if !edits.notes.isEmpty { prompt += "\n用户备注与修改要求：\n"+edits.notes+"\n" }
+        }
+        pasteboard.clearContents(); pasteboard.setString(prompt,forType:.string)
+        pasteboard.setString(directory.path,forType:CaptureRetention.clipboardType)
     }
-    static func copyImage(_ directory:URL) throws {
+    static func copyImage(_ directory:URL,pasteboard:NSPasteboard = CaptureClipboard.current) throws {
         try validate(directory)
         let path = try file("screenshot.png",in:directory)
         guard let source = CGImageSourceCreateWithURL(path as CFURL,nil),validDimensions(source),let raster = CGImageSourceCreateImageAtIndex(source,0,nil) else { throw CaptureService.Failure.message("截图无法读取或尺寸超出限制") }
         let image = NSImage(cgImage:raster,size:NSSize(width:raster.width,height:raster.height))
-        NSPasteboard.general.clearContents(); NSPasteboard.general.writeObjects([image])
-        NSPasteboard.general.setString(directory.path,forType:CaptureRetention.clipboardType)
+        pasteboard.clearContents(); pasteboard.writeObjects([image])
+        pasteboard.setString(directory.path,forType:CaptureRetention.clipboardType)
     }
 }

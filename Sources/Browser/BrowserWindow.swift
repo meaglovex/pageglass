@@ -15,18 +15,25 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     var tabButtons: [UUID:TabButton] = [:]
     var tabWidths: [UUID:NSLayoutConstraint] = [:]
     var tabPopover: NSPopover?
+    var commandPalette:CommandPaletteController?
+    var extensionManager:NSWindowController?
     var bookmarkPopover: NSPopover?
     var overflowBookmarks: [PageRecord] = []
     var renderedBookmarks: [PageRecord]?
     var renderedBookmarkWidth: CGFloat = 0
     var renderedBookmarksVisible = false
-    var compactTools: [NSView] = []
+    var toolbarTools:[ToolbarTool:NSView] = [:]
+    var tabScrollWidth:NSLayoutConstraint?
+    let captureMenuButton = ChromeButton(), downloadButton = ChromeButton(), extensionButton = ChromeButton()
+    let extensionActionBar = NSStackView()
+    var extensionActionButtons:[UUID:ChromeButton] = [:]
+    weak var omnibox:ChromeStackView?
     let errorBar = NSStackView(), errorLabel = NSTextField(labelWithString:"")
     let bookmarkRow = NSStackView()
     let address = NSTextField()
     let status = BrowserNotice(labelWithString: "")
-    let back = NSButton(), forward = NSButton(), refresh = NSButton(), bookmarkButton = NSButton(), siteButton = NSButton()
-    let pick = NSButton(), captureAll = NSButton(), recordInteraction = NSButton()
+    let back = ChromeButton(), forward = ChromeButton(), refresh = ChromeButton(), bookmarkButton = ChromeButton(), siteButton = ChromeButton()
+    let pick = ChromeButton(), captureAll = ChromeButton(), recordInteraction = ChromeButton()
     let progress = NSProgressIndicator()
     let findBar = NSStackView(), findField = NSSearchField(), findResult = NSTextField(labelWithString:"")
     let captureService = CaptureService()
@@ -38,9 +45,10 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     var captureProgress = ""
     var selectionDescription = ""
     var recordingBarHidden = false
-    let captureBar = NSStackView(), captureLabel = NSTextField(labelWithString:"")
-    let cancelCaptureButton = NSButton()
-    var captureResultController: CapturePreviewController?
+    let captureBar = ChromeStackView(), captureLabel = NSTextField(labelWithString:"")
+    let cancelCaptureButton = NSButton(), parentCaptureButton = NSButton()
+    var captureSidebar:CaptureSidebar?
+    var captureIntro:CaptureIntroView?
     var captureLibraryController: CaptureLibraryController?
     var downloads: [ObjectIdentifier: WKDownload] = [:]
     var downloadRecords: [ObjectIdentifier:DownloadRecord] = [:]
@@ -68,7 +76,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         window.titleVisibility = .hidden; window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false; window.isMovableByWindowBackground = false
         super.init(window:window)
-        window.delegate = self; window.center(); buildInterface()
+        window.delegate = self; window.center(); buildInterface(); applyAppearance()
         if let session, !privateBrowsing {
             tabs = session.tabs.map { saved in
                 let tab = BrowserTab(url:saved.url.flatMap(URL.init(string:))); tab.title = saved.title; return tab
@@ -76,16 +84,19 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         }
         if tabs.isEmpty { tabs = [BrowserTab()] }
         activate(max(0,min(session?.active ?? 0,tabs.count-1)))
+        if #available(macOS 15.4,*),let extensions { extensions.opened(self) }
         storeObserver = NotificationCenter.default.addObserver(forName:BrowserStore.changed,object:store,queue:.main) { [weak self] _ in
-            self?.renderBookmarks(); self?.syncChrome()
+            self?.applyAppearance(); self?.renderBookmarks(); self?.updateToolbarLayout(); self?.syncChrome()
         }
     }
     required init?(coder:NSCoder) { fatalError() }
     deinit { if let storeObserver { NotificationCenter.default.removeObserver(storeObserver) } }
 
     func createWebView(for tab:BrowserTab,configuration:WKWebViewConfiguration? = nil)->WKWebView {
+        tab.owner = self
         let config = configuration ?? WKWebViewConfiguration()
         if configuration == nil { config.websiteDataStore = websiteDataStore }
+        if #available(macOS 15.4,*) { config.webExtensionController = privateBrowsing ? nil : extensions?.controller }
         config.preferences.isElementFullscreenEnabled = true
         DeveloperTools.enable(config.preferences)
         let controller = WKUserContentController(); config.userContentController = controller
@@ -93,6 +104,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         controller.addUserScript(WKUserScript(source:CaptureService.script,injectionTime:.atDocumentEnd,forMainFrameOnly:true,in:CaptureService.world))
         controller.addUserScript(WKUserScript(source:InteractionRecording.script,injectionTime:.atDocumentEnd,forMainFrameOnly:true,in:CaptureService.world))
         let view = WKWebView(frame:.zero,configuration:config)
+        DeveloperTools.prepareDelegate()
         view.allowsBackForwardNavigationGestures = true; view.navigationDelegate = self; view.uiDelegate = self
         view.isInspectable = true; view.pageZoom = store.state.settings.defaultZoom
         tab.webView = view
@@ -110,7 +122,9 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     }
     func activate(_ index:Int) {
         guard !capturing,tabs.indices.contains(index) else { return }
-        dismissSuggestions()
+        bookmarkPopover?.close(); tabPopover?.close()
+        dismissCaptureIntro()
+        dismissSuggestions(); commandPalette?.dismiss(restoreFocus:false); hideCaptureSidebar()
         if tabs.indices.contains(activeIndex),let old = tabs[activeIndex].webView {
             if index != activeIndex { tabs[activeIndex].recording.pause(old) }
             old.evaluateJavaScript("globalThis.__pageglass?.stop()",in:nil,in:CaptureService.world); tabs[activeIndex].container.removeFromSuperview()
@@ -132,11 +146,12 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         renderTabs(revealActive:true); syncChrome(); saveSession()
     }
     func syncChrome() {
+        if #available(macOS 15.4,*) { extensions?.sync(self) }
         guard tabs.indices.contains(activeIndex),let view = tabs[activeIndex].webView else { return }
         if window?.firstResponder !== address.currentEditor() { address.stringValue = displayURL(view.url) }
         back.isEnabled = view.canGoBack && !capturing; forward.isEnabled = view.canGoForward && !capturing
         progress.doubleValue = view.estimatedProgress; progress.isHidden = !view.isLoading
-        pick.isEnabled = !capturing; captureAll.isEnabled = !capturing; address.isEnabled = !capturing
+        pick.isEnabled = !capturing; captureAll.isEnabled = !capturing; captureMenuButton.isEnabled = !capturing; address.isEnabled = !capturing
         recordInteraction.isEnabled = !capturing && !selecting
         let recording = interactionRecording?.isRecording == true
         recordInteraction.image = NSImage(systemSymbolName:recording ? "stop.circle.fill" : "record.circle",accessibilityDescription:recording ? "停止交互记录" : "记录交互")
@@ -147,6 +162,9 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         refresh.image = NSImage(systemSymbolName:view.isLoading ? "xmark" : "arrow.clockwise",accessibilityDescription:view.isLoading ? "停止加载" : "重新加载")
         pick.toolTip = selecting ? "取消捕获（Esc）" : "捕获元素（⌘⇧C）"
         pick.contentTintColor = selecting ? .systemBlue : .labelColor
+        pick.title = selecting ? "选取中" : "捕获"
+        pick.setAccessibilityLabel(selecting ? "取消选取（Esc）" : "捕获元素（⌘⇧C）")
+        updateToolbarLayout()
         let marked = view.url.map { store.bookmark(for:$0.absoluteString) != nil } ?? false
         bookmarkButton.image = NSImage(systemSymbolName:marked ? "star.fill" : "star",accessibilityDescription:marked ? "移除书签" : "添加书签")
         bookmarkButton.contentTintColor = marked ? .systemBlue : .secondaryLabelColor
@@ -167,6 +185,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         return url.absoluteString
     }
     func load(_ url:URL) {
+        dismissCaptureIntro()
         dismissSuggestions()
         tabs[activeIndex].pendingURL = url
         tabs[activeIndex].failure = nil
@@ -187,15 +206,35 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     }
     func windowWillClose(_ notification:Notification) {
         captureTask?.cancel(); cancelCapture()
-        dismissSuggestions(); saveSession()
-        libraryController?.close(); settingsController?.close(); tabPopover?.close(); bookmarkPopover?.close(); captureResultController?.close()
+        dismissSuggestions(); commandPalette?.dismiss(restoreFocus:false); saveSession()
+        libraryController?.close(); settingsController?.close(); extensionManager?.close(); tabPopover?.close(); bookmarkPopover?.close(); captureSidebar?.detail.closePreviews()
         captureLibraryController?.close()
         for download in downloads.values { updateDownload(download,state:"已取消：窗口已关闭"); download.cancel { _ in } }
         downloadObservers.removeAll(); downloads.removeAll()
+        if #available(macOS 15.4,*) { extensions?.closed(self) }
         for tab in tabs { tab.release() }
         (NSApp.delegate as? AppDelegate)?.closed(self)
     }
-    func windowDidResignKey(_ notification:Notification) { dismissSuggestions() }
+    override func cancelOperation(_ sender:Any?) {
+        if bookmarkPopover?.isShown == true { dismissBookmarkOverflow() }
+        else if tabPopover?.isShown == true { dismissTabList() }
+        else if captureSidebar?.isHidden == false { dismissCaptureSidebar() }
+        else if captureIntro != nil { dismissCaptureIntro() }
+        else if selecting || capturing { cancelCapture() }
+        // NSResponder declares this text action, but NSWindowController does not
+        // implement it. Calling super here raises an Objective-C exception.
+        else if let view = activeWebView,view.isLoading { view.stopLoading() }
+    }
+    func windowDidUpdate(_ notification:Notification) {
+        let editor = address.currentEditor()
+        let focused = window?.isKeyWindow == true && editor != nil && window?.firstResponder === editor
+        if omnibox?.showsFocus != focused { omnibox?.showsFocus = focused }
+    }
+    func windowDidBecomeKey(_ notification:Notification) { if #available(macOS 15.4,*) { extensions?.controller.didFocusWindow(extensionWindowVisible ? self : nil) }; offerCaptureIntroIfNeeded() }
+    func windowDidResignKey(_ notification:Notification) {
+        dismissSuggestions(); omnibox?.showsFocus = false
+        if #available(macOS 15.4,*) { extensions?.controller.didFocusWindow(nil) }
+    }
     func windowDidResize(_ notification:Notification) { renderTabs(revealActive:true); renderBookmarks(); updateToolbarLayout(); dismissSuggestions(); tabPopover?.close(); bookmarkPopover?.close() }
     @objc func newTab() { guard !capturing else { return }; tabs.append(BrowserTab()); activate(tabs.count-1); address.stringValue = ""; focusAddress() }
     func openTab(_ url:URL,inBackground:Bool = false) {
@@ -220,7 +259,10 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         guard !capturing,let url = Navigation.url(for:input,searchEngine:store.state.settings.searchEngine) else { status.stringValue = "请输入有效的网址或搜索词"; return }
         window?.makeFirstResponder(webView); load(url)
     }
-    @objc func focusAddress() { window?.makeFirstResponder(address); address.selectText(nil) }
+    @objc func focusAddress() {
+        tabPopover?.close(); bookmarkPopover?.close(); commandPalette?.dismiss(restoreFocus:false)
+        window?.makeKeyAndOrderFront(nil); window?.makeFirstResponder(address); address.selectText(nil)
+    }
     @objc func goBack() { if !capturing { webView.goBack() } }
     @objc func goForward() { if !capturing { webView.goForward() } }
     @objc func reload() { if !capturing { if webView.isLoading { webView.stopLoading() } else { webView.reload() } } }

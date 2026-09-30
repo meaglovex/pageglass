@@ -11,11 +11,26 @@ enum CaptureAssetSmoke {
             throw CaptureService.Failure.message("asset fixture load timeout")
         }
         let url = base.appendingPathComponent("capture-fixture.html")
+        let sleeping = BrowserTab(url:base.appendingPathComponent("browser-test"))
+        let otherOrigin = BrowserTab(url:URL(string:"https://other.pageglass.test/")!)
+        browser.tabs.append(contentsOf:[sleeping,otherOrigin]);browser.renderTabs()
+        defer {
+            for tab in [sleeping,otherOrigin] { if let index = browser.tabs.firstIndex(where:{$0 === tab}) { browser.close(at:index) } }
+        }
         browser.load(url); try await loaded(browser.webView,url:url)
         let view = browser.webView
-        for _ in 0..<80 { if browser.tabs[browser.activeIndex].favicon != nil { break };try await Task.sleep(for:.milliseconds(100)) }
+        // A provisional navigation can still display the previous icon; wait for the new origin too.
+        for _ in 0..<80 { if browser.tabs[browser.activeIndex].favicon != nil && browser.favicons.cached(for:url) != nil { break };try await Task.sleep(for:.milliseconds(100)) }
         try require(browser.tabs[browser.activeIndex].favicon != nil,"declared site favicon loads into its actual browser tab")
         try require(browser.favicons.cached(for:url) != nil,"site favicon is reused by bookmark origin")
+        let bookmark = PageRecord(title:"Declared icon QA",url:url.absoluteString)
+        let bookmarkButton = browser.bookmarkButton(for:bookmark)
+        try require(bookmarkButton.image === browser.tabs[browser.activeIndex].favicon,"bookmark button uses the loaded page's declared icon rather than its fallback symbol")
+        let otherPath = base.appendingPathComponent("not-visited-bookmark")
+        let reusedIcon = await browser.favicons.image(for:otherPath)
+        try require(reusedIcon === bookmarkButton.image,"another bookmark path reuses the same origin icon without visiting the page")
+        try require(sleeping.favicon === reusedIcon && sleeping.webView == nil,"restored same-origin tab receives its icon without loading a WebView")
+        try require(otherOrigin.favicon == nil && otherOrigin.webView == nil,"icon propagation neither changes another origin nor loads its restored tab")
         let ready:Any? = try await withCheckedThrowingContinuation { continuation in
             view.callAsyncJavaScript("await document.fonts.ready; await Promise.all([...document.images].map(i=>i.decode())); return document.querySelector('#raster').naturalWidth",arguments:[:],in:nil,in:CaptureService.world) { continuation.resume(with:$0) }
         }

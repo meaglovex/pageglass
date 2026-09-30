@@ -4,17 +4,29 @@ import WebKit
 
 @MainActor
 final class FaviconLoader {
-    private let cache = NSCache<NSString,NSImage>()
+    // These are already downsampled to 32 px. Keep a strict, small working set so
+    // a recently loaded page's declared icon cannot disappear before bookmarks reuse it.
+    private var cache:[URL:NSImage] = [:]
+    private var recent:[URL] = []
+    private let download:(URL) async -> Data?
     private var pending:[URL:Task<NSImage?,Never>] = [:]
     private var failed = Set<URL>()
-    init() { cache.countLimit = 128 }
+    init(download:@escaping (URL) async -> Data? = IconDownload.fetch) { self.download = download }
     static func origin(_ url:URL)->URL? {
         guard ["http","https"].contains(url.scheme?.lowercased() ?? ""),url.host != nil else { return nil }
         var parts = URLComponents(url:url,resolvingAgainstBaseURL:false)
         parts?.path = "/";parts?.query = nil;parts?.fragment = nil;parts?.user = nil;parts?.password = nil
         return parts?.url
     }
-    func cached(for page:URL)->NSImage? { Self.origin(page).flatMap { cache.object(forKey:$0.absoluteString as NSString) } }
+    func cached(for page:URL)->NSImage? {
+        guard let origin = Self.origin(page),let image = cache[origin] else { return nil }
+        touch(origin);return image
+    }
+    private func touch(_ origin:URL) { recent.removeAll { $0 == origin };recent.append(origin) }
+    private func remember(_ image:NSImage,for origin:URL) {
+        cache[origin] = image;touch(origin)
+        if recent.count > 128 { cache.removeValue(forKey:recent.removeFirst()) }
+    }
     func image(for page:URL,candidates:[URL] = []) async -> NSImage? {
         guard let origin = Self.origin(page) else { return nil }
         if candidates.isEmpty,let found = cached(for:page) { return found }
@@ -27,8 +39,8 @@ final class FaviconLoader {
             let task:Task<NSImage?,Never>
             if let existing = pending[url] { task = existing }
             else {
-                task = Task {
-                    guard let data = await IconDownload.fetch(url),let source = CGImageSourceCreateWithData(data as CFData,nil),
+                task = Task { [download] in
+                    guard let data = await download(url),let source = CGImageSourceCreateWithData(data as CFData,nil),
                           let cg = CGImageSourceCreateThumbnailAtIndex(source,0,[kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceThumbnailMaxPixelSize:32,kCGImageSourceCreateThumbnailWithTransform:true] as CFDictionary) else { return nil }
                     let scale = 16.0/Double(max(cg.width,cg.height))
                     return NSImage(cgImage:cg,size:NSSize(width:Double(cg.width)*scale,height:Double(cg.height)*scale))
@@ -36,7 +48,7 @@ final class FaviconLoader {
                 pending[url] = task
             }
             let image = await task.value;pending[url] = nil
-            if let image { cache.setObject(image,forKey:origin.absoluteString as NSString);return image }
+            if let image { remember(image,for:origin);return image }
             if failed.count >= 128 { failed.removeAll() };failed.insert(url)
         }
         return cached(for:page)
@@ -86,7 +98,14 @@ extension BrowserWindow {
             let raw = try? await captureService.js(view,"Array.from(document.querySelectorAll('link[rel]')).filter(l=>l.rel.toLowerCase().split(/\\s+/).includes('icon')).slice(0,3).map(l=>l.href)") as? [String]
             let icon = await favicons.image(for:page,candidates:(raw ?? []).compactMap(URL.init(string:)))
             guard !Task.isCancelled,view.url == page,tab.webView === view else { return }
-            tab.favicon = icon;updateTabAppearance(tab);renderBookmarks(force:true)
+            tab.favicon = icon;updateTabAppearance(tab)
+            if let icon,let origin = FaviconLoader.origin(page) {
+                for sibling in tabs where sibling !== tab && sibling.favicon == nil {
+                    guard let url = sibling.webView?.url ?? sibling.url,FaviconLoader.origin(url) == origin else { continue }
+                    sibling.favicon = icon;updateTabAppearance(sibling)
+                }
+            }
+            renderBookmarks(force:true)
         }
     }
 }

@@ -47,7 +47,7 @@ struct CaptureRetention {
         return report
     }
     static let clipboardType = NSPasteboard.PasteboardType("dev.pageglass.capture-path")
-    static func clearClipboard(for removed:[URL],pasteboard:NSPasteboard = .general) {
+    static func clearClipboard(for removed:[URL],pasteboard:NSPasteboard = CaptureClipboard.current) {
         guard let path = pasteboard.string(forType:clipboardType),removed.contains(where:{ samePackage($0,URL(fileURLWithPath:path)) }) else { return }
         pasteboard.clearContents()
     }

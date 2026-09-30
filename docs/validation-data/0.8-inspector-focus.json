@@ -1,0 +1,114 @@
+{
+  "date": "2026-09-30",
+  "version": "0.8.0-alpha.1",
+  "build": 26,
+  "status": "native-inspector-close-focus-fixed-release-incomplete",
+  "sourceBaseCommit": "955ab9a6824242e931fa05fd380f7d67a3c84493",
+  "sourceDigestSHA256": "b6feba3a75ae17dcd437cde256edbc25ab6ca14b16365cb7c5ace185d1844779",
+  "sourceDigestMethod": "Python pathlib Path-component sorting of Sources/Browser files, followed by scripts/build.sh: relative path, NUL, raw SHA256 for each file",
+  "binarySHA256": {
+    "release": "8c7bd51fb0aefb188872f87497b11f46fc097bd7acaa8c7c888d343416c11bdd",
+    "qa": "19313966e30ff600ea99ed48839e42fdcf56aff90eae67b7a0c85b0862842466"
+  },
+  "environment": {
+    "os": "macOS 27.0 (26A428)",
+    "architecture": "arm64",
+    "profiles": "isolated temporary profiles with owned synthetic pages; automatic capture copy disabled"
+  },
+  "smokeRun": "20260930-070745",
+  "smokePassed": 295,
+  "unitPassed": 37,
+  "defaultUnitSkipped": 1,
+  "newChecks": [
+    "inspector close callback matches the loaded WebKit delegate ABI",
+    "native inspector close path is available without the browser toggle",
+    "native inspector close notification restores webpage keyboard focus",
+    "closing inspector preserves an active address editor and its draft",
+    "deferred inspector close cannot steal a newer keyboard focus",
+    "closing an inspector does not steal focus from another window",
+    "closing a background tab inspector preserves the new tab address focus",
+    "closed tab inspector callback leaves the adjacent surviving page focused"
+  ],
+  "implementation": {
+    "scope": "Existing authorized local inspector adapter only; no audio API or new security setting",
+    "callback": "_webView:willCloseLocalInspector:",
+    "runtimeProtocol": "WKUIDelegatePrivate",
+    "observedEncoding": "v32@0:8@16@24",
+    "guard": "Register only if loaded protocol and implementation ABI match exactly; never replace an existing method",
+    "focus": "Queue once after WebKit teardown; restore only the active inspected page in the key window, with no sheet or other input focus and the inspector no longer visible",
+    "resources": "Weak captures; no polling, timer, observer lifetime or delegate replacement"
+  },
+  "actualUI": [
+    {
+      "widthPt": 900,
+      "tabs": 10,
+      "appearance": "light",
+      "result": "Native Close returned to the original page input; subsequent typing produced Before-after without clicking the page again"
+    },
+    {
+      "widthPt": 900,
+      "tabs": 10,
+      "appearance": "dark",
+      "result": "Native Close returned to the same input; right and left docking retained Console focus while open and restored the input on close"
+    },
+    {
+      "widthPt": 900,
+      "tabs": 10,
+      "appearance": "dark",
+      "result": "Detaching retained Console focus; native window close restored the page input and continued typing produced Before-after-detached"
+    },
+    {
+      "widthPt": 900,
+      "tabs": 10,
+      "appearance": "dark",
+      "result": "After docking back to bottom, F12 closed the inspector and returned to the input"
+    },
+    {
+      "widthPt": 900,
+      "tabs": 9,
+      "appearance": "dark",
+      "result": "Closing inspected tab 10 opened adjacent tab 9 with its HTML content focused"
+    },
+    {
+      "widthPt": 1440,
+      "tabs": 1,
+      "appearance": "light",
+      "result": "Original build 25 failing Close path now restores HTML focus and full 1440 x 752 page viewport"
+    },
+    {
+      "widthPt": 1440,
+      "tabs": 1,
+      "appearance": "dark",
+      "result": "Original build 25 failing Close path now restores HTML focus and full 1440 x 752 page viewport"
+    }
+  ],
+  "remainingInspectorIssue": "F12 inside a detached inspector window did nothing. Redocking restored the shortcut. Current menu targets use the BrowserWindow responder; detached command routing remains to fix.",
+  "failedAttempts": [
+    {
+      "failure": "background inspector focus assertion",
+      "finding": "newTab intentionally focuses the address field; final test preserves that same editor instead of assuming page focus"
+    },
+    {
+      "failure": "closed inspected tab focus assertion",
+      "finding": "Closing the appended tab selects its adjacent survivor; diagnostics confirmed that WKWebView was focused. Final test identifies the adjacent tab before closing and verifies its focus."
+    },
+    {
+      "failure": "site favicon is reused by bookmark origin",
+      "finding": "One intermediate run failed before inspector tests. Cause unknown; no favicon code, timeout or assertion changed. Final full smoke passed; intermittent cause remains unresolved."
+    }
+  ],
+  "sources": [
+    "https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/API/Cocoa/WKUIDelegatePrivate.h",
+    "https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/Inspector/WebInspectorUIProxy.cpp",
+    "https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/Inspector/mac/WebInspectorUIProxyMac.mm"
+  ],
+  "limits": [
+    "Detached-inspector F12 routing unresolved",
+    "One favicon-cache smoke failure unexplained",
+    "macOS 14 / 15.4 devices untested",
+    "Full visual/accessibility, IME, VoiceOver and bookmark pointer acceptance remain open",
+    "Audio decision, actual Codex paste and receiver attachment remain open",
+    "Broader extension, multiwindow and performance requirements retain full plan scope",
+    "Normal app untouched; both isolated UI sessions exited normally; no 0.8 release"
+  ]
+}

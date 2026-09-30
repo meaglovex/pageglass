@@ -22,7 +22,7 @@ final class TabButton: NSView {
     private var hovering = false
     private let label = NSTextField(labelWithString:"")
     private let icon = NSImageView()
-    let closeButton = NSButton()
+    let closeButton = ChromeButton()
     private var down: NSEvent?
     private var dragging = false
 
@@ -49,7 +49,7 @@ final class TabButton: NSView {
             label.centerYAnchor.constraint(equalTo:centerYAnchor),
             closeButton.trailingAnchor.constraint(equalTo:trailingAnchor,constant:-10),
             closeButton.centerYAnchor.constraint(equalTo:centerYAnchor),
-            closeButton.widthAnchor.constraint(equalToConstant:16),closeButton.heightAnchor.constraint(equalToConstant:16)
+            closeButton.widthAnchor.constraint(equalToConstant:28),closeButton.heightAnchor.constraint(equalToConstant:28)
         ])
         setAccessibilityElement(true); setAccessibilityRole(.button); setAccessibilityLabel(label.stringValue)
         toolTip = tab.url?.absoluteString ?? label.stringValue
@@ -113,7 +113,8 @@ final class TabButton: NSView {
 
 final class HeaderBackground: NSView {
     override func draw(_ dirtyRect:NSRect) {
-        let color = effectiveAppearance.bestMatch(from:[.darkAqua,.aqua]) == .darkAqua ? NSColor.windowBackgroundColor : NSColor(calibratedWhite:0.92,alpha:1)
+        let dark = effectiveAppearance.bestMatch(from:[.darkAqua,.aqua]) == .darkAqua
+        let color = dark ? NSColor.windowBackgroundColor : (NSColor.windowBackgroundColor.blended(withFraction:0.06,of:.labelColor) ?? .windowBackgroundColor)
         color.setFill(); bounds.fill()
     }
     override func viewDidChangeEffectiveAppearance() { super.viewDidChangeEffectiveAppearance(); needsDisplay = true }
@@ -121,9 +122,18 @@ final class HeaderBackground: NSView {
     override func mouseDown(with event:NSEvent) { window?.performDrag(with:event) }
 }
 
-final class ChromeStackView:NSStackView {
+class ChromeStackView:NSStackView {
     var surfaceColor:NSColor = .controlBackgroundColor
     var cornerRadius:CGFloat = 0
-    override func draw(_ dirtyRect:NSRect) { surfaceColor.setFill(); NSBezierPath(roundedRect:bounds,xRadius:cornerRadius,yRadius:cornerRadius).fill() }
+    var showsBorder = false
+    var showsFocus = false { didSet { needsDisplay = true } }
+    override func draw(_ dirtyRect:NSRect) {
+        surfaceColor.setFill(); NSBezierPath(roundedRect:bounds,xRadius:cornerRadius,yRadius:cornerRadius).fill()
+        if showsBorder || showsFocus {
+            let contrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+            (showsFocus ? NSColor.keyboardFocusIndicatorColor : contrast ? NSColor.labelColor : NSColor.separatorColor).setStroke()
+            let path = NSBezierPath(roundedRect:bounds.insetBy(dx:0.5,dy:0.5),xRadius:cornerRadius,yRadius:cornerRadius); path.lineWidth = showsFocus ? 2 : contrast ? 1.5 : 0.5; path.stroke()
+        }
+    }
     override func viewDidChangeEffectiveAppearance() { super.viewDidChangeEffectiveAppearance(); needsDisplay = true }
 }

@@ -126,7 +126,9 @@ CPU 单位依据 Apple XNU 的 [fill_task_rusage](https://github.com/apple-oss-d
 
 每轮保存原始分数、子项、窗口尺寸、系统状态、进程归属、字节占用及浏览器二进制 SHA256。全部轮次完成才生成 summary；Speedometer 结束时的内存不冒充多标签内存测试。结果写入指定的 `--output-root`（默认 `qa-output/benchmark-*`）。运行中的 Chrome profile、控制台日志和任何用户数据不作为公开测量报告上传。
 
-三组全部完成后，用 `scripts/benchmark/compare-memory.py --baseline <0.6结果目录> --candidate <0.7结果目录> --chrome <Chrome结果目录> --output <报告.json>` 验证同一负载哈希、每个标签的固定视口、三轮及每轮五个完整样本，再导出白名单中的测试数据、中位数与范围。未完成的运行不能生成比较报告。
+使用 `scripts/benchmark/compare-memory.py --baseline <基线结果目录> --candidate <候选结果目录> --chrome <Chrome结果目录> --output <报告.json>` 导出比较。版本名称从测量记录读取，校验运行器、负载、硬件和系统一致，全部标签已实际显示、每个标签数至少三轮且每轮五个完整物理内存样本；报告与原始中位数不符时拒绝。仅比较两个 Pageglass 版本时可省略 `--chrome`，输出明确记录 `chromeIncluded: false`，不算通过 Chrome 对照。未完成的运行不能生成比较报告。校验器回归使用 `python3 scripts/benchmark/test_compare_memory.py`，也在 Python 优化模式下检查，不能因关闭 assert 而接受无效证据。
+
+0.8 当前测量和完整验收的区别见 [0.8 性能阶段报告](performance-0.8.md)。
 
 Speedometer 三组全部完成后，使用相同参数调用 `compare-speedometer.py`；它检查上游源码、适配器、运行器、设备、视口、测试数量及每轮至少十个有效分数一致，再导出每轮分数、各子套件总时间与环境记录。运行器记录的 SHA256 用于核对同一测量程序，不能混用改过适配器的成绩。
 

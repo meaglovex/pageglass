@@ -1,0 +1,142 @@
+{
+  "status": "passed-owned-checks-real-extension-compatibility-partial",
+  "date": "2026-09-30",
+  "system": "macOS 27.0 (26A428), arm64",
+  "version": "0.8.0-alpha.1",
+  "build": 17,
+  "sourceBaseCommit": "5262c44e69b0274c35c1710414ce12a3988277ab",
+  "sourceState": "Escape and extension interaction fixes committed with this report",
+  "sourceDigestSHA256": "9a178184af18d036cd3e31924af6704e5ab3929ccccc9d41a5e563549867e695",
+  "sourceDigestMethod": "SHA256 of sorted relative path, NUL, raw file SHA256 for Sources/Browser/**/* files and scripts/build.sh",
+  "binarySHA256": "cf790595f1d8605877f34806911dd285897ba18a3805d699721b684645deb071",
+  "qaBinarySHA256": "e074e8f33d39f1c2dd2d706251cc91051792d8c0c4d3d48c8c9519adbe585cc5",
+  "smokeRun": "20260930-035242",
+  "smokeChecksPassed": 243,
+  "unitTestsPassed": 37,
+  "unitTestsSkipped": 1,
+  "unitTestScope": "Source unchanged except adding description to the owned smoke fixture after the unit test run; final release and full smoke include that fixture correction",
+  "newChecks": [
+    "Escape stops a pending page load without discarding its document, draft or focus",
+    "Escape on an ordinary page preserves its draft, tab and focus without an exception",
+    "extension host: install selects the newly installed extension instead of the previous row",
+    "extension host: content-only extension has no synthetic runnable toolbar action",
+    "extension host: content-only menu opens the matching permission details without a fake popup",
+    "extension host: content-only extension still runs its granted static script without an action"
+  ],
+  "physicalUI": {
+    "isolation": "Temporary, signed-out QA profile; normal installed app and browser profile unchanged; no GitHub token or repository write actions",
+    "build15": {
+      "qaBinarySHA256": "57294d4fbc1e1a5eb1f7a35075466c1b0929833fdd49c2f9fa96f6e44ff61dbd",
+      "observed": [
+        "GHUX 0.6.0 ZIP install, site deny and grant, real popup settings, raw 0.7.0 directory update preserving permissions and settings",
+        "GHUX diff layout failed before and after update; revoke and refresh restored ordinary GitHub diff",
+        "Escape on an ordinary webpage crashed the application"
+      ]
+    },
+    "build16": {
+      "qaBinarySHA256": "ca0db20d722e00c003e53414e0b1e46c8975c72ed2175979688179ec86999a30",
+      "observed": [
+        "Two Escape presses on an ordinary YouTube page preserved window and webpage focus",
+        "Shorts Blocker 1.0.0 raw ZIP install, explicit deny retains Shorts entry, explicit allow then refresh hides it"
+      ]
+    },
+    "finalBuild17Observed": [
+      "Normal app quit and process exit followed by relaunch restored GHUX toolbar action, popup flags and denied GitHub grant",
+      "Shorts Blocker 1.0.0 remained active after actual app restart; native menu opened matching site-permission details without a synthetic popup",
+      "Raw Shorts Blocker 1.0.1 directory update retained site permission; refresh hid homepage Shorts navigation",
+      "Revoke restored homepage Shorts navigation after refresh",
+      "Disable restored navigation; real app restart preserved disabled state and absent running-menu item",
+      "Reenable hid navigation; another real app restart preserved enabled state and hidden navigation",
+      "Uninstall program with data-retention default showed removed/data retained, moved program to Trash, refresh restored Shorts navigation",
+      "Native directory chooser installed owned Content-only fixture while a previous row was selected; new row selected automatically, named success feedback, disabled action and toolbar controls visibly correct"
+    ],
+    "finalAppExitConfirmed": true
+  },
+  "realExtensions": [
+    {
+      "name": "GHUX - GitHub UX",
+      "source": "https://github.com/jeffreyhaen/ghux-chrome",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "0.6.0",
+          "commit": "1e53bfdf1f9c1ea3ffe7a4c167ae27f89adb4df1"
+        },
+        {
+          "version": "0.7.0",
+          "commit": "f99c5ca5d8e41553000442cb81c40d1837aab52f"
+        }
+      ],
+      "modifiedUpstream": false,
+      "result": "failed-functional-compatibility",
+      "failure": "Diff line numbers collapsed vertically and body was unreadable; word wrap toggling and disabling split/minimap did not resolve it. Cause remains unassigned between upstream/current GitHub DOM and WebKit. Revocation plus refresh restored the page.",
+      "notTested": [
+        "Token and API host access",
+        "Review and repository deletion",
+        "All diff modes",
+        "Plugin-specific disable/uninstall UI"
+      ]
+    },
+    {
+      "name": "YouTube Shorts Blocker",
+      "source": "https://github.com/ramonmello/youtube-shorts-blocker",
+      "license": "MIT",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "commit": "a1df8e79757cca8dd609abc43f8c1ff4327fe8bf"
+        },
+        {
+          "version": "1.0.1",
+          "commit": "3e0d05688c49964cdc91eb83af4f11f2591b501b"
+        }
+      ],
+      "modifiedUpstream": false,
+      "result": "passed-homepage-navigation-feature-lifecycle",
+      "scope": "Signed-out desktop YouTube homepage Shorts navigation only",
+      "passed": [
+        "install",
+        "deny",
+        "grant",
+        "use",
+        "revoke",
+        "disable",
+        "actual restart",
+        "update",
+        "reenable",
+        "uninstall retaining data"
+      ],
+      "notTested": [
+        "Search result cards",
+        "Infinite scroll",
+        "Authenticated sessions",
+        "Every recommendation area",
+        "Direct Shorts video pages"
+      ]
+    }
+  ],
+  "failuresBeforeFix": [
+    {
+      "build": 15,
+      "error": "NSInvalidArgumentException: -[Browser.BrowserWindow cancelOperation:]: unrecognized selector",
+      "resolution": "Avoid nonexistent superclass action; idle Escape preserves current page and loading Escape stops remaining load"
+    },
+    {
+      "run": "20260930-035141",
+      "error": "Missing or empty `description` manifest entry.",
+      "resolution": "Added description to owned content-only fixture; full 243 checks then passed with unchanged production permission boundary"
+    }
+  ],
+  "notComplete": [
+    "Two real open-source extensions and full permission/update/removal UI matrix",
+    "Multiwindow and three toolbar actions at all widths",
+    "VoiceOver, IME, increased contrast and full theme matrix",
+    "macOS 14 and 15.4 real devices",
+    "Actual Codex paste and editable prototype handoff",
+    "Three-round performance and real-data-copy migration",
+    "True tab audio indicator/mute under public API constraints",
+    "GHUX functional compatibility",
+    "Disabled content-only manager still permits a saved toolbar preference although no action is exposed after enabling",
+    "Full capture editor/export/receiver workflow and original 0.7 pending gates"
+  ]
+}

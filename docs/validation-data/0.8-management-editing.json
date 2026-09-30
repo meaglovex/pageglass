@@ -1,0 +1,81 @@
+{
+  "status": "passed-owned-checks-ui-partial",
+  "date": "2026-09-30",
+  "system": "macOS 27.0 (26A428), arm64",
+  "version": "0.8.0-alpha.1",
+  "build": 19,
+  "sourceBaseCommit": "78455d83345af936ee5a93e2b190fa86dc105a6c",
+  "sourceState": "Management empty states, narrow capture layouts and persistent operation feedback committed with this report",
+  "sourceDigestSHA256": "1ffee50777ca2c544115b5883880665efed741c09f5bcc5a0fa8bf9cfecfa9af",
+  "sourceDigestMethod": "SHA256 of sorted relative path, NUL, raw file SHA256 for Sources/Browser/**/* files and scripts/build.sh",
+  "binarySHA256": "f5cad8d0332d52c994fdbf0615662219b7c1ac97228b1ef027bf893d593b2155",
+  "qaBinarySHA256": "dd904752c3b1ded9096bb5386982a0eeb51f235d40628a1f51d625722e1f421f",
+  "smokeRun": "20260930-042555",
+  "smokeChecksPassed": 257,
+  "unitTestsPassed": 37,
+  "unitTestsSkipped": 1,
+  "newChecks": [
+    "empty bookmarks explains the next step without enabling record actions",
+    "empty history explains the next step without enabling record actions",
+    "empty downloads explains the next step without enabling record actions",
+    "unmatched search clears stale selection and offers recovery",
+    "clearing search restores saved records and keyboard focus",
+    "NSAppearanceNameAqua narrow management window keeps recovery action visible",
+    "NSAppearanceNameDarkAqua narrow management window keeps recovery action visible",
+    "corrupt profile is identified as unreadable and its original data is preserved",
+    "refreshing the same capture preserves its completed operation receipt",
+    "switching captures clears the preceding record operation receipt",
+    "empty capture filters expose recovery and disable stale record actions",
+    "clearing capture filters restores all records without deleting metadata",
+    "capture history fits 900 pt with readable detail and search controls",
+    "annotation editor fits 900 pt and scrolls its detail fields at minimum height"
+  ],
+  "physicalUI": {
+    "isolation": "Disposable QA profile with 200 owned synthetic captures; normal installed application and real profile unchanged",
+    "build18QABinarySHA256": "a6c3f09d94b58a1da25630b1b7f314602bc7551a89de5c76c504a0914ab17b73",
+    "build18Observed": [
+      "Light and dark bookmarks empty states, search miss and clear-search keyboard focus, downloads empty state",
+      "Manual bookmark window narrowed to approximately 600 pt and capture history to 900 pt; visible controls remain usable",
+      "200-record URL search selects one result; unmatched search disables stale actions, clear filters restores all records, scroll reaches final records and opens the selected detail",
+      "Arrow drawing, Cmd-Z undo and Cmd-Shift-Z redo, adding text and numbered marks, verified Chinese name/notes/text saved, close/reopen preserves three editable marks",
+      "Invalid zero number blocks annotation PNG export; continue editing, save-on-close and discard-unsaved-name paths preserve expected saved data",
+      "Native save dialogs export PNG and portable ZIP; exported PNG visually inspected with image tool and ZIP contents verified"
+    ],
+    "finalBuild19Observed": [
+      "Actual app restart restores the 200-record profile and saved name, notes and three marks",
+      "Native ZIP save dialog produces pageglass-portable-qa19.zip and visible completion message",
+      "Manual refresh of the same record preserves export completion feedback",
+      "Changing search to another capture removes the preceding export feedback",
+      "Normal application exit confirmed"
+    ],
+    "originalEvidencePreserved": true,
+    "annotationPNGHash": "f7ce891f0788ccfee7379f27a012f536188f5e50f1420e1b3ac0bb83badfe67d",
+    "build18PortableZIPHash": "9a956a32688b4b69a5dc9420c10f6b504000373a413b8a0dd6557b10577e768b",
+    "finalPortableZIPHash": "93a8afe7ebb5ccdbeb9ac3f81e6443d01f44bb9006aa715367ae8cb9505c36ae",
+    "finalPortableVerified": [
+      "Same name, notes and three marks",
+      "Annotated PNG identical to visually inspected export",
+      "No machine-absolute source paths in capture.json, PROMPT.txt, reference.html or portable.json"
+    ],
+    "limitations": [
+      "CUA Chinese typeText dropped characters; paste reported timeout although complete name appeared. Other fields set through accessibility and values individually verified; actual IME composition not accepted",
+      "Editor edge drags did not change window size; 900 pt minimum layout has automated evidence only, manual low-height sidebar scrolling remains unverified",
+      "200-record operation is not a quantified three-round performance benchmark",
+      "Portable export does not prove actual receiver attachment or prototype reconstruction"
+    ]
+  },
+  "issuesFoundAndFixed": [
+    "Empty lists previously gave no actionable guidance and did not distinguish a missing search result from corrupt data",
+    "Capture history and editor minimum width exceeded a 900 pt browser window",
+    "Annotation image export previously ignored failed field validation",
+    "Returning from native export dialog triggered a refresh that overwrote successful export feedback"
+  ],
+  "notComplete": [
+    "Full visual state matrix, increased contrast and VoiceOver",
+    "Physical IME, editor minimum-height sidebar scrolling and full keyboard flow",
+    "Actual local Codex paste and portable receiver attachment/reconstruction",
+    "At least two compatible real extensions, multiple windows/actions, old macOS devices",
+    "True tab audio controls under public API constraints",
+    "Three-round performance, real-data-copy migration and retained 0.7 gates"
+  ]
+}
