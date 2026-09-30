@@ -3,9 +3,28 @@ import WebKit
 
 @MainActor
 enum DeveloperToolsSmoke {
+    // These checks exercise real AppKit focus. Losing application activation
+    // invalidates that prerequisite, even if the app becomes active again later.
+    @MainActor private final class ForegroundSession:NSObject {
+        private var interrupted = false
+        init(application:NSApplication) {
+            super.init()
+            NotificationCenter.default.addObserver(self,selector:#selector(resigned),name:NSApplication.didResignActiveNotification,object:application)
+        }
+        deinit { NotificationCenter.default.removeObserver(self) }
+        @objc private func resigned() { interrupted = true }
+        func validate() throws {
+            guard !interrupted,NSApp.isActive else {
+                throw CaptureService.Failure.message("inspector smoke interrupted: application lost foreground; run in an uninterrupted foreground session")
+            }
+        }
+    }
     static func run(_ browser:BrowserWindow) async throws->[String] {
+        let foreground = ForegroundSession(application:NSApp)
+        try foreground.validate()
         var checks:[String] = []
         func require(_ condition:Bool,_ label:String) throws {
+            try foreground.validate()
             guard condition else {
                 let responder = browser.window?.firstResponder.map { String(describing:type(of:$0)) } ?? "nil"
                 throw CaptureService.Failure.message("\(label) [appActive=\(NSApp.isActive), browserKey=\(browser.window?.isKeyWindow == true), keyIsBrowser=\(NSApp.keyWindow === browser.window), browserResponder=\(responder)]")
@@ -13,6 +32,7 @@ enum DeveloperToolsSmoke {
         }
         func wait(_ inspector:NSObject,visible:Bool) async throws {
             for _ in 0..<100 {
+                try foreground.validate()
                 if DeveloperTools.visible(inspector) == visible { return }
                 try await Task.sleep(for:.milliseconds(50))
             }
@@ -97,17 +117,19 @@ enum DeveloperToolsSmoke {
         try require(adjacent.webView != nil && browser.activeWebView === adjacent.webView && browser.window?.firstResponder === adjacent.webView,"closed tab inspector callback leaves the adjacent surviving page focused")
         DeveloperTools.close(original)
         try await wait(inspector,visible:false)
-        checks += try await detachedCommands(browser)
+        checks += try await detachedCommands(browser,foreground:foreground)
         return checks
     }
 
-    private static func detachedCommands(_ browser:BrowserWindow) async throws->[String] {
+    private static func detachedCommands(_ browser:BrowserWindow,foreground:ForegroundSession) async throws->[String] {
         var checks:[String] = []
         func require(_ condition:Bool,_ label:String) throws {
+            try foreground.validate()
             guard condition else { throw CaptureService.Failure.message(label) };checks.append(label)
         }
         func until(_ label:String,_ condition:()->Bool) async throws {
             for _ in 0..<100 {
+                try foreground.validate()
                 if condition() { return }
                 try await Task.sleep(for:.milliseconds(50))
             }

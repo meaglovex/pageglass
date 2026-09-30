@@ -15,6 +15,14 @@ enum SmokeTest {
             }
             let view = browser.webView, capture = browser.captureService
             guard view.title == "工作台 · 捕获练习" else { throw CaptureService.Failure.message("fixture load timeout") }
+            if CommandLine.arguments.contains("--inspector-only") {
+                checks = try await DeveloperToolsSmoke.run(browser)
+                let report:[String:Any] = ["scope":"inspector","passed":checks,"status":"passed"]
+                try JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]).write(to:output.appendingPathComponent("report.json"))
+                print("INSPECTOR SMOKE PASS \(checks.count) \(output.path)")
+                if CommandLine.arguments.contains("--exit") { CaptureClipboard.finishTesting();NSApp.terminate(nil) }
+                return
+            }
             func require(_ value:Bool,_ label:String) throws {
                 if !value { throw CaptureService.Failure.message(label) }; checks.append(label)
             }
@@ -79,7 +87,7 @@ enum SmokeTest {
             if CommandLine.arguments.contains("--review-capture") { browser.performCapture(mode:"page") }
             if CommandLine.arguments.contains("--exit") { CaptureClipboard.finishTesting(); NSApp.terminate(nil) }
         } catch {
-            let report: [String:Any] = ["passed":checks,"error":error.localizedDescription,"status":"failed"]
+            let report: [String:Any] = ["scope":CommandLine.arguments.contains("--inspector-only") ? "inspector" : "full","passed":checks,"error":error.localizedDescription,"status":"failed"]
             if let data = try? JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted]) { try? data.write(to:output.appendingPathComponent("report.json")) }
             print("SMOKE FAIL \(error)")
             if CommandLine.arguments.contains("--exit") { CaptureClipboard.finishTesting(); exit(1) }

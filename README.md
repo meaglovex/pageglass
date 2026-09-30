@@ -98,7 +98,11 @@ swift test
 scripts/build.sh
 # 需登录的 macOS 图形会话；只使用自有测试页面
 scripts/smoke.sh
+# 只排查检查器焦点和多窗口命令；报告明确标记为 inspector 范围
+scripts/smoke.sh --inspector-only
 ```
+
+检查器焦点测试需要 Pageglass 持续处于前台。运行期间切到其他应用会使此次检查失败并报告前台条件失效，不会自动抢回焦点、跳过断言或算作通过；回到不受打断的前台环境后再运行。专项结果不能替代完整 smoke 或实际界面验收。
 
 源码与项目图标以 [MIT](LICENSE) 许可证开源。系统 WebKit / AppKit 不包含在仓库中，其许可由 Apple 提供；性能对照工具下载的 Speedometer 使用上游自身许可证，仅保存在被忽略的测试目录。
 

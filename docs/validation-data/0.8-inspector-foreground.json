@@ -1,0 +1,84 @@
+{
+  "date": "2026-09-30",
+  "version": "0.8.0-alpha.1",
+  "build": 30,
+  "status": "inspector-test-foreground-prerequisite-tracked-release-incomplete",
+  "sourceBaseCommit": "60fc09b7eeb2823740d9db8b10fee399582685b5",
+  "sourceDigestSHA256": "8daf60d8032243dad79b7a54a9136ff29d1f1efd71c9b3e00aea1b66c31b9b04",
+  "sourceDigestMethod": "Python pathlib Path-component sorting of Sources/Browser files, followed by scripts/build.sh: relative path, NUL, raw SHA256 for each file",
+  "binarySHA256": {
+    "release": "6ca35ab152e4eabd2a77aae4b5906261f8d72314c72e3afe531e9d550479119e",
+    "qa": "089a9800043077c56b4aad3abc5d5c5a54c150dc07dda2155f192d9cabb6698c"
+  },
+  "unitPassed": 42,
+  "defaultUnitSkipped": 1,
+  "inspectorSmoke": {
+    "run": "20260930-085606",
+    "scope": "inspector",
+    "status": "passed",
+    "passed": 30
+  },
+  "fullSmoke": {
+    "run": "20260930-085615",
+    "scope": "full",
+    "status": "failed",
+    "passedBeforeFailure": 83,
+    "error": "inspector smoke interrupted: application lost foreground; run in an uninterrupted foreground session"
+  },
+  "lastCompleteFullSmoke": {
+    "build": 29,
+    "runs": [
+      "20260930-084518",
+      "20260930-084552",
+      "20260930-084617"
+    ],
+    "passedEach": 321,
+    "notCurrentBuildAcceptance": true
+  },
+  "change": {
+    "entryPoint": "scripts/smoke.sh --inspector-only runs the same 30 inspector assertions and writes scope=inspector",
+    "precondition": "Observe NSApplication.didResignActiveNotification during inspector tests and require continuous activation before assertions and wait conditions; an interruption fails the run even if activation subsequently returns",
+    "lifetime": "Observer is owned by the test session and removed at deinit; no new observer or polling in normal browser execution",
+    "failurePolicy": "No auto-reactivation, retry, skip or success conversion; original assertions and timeout bounds retained",
+    "runtime": "DeveloperTools.swift is byte-identical to the preceding commit; temporary callback trace code removed. No change to browser focus behavior or private API scope"
+  },
+  "diagnosticEvidence": [
+    {
+      "run": "20260930-085241",
+      "result": "Instrumented original inspector suite passed all 30."
+    },
+    {
+      "run": "20260930-085255",
+      "result": "Application initially active; trace later showed app=false, key=false, keyID=-1 before detached-window readiness failed. No second Pageglass process remained."
+    },
+    {
+      "run": "20260930-085328",
+      "result": "Application again lost activation before closing the second inspected tab; detached inspector never acquired key/main while inactive."
+    },
+    {
+      "run": "20260930-085505",
+      "result": "First foreground-session implementation passed all 30 checks."
+    },
+    {
+      "run": "20260930-085514",
+      "result": "Application lost foreground after the address-editor preservation case. The new guard failed immediately with an explicit interruption error; this was not counted as a pass."
+    }
+  ],
+  "environment": {
+    "os": "macOS 27.0 (26A428)",
+    "architecture": "arm64",
+    "data": "owned smoke fixtures and temporary profiles; no real user captures or clipboard changes"
+  },
+  "limits": [
+    "The two build 29 generic focus failures did not record activation and cannot be conclusively attributed to the newly observed interruption class.",
+    "The current full smoke failed on the foreground prerequisite after 83 completed non-inspector checks; no build 30 full-suite pass is claimed.",
+    "A diagnostic run proves test conditions only; it does not close actual UI, IME, VoiceOver, audio, Codex paste, bookmark pointer, extension, system-version or performance gates.",
+    "The old favicon transient trigger remains unproven, despite build 29 retention and reuse improvements.",
+    "All owned smoke processes and servers terminated; normal installed app untouched; 0.8 is an unreleased draft alpha."
+  ],
+  "researchReferences": [
+    "https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/Inspector/WebInspectorUIProxy.cpp",
+    "https://github.com/WebKit/WebKit/blob/main/Source/WebKit/UIProcess/Inspector/mac/WebInspectorUIProxyMac.mm"
+  ],
+  "referenceLimit": "Upstream source guided trace locations; it is not proof of the exact system WebKit implementation or a diagnosis of uninstrumented historical failures."
+}
