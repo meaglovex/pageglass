@@ -6,7 +6,10 @@ enum DeveloperToolsSmoke {
     static func run(_ browser:BrowserWindow) async throws->[String] {
         var checks:[String] = []
         func require(_ condition:Bool,_ label:String) throws {
-            guard condition else { throw CaptureService.Failure.message(label) };checks.append(label)
+            guard condition else {
+                let responder = browser.window?.firstResponder.map { String(describing:type(of:$0)) } ?? "nil"
+                throw CaptureService.Failure.message("\(label) [appActive=\(NSApp.isActive), browserKey=\(browser.window?.isKeyWindow == true), keyIsBrowser=\(NSApp.keyWindow === browser.window), browserResponder=\(responder)]")
+            };checks.append(label)
         }
         func wait(_ inspector:NSObject,visible:Bool) async throws {
             for _ in 0..<100 {
@@ -58,9 +61,16 @@ enum DeveloperToolsSmoke {
         guard let settings = browser.settingsController,let settingsWindow = settings.window else { throw CaptureService.Failure.message("settings window missing during inspector focus test") }
         settingsWindow.makeKeyAndOrderFront(nil);settingsWindow.makeFirstResponder(settings.homepage)
         let settingsEditor = settings.homepage.currentEditor()
+        func focusState()->String {
+            "appActive=\(NSApp.isActive), settingsKey=\(settingsWindow.isKeyWindow), browserKey=\(browser.window?.isKeyWindow == true), editorExists=\(settingsEditor != nil), editorFocused=\(settingsEditor != nil && settingsWindow.firstResponder === settingsEditor), fieldAttached=\(settings.homepage.window === settingsWindow)"
+        }
+        let focusBeforeClose = focusState()
         DeveloperTools.close(original)
         try await wait(inspector,visible:false)
         try await Task.sleep(for:.milliseconds(80))
+        if settingsEditor == nil || !settingsWindow.isKeyWindow || settingsWindow.firstResponder !== settingsEditor {
+            print("INSPECTOR FOCUS before: \(focusBeforeClose); after: \(focusState())")
+        }
         try require(settingsEditor != nil && settingsWindow.isKeyWindow && settingsWindow.firstResponder === settingsEditor,"closing an inspector does not steal focus from another window")
         settings.close();browser.window?.makeKeyAndOrderFront(nil)
 

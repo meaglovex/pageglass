@@ -69,7 +69,9 @@ Chrome 级验收仍需要相同电脑、相同窗口尺寸/网络/页面集、�
 
 ## 网站图标、捕获清理与检查器
 
-标签和书签按站点显示图标。读取页面声明的 icon，再回退同源 favicon.ico；独立无 Cookie URLSession 限制单图 256 KiB、8 秒，ImageIO 缩至 32 像素，内存缓存最多 128 站点。不使用第三方图标服务。
+标签和书签按站点显示图标。读取页面声明的 icon，再回退同源 favicon.ico；独立无 Cookie URLSession 限制单图 256 KiB、8 秒，ImageIO 缩至 32 像素，不使用第三方图标服务。每个浏览器窗口明确保留最近使用的 128 个站点图标，超限只移除最久未用的一项。页面图标加载后供同源书签及缺图标的同源标签复用，休眠标签不因此创建 WebView；已有不同图标不覆盖。缓存不落盘，重新启动后需要重新获取图标。
+
+此小型工作集不再使用可自行移除对象的 [NSCache](https://developer.apple.com/documentation/Foundation/NSCache)，其 [countLimit](https://developer.apple.com/documentation/foundation/nscache/countlimit) 也不是严格上限。这明确了近期图标的保留条件，但尚未复现旧 smoke 偶发失败的精确触发过程，不能将缓存策略变更当作旧原因的证明。
 
 捕获清理仅枚举 Captures 的直接子目录，要求符合本程序命名及完成标志 capture.json，跳过符号链接；不执行或信任网页元数据中的路径。自动按创建时刻计算保留天数，默认关闭，手动和自动都移入系统废纸篓；失败保留并报告。自有剪贴板类型标记所属包，清理不碰其他复制内容。旧设置没有保留期限字段时仍可完整解码。
 

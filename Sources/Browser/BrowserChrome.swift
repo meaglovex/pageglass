@@ -167,7 +167,9 @@ extension BrowserWindow {
     }
     @objc func bookmarkClicked(_ button:NSButton) {
         bookmarkPopover?.close()
-        if let record = store.state.bookmarks.first(where:{$0.id.uuidString == button.identifier?.rawValue}),let url = URL(string:record.url) { load(url) }
+        if let record = store.state.bookmarks.first(where:{$0.id.uuidString == button.identifier?.rawValue}),let url = URL(string:record.url) {
+            window?.makeFirstResponder(webView);load(url)
+        }
     }
     func buildFindBar() {
         findBar.isHidden = true; findBar.spacing = 8; findBar.edgeInsets = NSEdgeInsets(top:6,left:16,bottom:6,right:12)

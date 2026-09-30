@@ -55,6 +55,15 @@ enum ExperienceSmoke {
         // Let the pending window resize finish: resizing intentionally closes popovers.
         browser.window?.makeKeyAndOrderFront(nil); browser.window?.contentView?.layoutSubtreeIfNeeded()
         try await Task.sleep(for:.milliseconds(100))
+        guard let barButton = browser.bookmarkRow.arrangedSubviews.compactMap({ $0 as? BookmarkBarButton }).first(where:{$0.identifier != nil}),
+              let barRecord = store.state.bookmarks.first(where:{$0.id.uuidString == barButton.identifier?.rawValue}) else { throw CaptureService.Failure.message("bookmark bar fixture missing") }
+        for draft in ["","unfinished-address-draft"] {
+            browser.focusAddress();browser.address.stringValue = draft
+            guard browser.address.currentEditor() != nil, browser.window?.firstResponder === browser.address.currentEditor() else { throw CaptureService.Failure.message("bookmark fixture did not focus the address editor") }
+            barButton.performClick(nil)
+            for _ in 0..<40 { if browser.webView.url?.absoluteString == barRecord.url && browser.address.stringValue == barRecord.url { break };try await Task.sleep(for:.milliseconds(50)) }
+            try require(browser.webView.url?.absoluteString == barRecord.url && browser.address.stringValue == barRecord.url && browser.window?.firstResponder === browser.activeWebView && browser.suggestionPanel == nil,"bookmark bar navigation replaces \(draft.isEmpty ? "empty" : "unfinished") address editing with the actual URL and webpage focus")
+        }
         guard let overflowButton = browser.bookmarkRow.arrangedSubviews.compactMap({ $0 as? NSButton }).first(where:{$0.action == #selector(BrowserWindow.showBookmarkOverflow(_:))}) else { throw CaptureService.Failure.message("bookmark overflow button missing") }
         browser.showBookmarkOverflow(overflowButton)
         guard let overflow = browser.bookmarkPopover?.contentViewController as? BookmarkListController else { throw CaptureService.Failure.message("bookmark overflow list missing") }
