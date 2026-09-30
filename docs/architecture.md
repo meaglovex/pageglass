@@ -18,7 +18,7 @@ WebKit 支持系统 GPU 路径，但不保证所有网站都比 Chromium 快。�
 ## 代码边界
 
 - `BrowserWindow` / `BrowserChrome`：标签生命周期、两行原生工具栏、地址栏、查找栏与临时回执。
-- `BrowserActions` / `TabButton` / `AddressSuggestions`：导航菜单、标签排序/恢复与本地地址建议。
+- `BrowserActions` / `BrowserMenu` / `TabButton` / `AddressSuggestions`：浏览器动作、分组原生菜单、标签排序/恢复与本地地址建议。`BrowserMenu` 复用现有 selector 与菜单栏快捷键，单行缩放控件直接更新活动 WebView，菜单关闭后不保留窗口引用。
 - `CommandPalette`：本地快速操作，按类型搜索并分发到现有浏览器动作；组合输入不执行命令。
 - `CaptureSidebar` / `CapturePreview` / `CaptureImagePreview`：不改变网页视口的结果覆盖面板、共享详情与原生缩放预览。
 - `CaptureIntro`：仅新配置自动显示一次的本地捕获练习提示；手动入口复用同一原生覆盖视图。
