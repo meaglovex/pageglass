@@ -1,0 +1,854 @@
+{
+  "status": "incomplete",
+  "date": "2026-10-09",
+  "scope": "one accepted Chrome 1-tab round; not a completed 3-round or multi-tab comparison",
+  "provenance": {
+    "benchmark": "Speedometer 3.1",
+    "commit": "1386415be8fef2f6b6bbdbe1828872471c5d802a",
+    "treeSHA256": "9fc73061ed86c3d25d909b843779447c6d374226058198ac5b41647f9f5f3ce4",
+    "archiveSHA256": "088235e48fb02ad0d7b5b39cb7ad83ad5257ee05e1e7db6cd6011866e5cdbe1d",
+    "source": "https://github.com/WebKit/Speedometer/tree/1386415be8fef2f6b6bbdbe1828872471c5d802a",
+    "browsers": {
+      "pageglass": {
+        "version": "0.8.0-alpha.1",
+        "executableSHA256": "d9bf2353eeddb9a6e75e6775fced1d080b0084e7bc75e473841ad4243d7d4de0"
+      },
+      "chrome": {
+        "version": "154.0.8037.98",
+        "executableSHA256": "ccffd5c5fe77ba3212e07c2c69091f8048b73c396b4647ecaa150e1e01a04954"
+      }
+    },
+    "engines": [
+      "chrome"
+    ],
+    "runnerSHA256": "5ec43e1c5b83c9fc24cc0e76009d1b92c8d8dcb635462f5d534ee1c67e4e6137",
+    "adapterSHA256": "e484a771af3f12cd1e0266445695d459b4955f2216065773c2eda47607516f89",
+    "serverSHA256": "60170449a9446da7398c7cc95b2ff170131ea7cb01e4b58739a345b10ae08023",
+    "environmentHelperSHA256": "22823d79b46c0f624ecdc997d7a39b63e7b88f9e373bb4adef67523ac98e3251",
+    "processMetricsSHA256": "10183fd4c197f76802b15a6f1d5ca1ddf74167eaec3ed2f2383faf6f1695b41e",
+    "memoryFixture": {
+      "version": 3,
+      "viewport": {
+        "width": 1280,
+        "height": 760
+      },
+      "sha256": "1e8979cb359f3b47e4fcb683f5b3670d85abb01c863adb63a61989e174b39778",
+      "containerSHA256": "60170449a9446da7398c7cc95b2ff170131ea7cb01e4b58739a345b10ae08023"
+    },
+    "chromeWindowHeight": 867,
+    "hardwareModel": "Mac17,4"
+  },
+  "acceptedOneTabResult": {
+    "status": "completed",
+    "tabs": {
+      "0": {
+        "kind": "memory",
+        "tab": 0,
+        "ready": true,
+        "seenVisible": true,
+        "rows": 1000,
+        "nodes": 5233,
+        "viewport": {
+          "width": 1280,
+          "height": 760
+        },
+        "containerViewport": {
+          "width": 1280,
+          "height": 780
+        },
+        "visible": true,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+      }
+    },
+    "measuredViewport": {
+      "width": 1280,
+      "height": 760
+    },
+    "memorySamples": [
+      {
+        "engine": "chrome",
+        "rootPID": 56695,
+        "processes": [
+          {
+            "pid": 56695,
+            "name": "Google Chrome",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 90883752,
+            "translated": false
+          },
+          {
+            "pid": 56701,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 262587808,
+            "translated": false
+          },
+          {
+            "pid": 56702,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 23987304,
+            "translated": false
+          },
+          {
+            "pid": 56704,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 22037728,
+            "translated": false
+          },
+          {
+            "pid": 56708,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 67569200,
+            "translated": false
+          },
+          {
+            "pid": 56711,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 64636368,
+            "translated": false
+          },
+          {
+            "pid": 56714,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 30065984,
+            "translated": false
+          },
+          {
+            "pid": 56715,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 32556424,
+            "translated": false
+          },
+          {
+            "pid": 56737,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 27952400,
+            "translated": false
+          },
+          {
+            "pid": 56738,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 33555848,
+            "translated": false
+          }
+        ],
+        "physicalFootprintBytes": 652850928,
+        "sampleTime": "2026-10-09T09:45:28.384+08:00",
+        "warnings": [],
+        "metric": "macOS footprint aggregate; includes attributed browser helpers and WebKit services"
+      },
+      {
+        "engine": "chrome",
+        "rootPID": 56695,
+        "processes": [
+          {
+            "pid": 56695,
+            "name": "Google Chrome",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 90867368,
+            "translated": false
+          },
+          {
+            "pid": 56701,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 262587808,
+            "translated": false
+          },
+          {
+            "pid": 56702,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 24020072,
+            "translated": false
+          },
+          {
+            "pid": 56704,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 22037728,
+            "translated": false
+          },
+          {
+            "pid": 56708,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 67585584,
+            "translated": false
+          },
+          {
+            "pid": 56711,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 64652752,
+            "translated": false
+          },
+          {
+            "pid": 56714,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 30098752,
+            "translated": false
+          },
+          {
+            "pid": 56715,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 30901640,
+            "translated": false
+          },
+          {
+            "pid": 56737,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 27952400,
+            "translated": false
+          },
+          {
+            "pid": 56738,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 33555848,
+            "translated": false
+          }
+        ],
+        "physicalFootprintBytes": 651278064,
+        "sampleTime": "2026-10-09T09:45:29.616+08:00",
+        "warnings": [],
+        "metric": "macOS footprint aggregate; includes attributed browser helpers and WebKit services"
+      },
+      {
+        "engine": "chrome",
+        "rootPID": 56695,
+        "processes": [
+          {
+            "pid": 56695,
+            "name": "Google Chrome",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 90883752,
+            "translated": false
+          },
+          {
+            "pid": 56701,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 261539232,
+            "translated": false
+          },
+          {
+            "pid": 56702,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 24020072,
+            "translated": false
+          },
+          {
+            "pid": 56704,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 22037728,
+            "translated": false
+          },
+          {
+            "pid": 56708,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 67585584,
+            "translated": false
+          },
+          {
+            "pid": 56711,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 64652752,
+            "translated": false
+          },
+          {
+            "pid": 56714,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 30098752,
+            "translated": false
+          },
+          {
+            "pid": 56715,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 30901640,
+            "translated": false
+          },
+          {
+            "pid": 56737,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 27952400,
+            "translated": false
+          },
+          {
+            "pid": 56738,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 33555848,
+            "translated": false
+          }
+        ],
+        "physicalFootprintBytes": 650245872,
+        "sampleTime": "2026-10-09T09:45:30.846+08:00",
+        "warnings": [],
+        "metric": "macOS footprint aggregate; includes attributed browser helpers and WebKit services"
+      },
+      {
+        "engine": "chrome",
+        "rootPID": 56695,
+        "processes": [
+          {
+            "pid": 56695,
+            "name": "Google Chrome",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 91555496,
+            "translated": false
+          },
+          {
+            "pid": 56701,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 260490656,
+            "translated": false
+          },
+          {
+            "pid": 56702,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 24036456,
+            "translated": false
+          },
+          {
+            "pid": 56704,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 22037728,
+            "translated": false
+          },
+          {
+            "pid": 56708,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 67585584,
+            "translated": false
+          },
+          {
+            "pid": 56711,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 64652752,
+            "translated": false
+          },
+          {
+            "pid": 56714,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 30131520,
+            "translated": false
+          },
+          {
+            "pid": 56715,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 30901640,
+            "translated": false
+          },
+          {
+            "pid": 56737,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 26625296,
+            "translated": false
+          },
+          {
+            "pid": 56738,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 33605000,
+            "translated": false
+          }
+        ],
+        "physicalFootprintBytes": 648607472,
+        "sampleTime": "2026-10-09T09:45:32.040+08:00",
+        "warnings": [],
+        "metric": "macOS footprint aggregate; includes attributed browser helpers and WebKit services"
+      },
+      {
+        "engine": "chrome",
+        "rootPID": 56695,
+        "processes": [
+          {
+            "pid": 56695,
+            "name": "Google Chrome",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 93750952,
+            "translated": false
+          },
+          {
+            "pid": 56701,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 249906592,
+            "translated": false
+          },
+          {
+            "pid": 56702,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 26166376,
+            "translated": false
+          },
+          {
+            "pid": 56704,
+            "name": "Google Chrome Helper",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 22037728,
+            "translated": false
+          },
+          {
+            "pid": 56708,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 67585584,
+            "translated": false
+          },
+          {
+            "pid": 56711,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 64652752,
+            "translated": false
+          },
+          {
+            "pid": 56715,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 30901640,
+            "translated": false
+          },
+          {
+            "pid": 56737,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 26625296,
+            "translated": false
+          },
+          {
+            "pid": 56738,
+            "name": "Google Chrome Helper (Renderer)",
+            "attribution": "isolated test profile",
+            "physicalFootprintBytes": 33719688,
+            "translated": false
+          }
+        ],
+        "physicalFootprintBytes": 610513328,
+        "sampleTime": "2026-10-09T09:45:34.488+08:00",
+        "warnings": [],
+        "metric": "macOS footprint aggregate; includes attributed browser helpers and WebKit services"
+      }
+    ],
+    "discardedSamples": [
+      {
+        "sample": 4,
+        "attempt": 1,
+        "reason": "process group changed during sample; missing=['(Google Chrome He)']; unexpected=[]"
+      }
+    ],
+    "engine": "chrome",
+    "environment": [
+      {
+        "cpuCount": 10,
+        "frontmostPID": 92778,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:18Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56695,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:23Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56695,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:23Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56695,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:28Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56695,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:29Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56695,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:30Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56695,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:31Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56695,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:33Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56695,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:34Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    ],
+    "memoryAfterBenchmark": {
+      "engine": "chrome",
+      "rootPID": 56695,
+      "processes": [
+        {
+          "pid": 56695,
+          "name": "Google Chrome",
+          "attribution": "isolated test profile",
+          "physicalFootprintBytes": 93750952,
+          "translated": false
+        },
+        {
+          "pid": 56701,
+          "name": "Google Chrome Helper",
+          "attribution": "isolated test profile",
+          "physicalFootprintBytes": 249906592,
+          "translated": false
+        },
+        {
+          "pid": 56702,
+          "name": "Google Chrome Helper",
+          "attribution": "isolated test profile",
+          "physicalFootprintBytes": 26166376,
+          "translated": false
+        },
+        {
+          "pid": 56704,
+          "name": "Google Chrome Helper",
+          "attribution": "isolated test profile",
+          "physicalFootprintBytes": 22037728,
+          "translated": false
+        },
+        {
+          "pid": 56708,
+          "name": "Google Chrome Helper (Renderer)",
+          "attribution": "isolated test profile",
+          "physicalFootprintBytes": 67585584,
+          "translated": false
+        },
+        {
+          "pid": 56711,
+          "name": "Google Chrome Helper (Renderer)",
+          "attribution": "isolated test profile",
+          "physicalFootprintBytes": 64652752,
+          "translated": false
+        },
+        {
+          "pid": 56715,
+          "name": "Google Chrome Helper (Renderer)",
+          "attribution": "isolated test profile",
+          "physicalFootprintBytes": 30901640,
+          "translated": false
+        },
+        {
+          "pid": 56737,
+          "name": "Google Chrome Helper (Renderer)",
+          "attribution": "isolated test profile",
+          "physicalFootprintBytes": 26625296,
+          "translated": false
+        },
+        {
+          "pid": 56738,
+          "name": "Google Chrome Helper (Renderer)",
+          "attribution": "isolated test profile",
+          "physicalFootprintBytes": 33719688,
+          "translated": false
+        }
+      ],
+      "physicalFootprintBytes": 610513328,
+      "sampleTime": "2026-10-09T09:45:34.488+08:00",
+      "warnings": [],
+      "metric": "macOS footprint aggregate; includes attributed browser helpers and WebKit services"
+    },
+    "elapsedSeconds": 17.366189417021815
+  },
+  "medianMiB": 620.1227874755859,
+  "sampleMiB": [
+    622.6071624755859,
+    621.1071624755859,
+    620.1227874755859,
+    618.5602874755859,
+    582.2308807373047
+  ],
+  "invalidFiveTabRun": {
+    "reason": "browser not foreground",
+    "run": "8cab431727ff4f839fef628485bc3a81",
+    "environment": [
+      {
+        "cpuCount": 10,
+        "frontmostPID": 52450,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:35Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:40Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:45Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:50Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:45:55Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:00Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:05Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:10Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:15Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:20Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:25Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:30Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:36Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:41Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:46Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 56779,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:51Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      {
+        "cpuCount": 10,
+        "frontmostPID": 92778,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T01:46:56Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    ]
+  },
+  "unmeasured": [
+    "three-round Chrome medians",
+    "5-tab Chrome memory",
+    "10-tab Chrome memory",
+    "Chrome CPU/power"
+  ],
+  "browserControlBlocker": "Browser plugin connection failed after retry; installed and enabled extension plus native host validated; no alternate browser-control workaround used."
+}
