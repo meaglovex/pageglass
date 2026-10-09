@@ -164,6 +164,29 @@ enum ExperienceSmoke {
         }
         browser.webView(browser.webView,didFailProvisionalNavigation:nil,withError:NSError(domain:"WebKitErrorDomain",code:101))
         try require(tab.failure != nil && !browser.errorBar.isHidden,"unhandled WebKit navigation error remains visible")
+        func chooseSuggestion(_ query:String,mouse:Bool) async throws -> PageRecord {
+            browser.focusAddress(); browser.address.stringValue = query
+            browser.controlTextDidChange(Notification(name:NSControl.textDidChangeNotification,object:browser.address))
+            guard let record = browser.suggestions.first else { throw CaptureService.Failure.message("bookmark suggestion fixture missing") }
+            if mouse {
+                guard let stack = browser.suggestionPanel?.contentView as? NSStackView,let button = stack.arrangedSubviews.first as? NSButton else { throw CaptureService.Failure.message("suggestion mouse action missing") }
+                button.performClick(nil)
+            } else { browser.selectedSuggestion = 0; browser.navigate() }
+            for _ in 0..<100 {
+                if browser.webView.url?.absoluteString == record.url && !browser.webView.isLoading { break }
+                try await Task.sleep(for:.milliseconds(50))
+            }
+            try require(browser.webView.url?.absoluteString == record.url && browser.suggestionPanel == nil && browser.window?.firstResponder === browser.webView,"\(mouse ? "mouse" : "keyboard") suggestion selection opens an existing local bookmark and restores page focus")
+            return record
+        }
+        _ = try await chooseSuggestion("书签",mouse:false)
+        let record = try await chooseSuggestion("书签 1",mouse:true)
+        let currentURL = browser.webView.url
+        store.removeBookmark(id:record.id)
+        browser.suggestions = [record]; browser.selectedSuggestion = 0; browser.navigate()
+        try require(browser.webView.url == currentURL && browser.suggestionPanel == nil && browser.status.stringValue.contains("已失效"),"a removed suggestion cannot navigate using a stale stored record")
+        browser.focusAddress(); browser.address.stringValue = record.url; browser.dismissSuggestions(); browser.navigate()
+        try require(browser.webView.url == currentURL && browser.status.stringValue == "请输入有效的网址或搜索词" && Navigation.url(for:record.url) == nil,"direct file URL input remains restricted while stored bookmark selection is supported")
         return checks
     }
 }

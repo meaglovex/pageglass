@@ -255,8 +255,10 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     }
     @objc func navigate() {
         guard (address.currentEditor() as? NSTextView)?.hasMarkedText() != true else { return }
-        let input = selectedSuggestion >= 0 && suggestions.indices.contains(selectedSuggestion) ? suggestions[selectedSuggestion].url : address.stringValue
-        guard !capturing,let url = Navigation.url(for:input,searchEngine:store.state.settings.searchEngine) else { status.stringValue = "请输入有效的网址或搜索词"; return }
+        if selectedSuggestion >= 0,suggestions.indices.contains(selectedSuggestion) {
+            openSuggestion(suggestions[selectedSuggestion]); return
+        }
+        guard !capturing,let url = Navigation.url(for:address.stringValue,searchEngine:store.state.settings.searchEngine) else { status.stringValue = "请输入有效的网址或搜索词"; return }
         window?.makeFirstResponder(webView); load(url)
     }
     @objc func focusAddress() {

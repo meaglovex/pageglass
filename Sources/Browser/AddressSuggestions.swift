@@ -48,5 +48,19 @@ extension BrowserWindow {
         panel.contentView = row; let height = CGFloat(suggestions.count*48+12)
         panel.setFrame(NSRect(x:min(frame.minX,window.frame.maxX-width-12),y:frame.minY-height-7,width:width,height:height),display:true); panel.orderFront(nil)
     }
-    @objc private func suggestionClicked(_ button:NSButton) { guard suggestions.indices.contains(button.tag) else { return }; let url = suggestions[button.tag].url; dismissSuggestions(); address.stringValue = url; navigate() }
+    func openSuggestion(_ record:PageRecord) {
+        guard !capturing else { return }
+        // Suggestions are stored records, not arbitrary address-bar commands. Match
+        // their current identity and keep the same URL schemes as bookmark clicks.
+        let exists = store.state.bookmarks.contains { $0.id == record.id && $0.url == record.url } || store.state.history.contains { $0.id == record.id && $0.url == record.url }
+        guard exists,let url = URL(string:record.url),let scheme = url.scheme?.lowercased(),
+              ["http","https","file"].contains(scheme),url.isFileURL || url.host != nil else {
+            dismissSuggestions(); status.stringValue = "这条建议已失效，请重新搜索"; return
+        }
+        dismissSuggestions(); window?.makeFirstResponder(webView); load(url)
+    }
+    @objc private func suggestionClicked(_ button:NSButton) {
+        guard suggestions.indices.contains(button.tag) else { return }
+        openSuggestion(suggestions[button.tag])
+    }
 }
