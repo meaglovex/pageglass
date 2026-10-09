@@ -101,10 +101,17 @@ final class BrowserStore {
     func suggestions(_ query:String)->[PageRecord] {
         let q = query.trimmingCharacters(in:.whitespacesAndNewlines)
         guard !q.isEmpty else { return [] }
-        var seen = Set<String>()
-        return (state.bookmarks + state.history).filter { record in
-            (record.title.localizedCaseInsensitiveContains(q) || record.url.localizedCaseInsensitiveContains(q)) && seen.insert(record.url).inserted
-        }.prefix(8).map { $0 }
+        var seen = Set<String>(), matches:[PageRecord] = []
+        matches.reserveCapacity(8)
+        // Keep the existing ranking and locale-aware matching, but stop at the UI limit.
+        // A nonmatching bookmark must not hide a matching history entry for the same URL.
+        for records in [state.bookmarks,state.history] {
+            for record in records where (record.title.localizedCaseInsensitiveContains(q) || record.url.localizedCaseInsensitiveContains(q)) && seen.insert(record.url).inserted {
+                matches.append(record)
+                if matches.count == 8 { return matches }
+            }
+        }
+        return matches
     }
     private func changed(notify:Bool = true) {
         if notify { NotificationCenter.default.post(name:Self.changed,object:self) }

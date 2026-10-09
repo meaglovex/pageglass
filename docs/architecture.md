@@ -22,12 +22,12 @@ WebKit 支持系统 GPU 路径，但不保证所有网站都比 Chromium 快。�
 - `CommandPalette`：本地快速操作，按类型搜索并分发到现有浏览器动作；组合输入不执行命令。
 - `CaptureSidebar` / `CapturePreview` / `CaptureImagePreview`：不改变网页视口的结果覆盖面板、共享详情与原生缩放预览。
 - `CaptureIntro`：仅新配置自动显示一次的本地捕获练习提示；手动入口复用同一原生覆盖视图。
-- `BrowserStore`：原子写入浏览器数据，延迟合并保存；损坏文件不会被空数据覆盖。
+- `BrowserStore`：原子写入浏览器数据，延迟合并保存；损坏文件不会被空数据覆盖。地址建议按原有书签/历史顺序和 URL 去重规则收集，得到 8 条即停止，不创建完整匹配列表。
 - `LibraryController` / `SettingsController`：书签、历史、下载资料库与设置窗口。
 - `GraphicsDiagnostics` / `GraphicsSettingsView`：用户主动运行的本地图形检测、结构化结果及复制；使用公开 Metal / VideoToolbox / WebKit API，独立非持久页面与隔离内容世界，完成或取消后释放。不是应用级 GPU 开关。
 - `WebDelegates`：导航、下载、JS 对话框、文件上传和权限提示。
 - `BrowserTab`：每个标签的 WebView 与 KVO；关闭时拆除代理和脚本桥，防止强引用循环。
-- `CaptureService`：显式捕获事务、系统截图、长截图拼接、本地包及剪贴板。
+- `CaptureService` / `CapturePNG`：显式捕获事务、系统截图、长截图拼接、本地包及剪贴板。PNG 直接从已有 CGImage 编码，不经 TIFF 中转；压缩在后台任务执行，保留逻辑尺寸对应的 DPI，取消后不提交文件。
 - `CaptureAssets` / `Resources/capture-assets.js`：捕获时在隔离世界按页面权限读取资源、限制预算、验证文件格式、保存本地资源并替换引用。
 - `InteractionRecording` / `Resources/interaction-recorder.js`：用户显式开启后的限量操作记录；隔离世界事件、短期 DOM 变化观察、前后状态与逐步截图，和最终捕获共享离线资源。
 - `Resources/capture.js`：在独立 `WKContentWorld` 选择与序列化 DOM，网页主世界不能调用原生捕获桥。

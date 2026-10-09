@@ -56,7 +56,7 @@ final class InteractionRecording {
                 let image = try await view.takeSnapshot(configuration:configuration)
                 guard token == generation,!Task.isCancelled,frames.indices.contains(index) else { return }
                 guard try await revisionMatches() else { mark("skipped-changed-during-capture"); return }
-                guard let tiff = image.tiffRepresentation,let bitmap = NSBitmapImageRep(data:tiff),let png = bitmap.representation(using:.png,properties:[:]) else { throw CaptureService.Failure.message("交互截图编码失败") }
+                let png = try await CapturePNG.encode(image)
                 guard token == generation,frames.indices.contains(index) else { return }
                 let bytes = (try JSONSerialization.data(withJSONObject:extraction).count) + png.count
                 if bytes+usedBytes > 20*1024*1024 { frames[index].step["frameStatus"] = "skipped-size-limit"; warnings.append("交互画面与结构合计达到 20 MiB，后续仅保存操作日志。"); return }

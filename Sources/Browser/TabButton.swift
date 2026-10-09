@@ -13,7 +13,7 @@ final class TabClipView:NSClipView {
 /// 原生标签使用自绘背景，文字、关闭按钮和无障碍仍是原生控件。
 final class TabButton: NSView {
     let tabID: UUID
-    var selected = false { didSet { needsDisplay = true } }
+    var selected = false { didSet { if oldValue != selected { needsDisplay = true } } }
     var activate: (() -> Void)?
     var close: (() -> Void)?
     var drop: ((NSPoint)->Void)?
@@ -22,6 +22,7 @@ final class TabButton: NSView {
     private var hovering = false
     private let label = NSTextField(labelWithString:"")
     private let icon = NSImageView()
+    private static let fallbackIcon = NSImage(systemSymbolName:"globe",accessibilityDescription:nil)
     let closeButton = ChromeButton()
     private var down: NSEvent?
     private var dragging = false
@@ -29,7 +30,7 @@ final class TabButton: NSView {
     init(tab:BrowserTab) {
         self.tabID = tab.id
         super.init(frame:.zero)
-        icon.image = tab.favicon ?? NSImage(systemSymbolName:"globe",accessibilityDescription:nil)
+        icon.image = tab.favicon ?? Self.fallbackIcon
         icon.contentTintColor = tab.favicon == nil ? .secondaryLabelColor : nil; icon.imageScaling = .scaleProportionallyDown
         label.stringValue = tab.title.isEmpty ? "新标签页" : tab.title
         label.font = .systemFont(ofSize:12); label.lineBreakMode = .byTruncatingTail
@@ -51,18 +52,27 @@ final class TabButton: NSView {
             closeButton.centerYAnchor.constraint(equalTo:centerYAnchor),
             closeButton.widthAnchor.constraint(equalToConstant:28),closeButton.heightAnchor.constraint(equalToConstant:28)
         ])
-        setAccessibilityElement(true); setAccessibilityRole(.button); setAccessibilityLabel(label.stringValue)
+        setAccessibilityElement(true); setAccessibilityRole(.button); setAccessibilityLabel(label.stringValue); setAccessibilityValue("")
         toolTip = tab.url?.absoluteString ?? label.stringValue
     }
     func update(_ tab:BrowserTab,selected:Bool) {
-        self.selected = selected
-        label.stringValue = tab.title.isEmpty ? "新标签页" : tab.title
-        icon.image = tab.favicon ?? NSImage(systemSymbolName:"globe",accessibilityDescription:nil)
-        icon.contentTintColor = tab.favicon == nil ? .secondaryLabelColor : nil
-        closeButton.setAccessibilityLabel("关闭 \(label.stringValue)")
-        setAccessibilityLabel(label.stringValue)
-        setAccessibilityValue(selected ? "当前标签页" : "")
-        toolTip = "\(label.stringValue)\n\(tab.url?.absoluteString ?? "")"
+        if self.selected != selected {
+            self.selected = selected
+            setAccessibilityValue(selected ? "当前标签页" : "")
+        }
+        let title = tab.title.isEmpty ? "新标签页" : tab.title
+        if label.stringValue != title {
+            label.stringValue = title
+            closeButton.setAccessibilityLabel("关闭 \(title)")
+            setAccessibilityLabel(title)
+        }
+        let image = tab.favicon ?? Self.fallbackIcon
+        if icon.image !== image {
+            icon.image = image
+            icon.contentTintColor = tab.favicon == nil ? .secondaryLabelColor : nil
+        }
+        let tip = "\(title)\n\(tab.url?.absoluteString ?? "")"
+        if toolTip != tip { toolTip = tip }
     }
     required init?(coder:NSCoder) { fatalError() }
     override func hitTest(_ point:NSPoint)->NSView? {

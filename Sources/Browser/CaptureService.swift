@@ -68,7 +68,8 @@ final class CaptureService {
         var committed = false
         try FileManager.default.createDirectory(at:work,withIntermediateDirectories:true,attributes:[.posixPermissions:0o700])
         defer { if !committed { try? FileManager.default.removeItem(at:work) } }
-        guard let tiff = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data:tiff), let png = bitmap.representation(using:.png,properties:[:]) else { throw Failure.message("截图编码失败") }
+        let png = try await CapturePNG.encode(image)
+        try Task.checkCancellation()
         try png.write(to:work.appendingPathComponent("screenshot.png"),options:.atomic)
         progress("正在保存图片与字体…")
         let assets = try await CaptureAssets.bundle(view,html:html,references:(data["assetReferences"] as? [[String:String]] ?? []) + (interactionHistory?.references ?? []),folder:work)

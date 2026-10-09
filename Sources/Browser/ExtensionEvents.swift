@@ -36,13 +36,13 @@ extension ExtensionRuntime {
         if visibleWindows.insert(window.id).inserted { controller.didOpenWindow(window) }
         let old = tabSnapshots[window.id] ?? [],next = window.tabs.filter(\.extensionVisible).map(ExtensionTabSnapshot.init)
         let oldIDs = Set(old.map { $0.tab.id }),nextIDs = Set(next.map { $0.tab.id })
+        let previousByTab = Dictionary(uniqueKeysWithValues:old.map { (ObjectIdentifier($0.tab),$0) })
         // Publish the snapshot first: delegate reads during event delivery see the current state.
         tabSnapshots[window.id] = next
         for item in old where !nextIDs.contains(item.tab.id) { controller.didCloseTab(item.tab) }
         for item in next where !oldIDs.contains(item.tab.id) { controller.didOpenTab(item.tab) }
         for item in next {
-            guard let previousIndex = old.firstIndex(where:{$0.tab === item.tab}) else { continue }
-            let previous = old[previousIndex]
+            guard let previous = previousByTab[ObjectIdentifier(item.tab)] else { continue }
             var changes:WKWebExtension.TabChangedProperties = []
             if previous.url != item.url { changes.insert(.URL) }
             if previous.title != item.title { changes.insert(.title) }
