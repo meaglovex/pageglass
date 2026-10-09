@@ -90,7 +90,7 @@ open dist/Pageglass.app
 
 技术决定见 [architecture.md](docs/architecture.md)，上一开发版范围见 [0.7 产品体验优化计划](docs/plan-0.7.md)，其验收进度见 [validation-0.7.md](docs/validation-0.7.md)，旧版验证记录见 [validation.md](docs/validation.md)，可复跑的性能对照方法见 [performance.md](docs/performance.md)。
 
-0.10 性能优化范围见 [0.10 计划](docs/plan-0.10.md)。
+0.10 性能优化范围见 [0.10 计划](docs/plan-0.10.md)，结果见 [性能审查与实测](docs/performance-0.10.md) 和 [验收记录](docs/validation-0.10.md)。
 
 0.9 新增范围见 [硬件加速状态与验证计划](docs/plan-0.9.md)，本机验证见 [0.9 验收记录](docs/validation-0.9.md)。0.8 未完成验收项继续保留，不能由新版本号自动关闭。
 

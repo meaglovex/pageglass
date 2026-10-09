@@ -1,0 +1,910 @@
+{
+  "status": "completed",
+  "preflight": {
+    "builds": {
+      "baseline": {
+        "ref": "c9834ac",
+        "sourceHashes": {
+          "Sources/Browser/BrowserStore.swift": "a59e650b05bbeee0d830b208df821fae0fae846d6c73771ee329cc96e35d89d4",
+          "Sources/Browser/TabButton.swift": "0bbf672106ccc812c6db93987fe2dc4e14b9f3ccf327a233af6e45df7c434476",
+          "Sources/Browser/BrowserStyle.swift": "e3e16daa8fed2110e95b1f08af46cca3ebbab88ede4cbdf1514934db8947ed2d",
+          "Sources/Browser/CaptureService.swift": "1daa388384410376933ae97f47ca95f58d8425040cba95238b8a0d0f559ed886",
+          "Sources/Browser/CapturePNG.swift": "fcd85134246f1f79e53fc5bcfbbd8bbac34d516ec0c51e27f7098fae5d0f42f4"
+        },
+        "encoderMode": "legacy TIFF expression extracted from verified CaptureService path",
+        "executableSHA256": "2e486887c6b6d6bdf3945d90d86da2eba53feaca7702c484800ca988a04f863f"
+      },
+      "candidate": {
+        "ref": "743994f",
+        "sourceHashes": {
+          "Sources/Browser/BrowserStore.swift": "0fbf42fa50c0c5697f99917f49b7c2e1152ad72b0e3668ca67b5acdf35073191",
+          "Sources/Browser/TabButton.swift": "3da0d5b4b5453b87fcc756773ad88b5932085fd61f611416fd4225bd46b446f8",
+          "Sources/Browser/BrowserStyle.swift": "e3e16daa8fed2110e95b1f08af46cca3ebbab88ede4cbdf1514934db8947ed2d",
+          "Sources/Browser/CapturePNG.swift": "92133710c92b782576238684cb481c5edde89da01ff8aa7302e4342b59332d72"
+        },
+        "encoderMode": "CapturePNG source",
+        "executableSHA256": "b067042da29a8b300eef30f1c79866f5982410d01c7df455ece2c4c1f743e5b7"
+      }
+    },
+    "runnerSHA256": "98dc4f9f0b510f4a0a95d74d9aeb880f9aa05714daeaa3ef0884d803b4c92e3a",
+    "probeSHA256": "58e28dc7c659dba731feec9bab4a8fb0a9d587e37e1dd83af299e49c6e0e19a2",
+    "scaffoldingSHA256": "a0e5bb40dccac43d6ea0942963004c089ba6088472133c3529b8fd4f6c3caa14",
+    "environment": {
+      "cpuCount": 10,
+      "frontmostPID": 1312,
+      "lowPowerMode": false,
+      "osVersion": "Version 27.0.1 (Build 26A434)",
+      "physicalMemoryBytes": 17179869184,
+      "sampledAt": "2026-10-09T03:59:46Z",
+      "screenLocked": false,
+      "sessionAvailable": true,
+      "thermalState": "nominal"
+    },
+    "scope": "release microbenchmarks with actual source; stub only the unused BrowserTab fields and QAProfile; no WebKit, visible rendering, network or browser-wide performance claim"
+  },
+  "samples": [
+    {
+      "build": "baseline",
+      "round": 1,
+      "result": {
+        "mode": "search",
+        "queries": [
+          {
+            "checksum": 24800,
+            "iterations": 100,
+            "millisecondsPerQuery": 7.442670000018552,
+            "query": "产品",
+            "urls": [
+              "https://example.test/bookmark/0",
+              "https://example.test/bookmark/1",
+              "https://example.test/bookmark/2",
+              "https://example.test/bookmark/3",
+              "https://example.test/bookmark/4",
+              "https://example.test/bookmark/5",
+              "https://example.test/bookmark/6",
+              "https://example.test/bookmark/7"
+            ]
+          },
+          {
+            "checksum": 3300,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.23703583329916,
+            "query": "item-09995",
+            "urls": [
+              "https://example.test/history/9995"
+            ]
+          },
+          {
+            "checksum": 0,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.069674583384767,
+            "query": "no-match-query",
+            "urls": []
+          }
+        ],
+        "records": 10020
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:46Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:50Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "candidate",
+      "round": 1,
+      "result": {
+        "mode": "search",
+        "queries": [
+          {
+            "checksum": 24800,
+            "iterations": 100,
+            "millisecondsPerQuery": 0.005882499972358346,
+            "query": "产品",
+            "urls": [
+              "https://example.test/bookmark/0",
+              "https://example.test/bookmark/1",
+              "https://example.test/bookmark/2",
+              "https://example.test/bookmark/3",
+              "https://example.test/bookmark/4",
+              "https://example.test/bookmark/5",
+              "https://example.test/bookmark/6",
+              "https://example.test/bookmark/7"
+            ]
+          },
+          {
+            "checksum": 3300,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.18910791655071,
+            "query": "item-09995",
+            "urls": [
+              "https://example.test/history/9995"
+            ]
+          },
+          {
+            "checksum": 0,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.073335833032615,
+            "query": "no-match-query",
+            "urls": []
+          }
+        ],
+        "records": 10020
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:50Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:54Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "baseline",
+      "round": 1,
+      "result": {
+        "firstTitle": "0 · 产品需求分析与长标题标签",
+        "iterations": 200,
+        "millisecondsPer100TabRefresh": 3.2666429167147726,
+        "mode": "tabs",
+        "selected": [
+          99
+        ],
+        "tabs": 100
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:54Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:54Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "candidate",
+      "round": 1,
+      "result": {
+        "firstTitle": "0 · 产品需求分析与长标题标签",
+        "iterations": 200,
+        "millisecondsPer100TabRefresh": 0.028324791637714952,
+        "mode": "tabs",
+        "selected": [
+          99
+        ],
+        "tabs": 100
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:54Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:54Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "baseline",
+      "round": 1,
+      "result": {
+        "encodeMilliseconds": [
+          98.85975002544001
+        ],
+        "height": 12000,
+        "logicalHeight": 12000,
+        "logicalWidth": 1440,
+        "mainActorSchedulingMilliseconds": [
+          98.84312504436821
+        ],
+        "mode": "png",
+        "peakRSSBytesBeforeVerification": 381091840,
+        "pixelSHA256": "b8cbb2e24845ee62f104340c658e46fa8c558b189c5dcf45fab01b13fe57b6b4",
+        "pngBytes": 356044,
+        "width": 1440
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:54Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:55Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "candidate",
+      "round": 1,
+      "result": {
+        "encodeMilliseconds": [
+          80.19208337645978
+        ],
+        "height": 12000,
+        "logicalHeight": 12000,
+        "logicalWidth": 1440,
+        "mainActorSchedulingMilliseconds": [
+          0.3203750238753855
+        ],
+        "mode": "png",
+        "peakRSSBytesBeforeVerification": 170983424,
+        "pixelSHA256": "b8cbb2e24845ee62f104340c658e46fa8c558b189c5dcf45fab01b13fe57b6b4",
+        "pngBytes": 356105,
+        "width": 1440
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:55Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:55Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "candidate",
+      "round": 2,
+      "result": {
+        "mode": "search",
+        "queries": [
+          {
+            "checksum": 24800,
+            "iterations": 100,
+            "millisecondsPerQuery": 0.006858750130049884,
+            "query": "产品",
+            "urls": [
+              "https://example.test/bookmark/0",
+              "https://example.test/bookmark/1",
+              "https://example.test/bookmark/2",
+              "https://example.test/bookmark/3",
+              "https://example.test/bookmark/4",
+              "https://example.test/bookmark/5",
+              "https://example.test/bookmark/6",
+              "https://example.test/bookmark/7"
+            ]
+          },
+          {
+            "checksum": 3300,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.530709166661836,
+            "query": "item-09995",
+            "urls": [
+              "https://example.test/history/9995"
+            ]
+          },
+          {
+            "checksum": 0,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.283015000051819,
+            "query": "no-match-query",
+            "urls": []
+          }
+        ],
+        "records": 10020
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:55Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:58Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "baseline",
+      "round": 2,
+      "result": {
+        "mode": "search",
+        "queries": [
+          {
+            "checksum": 24800,
+            "iterations": 100,
+            "millisecondsPerQuery": 7.773331666830927,
+            "query": "产品",
+            "urls": [
+              "https://example.test/bookmark/0",
+              "https://example.test/bookmark/1",
+              "https://example.test/bookmark/2",
+              "https://example.test/bookmark/3",
+              "https://example.test/bookmark/4",
+              "https://example.test/bookmark/5",
+              "https://example.test/bookmark/6",
+              "https://example.test/bookmark/7"
+            ]
+          },
+          {
+            "checksum": 3300,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.686894582933746,
+            "query": "item-09995",
+            "urls": [
+              "https://example.test/history/9995"
+            ]
+          },
+          {
+            "checksum": 0,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.210668749525212,
+            "query": "no-match-query",
+            "urls": []
+          }
+        ],
+        "records": 10020
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T03:59:58Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:02Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "candidate",
+      "round": 2,
+      "result": {
+        "firstTitle": "0 · 产品需求分析与长标题标签",
+        "iterations": 200,
+        "millisecondsPer100TabRefresh": 0.027011041529476643,
+        "mode": "tabs",
+        "selected": [
+          99
+        ],
+        "tabs": 100
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:02Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:02Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "baseline",
+      "round": 2,
+      "result": {
+        "firstTitle": "0 · 产品需求分析与长标题标签",
+        "iterations": 200,
+        "millisecondsPer100TabRefresh": 3.2858822916750796,
+        "mode": "tabs",
+        "selected": [
+          99
+        ],
+        "tabs": 100
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:02Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:02Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "candidate",
+      "round": 2,
+      "result": {
+        "encodeMilliseconds": [
+          79.42483329679817
+        ],
+        "height": 12000,
+        "logicalHeight": 12000,
+        "logicalWidth": 1440,
+        "mainActorSchedulingMilliseconds": [
+          0.34191663144156337
+        ],
+        "mode": "png",
+        "peakRSSBytesBeforeVerification": 170967040,
+        "pixelSHA256": "b8cbb2e24845ee62f104340c658e46fa8c558b189c5dcf45fab01b13fe57b6b4",
+        "pngBytes": 356105,
+        "width": 1440
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:02Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:03Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "baseline",
+      "round": 2,
+      "result": {
+        "encodeMilliseconds": [
+          99.67629163293168
+        ],
+        "height": 12000,
+        "logicalHeight": 12000,
+        "logicalWidth": 1440,
+        "mainActorSchedulingMilliseconds": [
+          99.65929167810827
+        ],
+        "mode": "png",
+        "peakRSSBytesBeforeVerification": 381091840,
+        "pixelSHA256": "b8cbb2e24845ee62f104340c658e46fa8c558b189c5dcf45fab01b13fe57b6b4",
+        "pngBytes": 356044,
+        "width": 1440
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:03Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:03Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "baseline",
+      "round": 3,
+      "result": {
+        "mode": "search",
+        "queries": [
+          {
+            "checksum": 24800,
+            "iterations": 100,
+            "millisecondsPerQuery": 7.701722083147615,
+            "query": "产品",
+            "urls": [
+              "https://example.test/bookmark/0",
+              "https://example.test/bookmark/1",
+              "https://example.test/bookmark/2",
+              "https://example.test/bookmark/3",
+              "https://example.test/bookmark/4",
+              "https://example.test/bookmark/5",
+              "https://example.test/bookmark/6",
+              "https://example.test/bookmark/7"
+            ]
+          },
+          {
+            "checksum": 3300,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.477256249752827,
+            "query": "item-09995",
+            "urls": [
+              "https://example.test/history/9995"
+            ]
+          },
+          {
+            "checksum": 0,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.317567083286121,
+            "query": "no-match-query",
+            "urls": []
+          }
+        ],
+        "records": 10020
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:03Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:07Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "candidate",
+      "round": 3,
+      "result": {
+        "mode": "search",
+        "queries": [
+          {
+            "checksum": 24800,
+            "iterations": 100,
+            "millisecondsPerQuery": 0.0063333334401249886,
+            "query": "产品",
+            "urls": [
+              "https://example.test/bookmark/0",
+              "https://example.test/bookmark/1",
+              "https://example.test/bookmark/2",
+              "https://example.test/bookmark/3",
+              "https://example.test/bookmark/4",
+              "https://example.test/bookmark/5",
+              "https://example.test/bookmark/6",
+              "https://example.test/bookmark/7"
+            ]
+          },
+          {
+            "checksum": 3300,
+            "iterations": 100,
+            "millisecondsPerQuery": 13.32847291661892,
+            "query": "item-09995",
+            "urls": [
+              "https://example.test/history/9995"
+            ]
+          },
+          {
+            "checksum": 0,
+            "iterations": 100,
+            "millisecondsPerQuery": 12.970629583578557,
+            "query": "no-match-query",
+            "urls": []
+          }
+        ],
+        "records": 10020
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:07Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:10Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "baseline",
+      "round": 3,
+      "result": {
+        "firstTitle": "0 · 产品需求分析与长标题标签",
+        "iterations": 200,
+        "millisecondsPer100TabRefresh": 3.2463033331441693,
+        "mode": "tabs",
+        "selected": [
+          99
+        ],
+        "tabs": 100
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:10Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:10Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "candidate",
+      "round": 3,
+      "result": {
+        "firstTitle": "0 · 产品需求分析与长标题标签",
+        "iterations": 200,
+        "millisecondsPer100TabRefresh": 0.0276893749833107,
+        "mode": "tabs",
+        "selected": [
+          99
+        ],
+        "tabs": 100
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:10Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:10Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "baseline",
+      "round": 3,
+      "result": {
+        "encodeMilliseconds": [
+          97.9907083674334
+        ],
+        "height": 12000,
+        "logicalHeight": 12000,
+        "logicalWidth": 1440,
+        "mainActorSchedulingMilliseconds": [
+          97.97679167240858
+        ],
+        "mode": "png",
+        "peakRSSBytesBeforeVerification": 381091840,
+        "pixelSHA256": "b8cbb2e24845ee62f104340c658e46fa8c558b189c5dcf45fab01b13fe57b6b4",
+        "pngBytes": 356044,
+        "width": 1440
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:10Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:11Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    },
+    {
+      "build": "candidate",
+      "round": 3,
+      "result": {
+        "encodeMilliseconds": [
+          79.32979165343568
+        ],
+        "height": 12000,
+        "logicalHeight": 12000,
+        "logicalWidth": 1440,
+        "mainActorSchedulingMilliseconds": [
+          0.3246666747145355
+        ],
+        "mode": "png",
+        "peakRSSBytesBeforeVerification": 170999808,
+        "pixelSHA256": "b8cbb2e24845ee62f104340c658e46fa8c558b189c5dcf45fab01b13fe57b6b4",
+        "pngBytes": 356105,
+        "width": 1440
+      },
+      "environmentBefore": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:11Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      },
+      "environmentAfter": {
+        "cpuCount": 10,
+        "frontmostPID": 1312,
+        "lowPowerMode": false,
+        "osVersion": "Version 27.0.1 (Build 26A434)",
+        "physicalMemoryBytes": 17179869184,
+        "sampledAt": "2026-10-09T04:00:11Z",
+        "screenLocked": false,
+        "sessionAvailable": true,
+        "thermalState": "nominal"
+      }
+    }
+  ],
+  "method": "Three alternating rounds. Actual source compiled with -O and fixed scaffolding. One 1440x12000 PNG encode per fresh process; peak RSS recorded before pixel verification. Pixel checksum and logical dimensions must match. Not a browser-wide memory metric.",
+  "preliminaryExperiments": [
+    {
+      "directory": "/private/tmp/pageglass-hotpaths-cxxr7ncn",
+      "reasonNotUsed": "three encodes per process allowed legacy autoreleased intermediates to accumulate; replaced by one encode per fresh process for both builds"
+    },
+    {
+      "directory": "/private/tmp/pageglass-hotpaths-ue6ergav",
+      "reasonNotUsed": "before preserving PNG DPI metadata; final data remeasured after correctness fix"
+    }
+  ]
+}
