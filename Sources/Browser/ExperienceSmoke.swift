@@ -47,11 +47,11 @@ enum ExperienceSmoke {
         let list = TabListController(browser:browser); _ = list.view
         list.search.stringValue = "动态标题"; list.refresh()
         try require(list.matches.count == 1 && list.matches[0].id == tab.id,"tab search finds long-lived tab by title")
-        for index in 0..<20 { store.toggleBookmark(title:"书签 \(index)",url:fixture.absoluteString+"#\(index)") }
+        for index in 0..<40 { store.toggleBookmark(title:"书签 \(index)",url:fixture.absoluteString+"#\(index)") }
         var settings = store.state.settings; settings.showBookmarksBar = true; store.updateSettings(settings)
         browser.window?.setContentSize(NSSize(width:900,height:860)); browser.renderBookmarks()
         let visible = browser.bookmarkRow.arrangedSubviews.compactMap { $0 as? BookmarkBarButton }.filter { $0.identifier != nil }.count
-        try require(visible > 0 && visible+browser.overflowBookmarks.count == 20 && !browser.overflowBookmarks.isEmpty,"bookmark overflow retains all 20 records")
+        try require(visible > 0 && visible+browser.overflowBookmarks.count == 40 && !browser.overflowBookmarks.isEmpty,"bookmark overflow retains all 40 records")
         // Let the pending window resize finish: resizing intentionally closes popovers.
         browser.window?.makeKeyAndOrderFront(nil); browser.window?.contentView?.layoutSubtreeIfNeeded()
         try await Task.sleep(for:.milliseconds(100))

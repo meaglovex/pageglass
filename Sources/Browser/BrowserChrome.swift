@@ -50,7 +50,7 @@ extension BrowserWindow {
         extensionActionBar.spacing = 4; extensionActionBar.detachesHiddenViews = true
         for v in [back,forward,refresh,home,omnibox,captureGroup,extensionActionBar,extensionButton,recordInteraction,downloadButton,profile,more] { toolbar.addArrangedSubview(v) }
         omnibox.heightAnchor.constraint(equalToConstant:32).isActive = true
-        bookmarkRow.spacing = 12; bookmarkRow.edgeInsets = NSEdgeInsets(top:3,left:16,bottom:3,right:16)
+        bookmarkRow.spacing = 8; bookmarkRow.edgeInsets = NSEdgeInsets(top:3,left:16,bottom:3,right:16)
         buildFindBar(); buildErrorBar(); buildCaptureBar()
         progress.style = .bar; progress.isIndeterminate = false; progress.maxValue = 1; progress.isHidden = true
         for v in [header,toolbar,bookmarkRow,progress,findBar,errorBar,content] {
@@ -140,21 +140,23 @@ extension BrowserWindow {
         for v in bookmarkRow.arrangedSubviews { bookmarkRow.removeArrangedSubview(v); v.removeFromSuperview() }
         bookmarkRow.isHidden = !store.state.settings.showBookmarksBar
         guard !bookmarkRow.isHidden else { return }
-        var remaining = max(0,(window?.frame.width ?? 1280)-150)
+        let itemWidth = BrowserStyle.controlSize
+        var remaining = max(0,width-32-2*(itemWidth+bookmarkRow.spacing))
         overflowBookmarks = []
         for record in store.state.bookmarks {
-            let width = min(180,max(60,(String(record.title.prefix(40)) as NSString).size(withAttributes:[.font:NSFont.systemFont(ofSize:11)]).width+34))
-            if !overflowBookmarks.isEmpty || remaining < width+12 { overflowBookmarks.append(record); continue }
+            if !overflowBookmarks.isEmpty || remaining < itemWidth+bookmarkRow.spacing { overflowBookmarks.append(record); continue }
             let button = bookmarkButton(for:record); bookmarkRow.addArrangedSubview(button)
-            button.widthAnchor.constraint(equalToConstant:width).isActive = true; remaining -= width+12
+            button.widthAnchor.constraint(equalToConstant:itemWidth).isActive = true
+            button.heightAnchor.constraint(equalToConstant:itemWidth).isActive = true
+            remaining -= itemWidth+bookmarkRow.spacing
         }
         if !overflowBookmarks.isEmpty { bookmarkRow.addArrangedSubview(tool("chevron.right.2","更多书签",#selector(showBookmarkOverflow(_:)))) }
-        let all = BookmarkBarButton(title:"所有书签",target:self,action:#selector(showBookmarks)); all.isBordered = false; all.font = .systemFont(ofSize:11); all.contextMenu = { [weak self] in self?.bookmarkMenu(id:nil) ?? NSMenu() }; bookmarkRow.addArrangedSubview(all)
+        let all = BookmarkBarButton(title:"所有书签",target:self,action:#selector(showBookmarks)); all.isBordered = false; all.imagePosition = .imageOnly; all.image = NSImage(systemSymbolName:"books.vertical",accessibilityDescription:nil); all.toolTip = "所有书签"; all.setAccessibilityLabel("所有书签"); all.widthAnchor.constraint(equalToConstant:itemWidth).isActive = true; all.heightAnchor.constraint(equalToConstant:itemWidth).isActive = true; all.contextMenu = { [weak self] in self?.bookmarkMenu(id:nil) ?? NSMenu() }; bookmarkRow.addArrangedSubview(all)
     }
     func bookmarkButton(for record:PageRecord)->BookmarkBarButton {
         let button = BookmarkBarButton(title:String(record.title.prefix(120)),target:self,action:#selector(bookmarkClicked(_:))); button.isBordered = false
-        button.identifier = NSUserInterfaceItemIdentifier(record.id.uuidString); button.toolTip = record.url; button.font = .systemFont(ofSize:11); button.lineBreakMode = .byTruncatingTail
-        button.imagePosition = .imageLeading; button.imageScaling = .scaleProportionallyDown; button.alignment = .left
+        button.identifier = NSUserInterfaceItemIdentifier(record.id.uuidString); button.toolTip = record.title+"\n"+record.url; button.setAccessibilityLabel(record.title); button.font = .systemFont(ofSize:11); button.lineBreakMode = .byTruncatingTail
+        button.imagePosition = .imageOnly; button.imageScaling = .scaleProportionallyDown; button.alignment = .center
         button.image = NSImage(systemSymbolName:"globe",accessibilityDescription:nil)
         if let page = URL(string:record.url) {
             button.image = favicons.cached(for:page) ?? button.image
