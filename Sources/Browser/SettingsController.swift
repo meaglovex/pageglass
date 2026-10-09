@@ -1,8 +1,8 @@
 import AppKit
 import WebKit
 
-final class SettingsController:NSWindowController {
-    enum Page:String,CaseIterable { case general = "通用",appearance = "外观与工具栏",browsing = "浏览",capture = "捕获",extensions = "扩展",data = "数据" }
+final class SettingsController:NSWindowController,NSWindowDelegate {
+    enum Page:String,CaseIterable { case general = "通用",appearance = "外观与工具栏",browsing = "浏览",performance = "性能与图形",capture = "捕获",extensions = "扩展",data = "数据" }
     weak var browser:BrowserWindow?
     let engine = NSPopUpButton(), zoom = NSPopUpButton(), retention = NSPopUpButton(), appearance = NSPopUpButton()
     let retentionDays = [0,1,7,30]
@@ -18,11 +18,12 @@ final class SettingsController:NSWindowController {
     private var toolButtons:[ToolbarTool:NSButton] = [:]
     private var selected = Page.general
     private var summaryGeneration = UUID()
+    let graphics = GraphicsSettingsView()
     init(browser:BrowserWindow) {
         self.browser = browser
         let window = NSWindow(contentRect:NSRect(x:0,y:0,width:740,height:580),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
         window.title = "设置"; window.isReleasedWhenClosed = false; window.minSize = NSSize(width:720,height:540); window.appearance = browser.window?.appearance
-        super.init(window:window); window.center()
+        super.init(window:window); window.delegate = self; window.center()
         let sidebar = NSStackView(); sidebar.orientation = .vertical; sidebar.alignment = .leading; sidebar.spacing = 6; sidebar.edgeInsets = NSEdgeInsets(top:24,left:12,bottom:20,right:12)
         for (index,page) in Page.allCases.enumerated() {
             let button = ChromeButton(title:page.rawValue,target:self,action:#selector(selectPage(_:))); button.tag = index; button.isBordered = false; button.setButtonType(.pushOnPushOff); button.alignment = .left; button.contentTintColor = .labelColor
@@ -54,6 +55,9 @@ final class SettingsController:NSWindowController {
     }
     required init?(coder:NSCoder) { fatalError() }
     @objc func closeTab() { close() }
+    func windowWillClose(_ notification:Notification) { graphics.cancel() }
+    override func close() { graphics.cancel(); super.close() }
+    func showGraphics() { selected = .performance; renderPage() }
     @objc private func openExtensions() { browser?.showExtensions() }
     @objc private func selectPage(_ sender:NSButton) {
         guard Page.allCases.indices.contains(sender.tag) else { return }
@@ -73,6 +77,7 @@ final class SettingsController:NSWindowController {
     }
     private func button(_ title:String,_ action:Selector)->NSButton { let button = NSButton(title:title,target:self,action:action); button.bezelStyle = .rounded; return button }
     private func renderPage() {
+        if selected != .performance { graphics.cancel() }
         for view in rows.arrangedSubviews { rows.removeArrangedSubview(view); view.removeFromSuperview() }
         heading.stringValue = selected.rawValue
         for (index,button) in navigation.enumerated() {
@@ -92,6 +97,8 @@ final class SettingsController:NSWindowController {
         case .browsing:
             row("默认缩放",zoom); text("用于新打开的页面。当前页面可用 ⌘+ / ⌘− 调整，⌘0 恢复。")
             text("普通窗口保留网站登录；无痕窗口不保存访问记录与会话。")
+        case .performance:
+            add(graphics)
         case .capture:
             add(autoCopy); text("复制内容为本机捕获文件引用。关闭自动复制后，可以检查结果再手动复制。")
             row("保留时间",retention)

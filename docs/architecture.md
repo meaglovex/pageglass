@@ -24,6 +24,7 @@ WebKit 支持系统 GPU 路径，但不保证所有网站都比 Chromium 快。�
 - `CaptureIntro`：仅新配置自动显示一次的本地捕获练习提示；手动入口复用同一原生覆盖视图。
 - `BrowserStore`：原子写入浏览器数据，延迟合并保存；损坏文件不会被空数据覆盖。
 - `LibraryController` / `SettingsController`：书签、历史、下载资料库与设置窗口。
+- `GraphicsDiagnostics` / `GraphicsSettingsView`：用户主动运行的本地图形检测、结构化结果及复制；使用公开 Metal / VideoToolbox / WebKit API，独立非持久页面与隔离内容世界，完成或取消后释放。不是应用级 GPU 开关。
 - `WebDelegates`：导航、下载、JS 对话框、文件上传和权限提示。
 - `BrowserTab`：每个标签的 WebView 与 KVO；关闭时拆除代理和脚本桥，防止强引用循环。
 - `CaptureService`：显式捕获事务、系统截图、长截图拼接、本地包及剪贴板。

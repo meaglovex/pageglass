@@ -6,7 +6,7 @@
 
 给产品经理的轻量 macOS 浏览器。浏览网页，选取一个元素或捕获整个已加载页面，把视觉、结构与交互状态交给本机 Codex。
 
-**已发布 0.6.0；当前分支为 0.8.0-alpha.1 开发版，macOS 14+ / Apple Silicon。** 原生 Swift + AppKit + 系统 WebKit，零第三方包依赖。尚未证明 Chrome 级性能、全站兼容性或更低的整组进程内存占用，不作为 Chrome 的完整替代品宣传。
+**已发布 0.6.0；当前分支为 0.9.0-alpha.1 开发版，macOS 14+ / Apple Silicon。** 原生 Swift + AppKit + 系统 WebKit，零第三方包依赖。尚未证明 Chrome 级性能、全站兼容性或更低的整组进程内存占用，不作为 Chrome 的完整替代品宣传。
 
 ## 打开
 
@@ -51,6 +51,7 @@ open dist/Pageglass.app
 | 页面保存 / 打印 | `⌘S` 保存 WebArchive / `⌘P` 系统打印面板 |
 | 本地文件 | `⌘O`，HTML、WebArchive、PDF、文本、图片 |
 | 扩展（开发预览） | 工具栏拼图 / 设置 → 扩展；本地目录或 ZIP 导入、逐站授权与停用，兼容边界见 [扩展说明](docs/extensions-0.8.md) |
+| 图形与硬件加速检测 | 设置 → 性能与图形，检查 Metal 设备、WebGL 绘制、WebGPU 计算和视频硬解码能力；[功能说明](docs/graphics-0.9.md) |
 | 设置 | `⌘,`，分组设置：主题、工具栏显隐、搜索引擎、主页、默认缩放、会话恢复、捕获自动复制/保留时间/清理与网站数据 |
 | 开发者工具 | F12 / ⌥⌘I 打开或关闭 WebKit 检查器；⌥⌘J 打开控制台；页面右键检查元素 |
 
@@ -89,7 +90,9 @@ open dist/Pageglass.app
 
 技术决定见 [architecture.md](docs/architecture.md)，上一开发版范围见 [0.7 产品体验优化计划](docs/plan-0.7.md)，其验收进度见 [validation-0.7.md](docs/validation-0.7.md)，旧版验证记录见 [validation.md](docs/validation.md)，可复跑的性能对照方法见 [performance.md](docs/performance.md)。
 
-当前开发范围见 [0.8 视觉、操作与扩展计划](docs/plan-0.8.md)，实施状态见 [0.8 验收记录](docs/validation-0.8.md)。扩展宿主已接入开发预览并通过自有样本测试，实际 UI 与第三方插件兼容性仍未完整验收。
+0.9 当前新增范围见 [硬件加速状态与验证计划](docs/plan-0.9.md)，本机验证见 [0.9 验收记录](docs/validation-0.9.md)。0.8 未完成验收项继续保留，不能由新版本号自动关闭。
+
+0.8 开发范围见 [0.8 视觉、操作与扩展计划](docs/plan-0.8.md)，实施状态见 [0.8 验收记录](docs/validation-0.8.md)。扩展宿主已接入开发预览并通过自有样本测试，实际 UI 与第三方插件兼容性仍未完整验收。
 
 ## 开发与开源
 
@@ -102,7 +105,19 @@ scripts/build.sh
 scripts/smoke.sh
 # 只排查检查器焦点和多窗口命令；报告明确标记为 inspector 范围
 scripts/smoke.sh --inspector-only
+# 硬件加速诊断专项（独立测试文档与隔离剪贴板）
+scripts/smoke.sh --graphics-only
 ```
+
+0.9 手动界面验证可使用独立配置：
+
+```sh
+scripts/build-qa.sh
+mkdir -p /private/tmp/pageglass-qa09/local
+open qa-output/Pageglass09QA.app --args --qa-profile /private/tmp/pageglass-qa09/local
+```
+
+测试包未传独立配置参数时拒绝启动，不会回退到日常浏览器数据。
 
 检查器焦点测试需要 Pageglass 持续处于前台。运行期间切到其他应用会使此次检查失败并报告前台条件失效，不会自动抢回焦点、跳过断言或算作通过；回到不受打断的前台环境后再运行。专项结果不能替代完整 smoke 或实际界面验收。
 
