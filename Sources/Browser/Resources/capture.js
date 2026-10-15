@@ -4,6 +4,8 @@
   const bridge = (body) => window.webkit.messageHandlers.pageglass.postMessage(body);
   let selected = null, overlay = null, badge = null, active = false, pinned = false;
   let restore = null, lastSelection = '';
+  // HTML void elements have no end tag; a serialized </br> would parse as a second <br>.
+  const voidElements = new Set(['area','base','br','col','embed','hr','img','input','link','meta','source','track','wbr']);
   const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const cleanURL = (raw, stripQuery = false) => {
     try {
@@ -57,10 +59,10 @@
   function selectParent() { if (!active || !selected?.parentElement) return false; pinned = true; paint(selected.parentElement); return true; }
   function update() { if (active && selected) paint(selected); }
   function removeListeners() {
-    document.removeEventListener('pointermove', move, true);
-    document.removeEventListener('click', click, true);
-    document.removeEventListener('keydown', key, true);
-    for (const event of ['pointerdown','pointerup','mousedown','mouseup','dblclick','contextmenu']) document.removeEventListener(event, block, true);
+    window.removeEventListener('pointermove', move, true);
+    window.removeEventListener('click', click, true);
+    window.removeEventListener('keydown', key, true);
+    for (const event of ['pointerdown','pointerup','mousedown','mouseup','dblclick','contextmenu']) window.removeEventListener(event, block, true);
     window.removeEventListener('scroll', update, true);
   }
   function stop() { active = false; pinned = false; overlay?.remove(); badge?.remove(); removeListeners(); }
@@ -71,10 +73,11 @@
     overlay.style.cssText = 'all:initial;position:fixed;pointer-events:none;z-index:2147483646;outline:2px solid #2d6cfa;background:rgba(45,108,250,.09);border-radius:3px;box-sizing:border-box;';
     badge.style.cssText = 'all:initial;position:fixed;pointer-events:none;z-index:2147483647;background:#162438;color:#fff;padding:7px 10px;border-radius:7px;font:12px -apple-system,sans-serif;box-shadow:0 3px 14px #0003;max-width:calc(100vw - 36px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
     document.documentElement.append(overlay,badge);
-    document.addEventListener('pointermove', move, true);
-    document.addEventListener('click', click, true);
-    document.addEventListener('keydown', key, true);
-    for (const event of ['pointerdown','pointerup','mousedown','mouseup','dblclick','contextmenu']) document.addEventListener(event, block, true);
+    // Window capture runs before the page's document-level listeners; the page can only precede it on window itself.
+    window.addEventListener('pointermove', move, true);
+    window.addEventListener('click', click, true);
+    window.addEventListener('keydown', key, true);
+    for (const event of ['pointerdown','pointerup','mousedown','mouseup','dblclick','contextmenu']) window.addEventListener(event, block, true);
     window.addEventListener('scroll', update, true);
   }
   function extract(mode) {
@@ -183,7 +186,9 @@
         children = node.assignedNodes({flatten:true}).map(child => visit(child,force)).join('');
       } else if (!node.matches(sensitive)) children = Array.from(node.childNodes).map(child => visit(child,force)).join('');
       if (node instanceof HTMLInputElement) attrs.push('value=""');
-      const result = `<${tag} ${attrs.join(' ')}>${children}</${tag}>`;
+      const isVoid = node.namespaceURI === 'http://www.w3.org/1999/xhtml' && voidElements.has(tag);
+      if (isVoid) children = '';
+      const result = isVoid ? `<${tag} ${attrs.join(' ')}>` : `<${tag} ${attrs.join(' ')}>${children}</${tag}>`;
       bytes += result.length - children.length;
       return result;
     }
