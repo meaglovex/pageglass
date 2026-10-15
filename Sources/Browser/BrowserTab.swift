@@ -15,12 +15,18 @@ final class BrowserTab: NSObject {
     var iconTask:Task<Void,Never>?
     let recording = InteractionRecording()
     var observations: [NSKeyValueObservation] = []
+    var dialog:NSAlert?
+    var dialogCount = 0
+    var dialogsSuppressed = false
 
     init(url: URL? = nil) { self.url = url }
 
     func release() {
         iconTask?.cancel();iconTask = nil
         recording.reset()
+        // WebKit still waits for the dialog's answer; end it as Cancel with the page.
+        if let dialog,let parent = dialog.window.sheetParent { parent.endSheet(dialog.window,returnCode:.abort) }
+        dialog = nil
         url = webView?.url ?? url
         if let webView { DeveloperTools.close(webView) }
         webView?.stopLoading()

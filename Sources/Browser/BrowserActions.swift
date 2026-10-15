@@ -93,6 +93,12 @@ extension BrowserWindow {
         }
         download.cancel { [weak self] _ in self?.updateDownload(download,state:"已取消"); self?.downloads.removeValue(forKey:pair.key); self?.downloadObservers.removeValue(forKey:pair.key) }
     }
+    /// fractionCompleted changes for every received chunk. Only a new whole percent touches records, the store and windows.
+    func updateDownloadProgress(_ download:WKDownload,percent:Int) {
+        let state = "下载中 \(percent)%"
+        guard downloadRecords[ObjectIdentifier(download)]?.state != state else { return }
+        updateDownload(download,state:state)
+    }
     func updateDownload(_ download:WKDownload,state:String,path:String? = nil) {
         let key = ObjectIdentifier(download)
         guard var record = downloadRecords[key] else { return }

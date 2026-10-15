@@ -14,10 +14,7 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
             decisionHandler(action.shouldPerformDownload ? .download : .allow)
         } else {
             decisionHandler(.cancel)
-            if action.navigationType == .linkActivated, action.targetFrame?.isMainFrame != false {
-                let alert = NSAlert(); alert.messageText = "在外部应用中打开链接？"; alert.informativeText = "协议：\(scheme)"; alert.addButton(withTitle:"打开"); alert.addButton(withTitle:"取消")
-                if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(url) }
-            }
+            if action.navigationType == .linkActivated, action.targetFrame?.isMainFrame != false,webView === activeWebView { confirmExternalOpen(url) }
         }
     }
     func webView(_ webView:WKWebView,decidePolicyFor response:WKNavigationResponse,decisionHandler:@escaping(WKNavigationResponsePolicy)->Void) { decisionHandler(response.canShowMIMEType ? .allow : .download) }
@@ -30,7 +27,7 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
         if webView === self.activeWebView { hideCaptureSidebar(); dismissCaptureIntro(); selecting = false; status.stringValue = "正在加载…"; syncChrome() }
     }
     func webView(_ webView:WKWebView,didCommit navigation:WKNavigation!) {
-        if let tab = tabs.first(where:{$0.webView === webView}) { tab.favicon = nil; updateTabAppearance(tab) }
+        if let tab = tabs.first(where:{$0.webView === webView}) { tab.favicon = nil; tab.dialogCount = 0; tab.dialogsSuppressed = false; updateTabAppearance(tab) }
     }
     func webView(_ webView:WKWebView,didFinish navigation:WKNavigation!) {
         if let tab = tabs.first(where:{$0.webView === webView}) { tab.failure = nil; tab.pendingURL = webView.url }
@@ -68,19 +65,41 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
     }
     func webViewDidClose(_ webView:WKWebView) { if let index = tabs.firstIndex(where:{$0.webView === webView}) { close(at:index) } }
     func webView(_ webView:WKWebView,runJavaScriptAlertPanelWithMessage message:String,initiatedByFrame frame:WKFrameInfo,completionHandler:@escaping()->Void) {
-        let alert = NSAlert(); alert.messageText = frame.securityOrigin.host; alert.informativeText = message; alert.runModal(); completionHandler()
+        presentPageDialog(webView,frame:frame,message:message,buttons:["确定"]) { _,_ in completionHandler() }
     }
     func webView(_ webView:WKWebView,runJavaScriptConfirmPanelWithMessage message:String,initiatedByFrame frame:WKFrameInfo,completionHandler:@escaping(Bool)->Void) {
-        let alert = NSAlert(); alert.messageText = frame.securityOrigin.host; alert.informativeText = message; alert.addButton(withTitle:"确定"); alert.addButton(withTitle:"取消"); completionHandler(alert.runModal() == .alertFirstButtonReturn)
+        presentPageDialog(webView,frame:frame,message:message,buttons:["确定","取消"]) { accepted,_ in completionHandler(accepted) }
     }
     func webView(_ webView:WKWebView,runJavaScriptTextInputPanelWithPrompt prompt:String,defaultText:String?,initiatedByFrame frame:WKFrameInfo,completionHandler:@escaping(String?)->Void) {
-        let alert = NSAlert(); alert.messageText = frame.securityOrigin.host; alert.informativeText = prompt
-        let field = NSTextField(frame:NSRect(x:0,y:0,width:300,height:26)); field.stringValue = defaultText ?? ""; alert.accessoryView = field
-        alert.addButton(withTitle:"确定"); alert.addButton(withTitle:"取消"); completionHandler(alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil)
+        presentPageDialog(webView,frame:frame,message:prompt,buttons:["确定","取消"],text:defaultText ?? "") { accepted,text in completionHandler(accepted ? text : nil) }
+    }
+    /// Page dialogs are sheets on this window and only for the visible tab, so no page can block the
+    /// whole app. Background requests are dismissed like Cancel; a repeating page can be silenced until it navigates.
+    func presentPageDialog(_ webView:WKWebView,frame:WKFrameInfo,message:String,buttons:[String],text:String? = nil,completion:@escaping(_ accepted:Bool,_ text:String?)->Void) {
+        guard let window,window.isVisible,webView === activeWebView,let tab = tabs.first(where:{$0.webView === webView}),!tab.dialogsSuppressed,tab.dialog == nil else { completion(false,nil); return }
+        let alert = NSAlert(); let host = frame.securityOrigin.host
+        alert.messageText = host.isEmpty ? "此页面" : host; alert.informativeText = message
+        for title in buttons { alert.addButton(withTitle:title) }
+        let field = text.map { value -> NSTextField in let field = NSTextField(frame:NSRect(x:0,y:0,width:300,height:26)); field.stringValue = value; alert.accessoryView = field; return field }
+        tab.dialogCount += 1
+        if tab.dialogCount > 1 { alert.showsSuppressionButton = true; alert.suppressionButton?.title = "阻止此页面继续显示对话框" }
+        tab.dialog = alert
+        alert.beginSheetModal(for:window) { [weak tab] response in
+            tab?.dialog = nil
+            if alert.suppressionButton?.state == .on { tab?.dialogsSuppressed = true }
+            completion(response == .alertFirstButtonReturn,field?.stringValue)
+        }
+        if let field { alert.window.makeFirstResponder(field) }
+    }
+    func confirmExternalOpen(_ url:URL) {
+        guard let window else { return }
+        let alert = NSAlert(); alert.messageText = "在外部应用中打开链接？"; alert.informativeText = "协议：\(url.scheme ?? "")"; alert.addButton(withTitle:"打开"); alert.addButton(withTitle:"取消")
+        alert.beginSheetModal(for:window) { if $0 == .alertFirstButtonReturn { NSWorkspace.shared.open(url) } }
     }
     func webView(_ webView:WKWebView,runOpenPanelWith parameters:WKOpenPanelParameters,initiatedByFrame frame:WKFrameInfo,completionHandler:@escaping([URL]?)->Void) {
+        guard let window,webView === activeWebView else { completionHandler(nil); return }
         let panel = NSOpenPanel(); panel.allowsMultipleSelection = parameters.allowsMultipleSelection; panel.canChooseDirectories = parameters.allowsDirectories
-        completionHandler(panel.runModal() == .OK ? panel.urls : nil)
+        panel.beginSheetModal(for:window) { completionHandler($0 == .OK ? panel.urls : nil) }
     }
     func webView(_ webView:WKWebView,requestMediaCapturePermissionFor origin:WKSecurityOrigin,initiatedByFrame frame:WKFrameInfo,type:WKMediaCaptureType,decisionHandler:@escaping(WKPermissionDecision)->Void) { decisionHandler(.prompt) }
     func webView(_ webView:WKWebView,navigationAction:WKNavigationAction,didBecome download:WKDownload) { register(download) }
@@ -91,15 +110,21 @@ extension BrowserWindow: WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate 
         updateDownload(download,state:"等待保存")
     }
     func download(_ download:WKDownload,decideDestinationUsing response:URLResponse,suggestedFilename:String,completionHandler:@escaping(URL?)->Void) {
+        let key = ObjectIdentifier(download)
+        if var record = downloadRecords[key] { record.name = suggestedFilename; downloadRecords[key] = record }
+        guard let window else { updateDownload(download,state:"已取消"); completionHandler(nil); return }
         let panel = NSSavePanel(); panel.nameFieldStringValue = URL(fileURLWithPath:suggestedFilename).lastPathComponent
-        if var record = downloadRecords[ObjectIdentifier(download)] { record.name = suggestedFilename; downloadRecords[ObjectIdentifier(download)] = record }
-        if panel.runModal() == .OK,let url = panel.url {
+        // A sheet keeps other windows usable; closing this window cancels the download before the answer arrives.
+        panel.beginSheetModal(for:window) { [weak self,weak download] response in
+            guard let self,let download,downloads[key] != nil else { completionHandler(nil); return }
+            guard response == .OK,let url = panel.url else { updateDownload(download,state:"已取消"); completionHandler(nil); return }
             updateDownload(download,state:"下载中",path:url.path)
-            downloadObservers[ObjectIdentifier(download)] = download.progress.observe(\.fractionCompleted,options:[.new]) { [weak self,weak download] progress,_ in
-                DispatchQueue.main.async { guard let download,self?.downloads[ObjectIdentifier(download)] != nil else { return }; self?.updateDownload(download,state:"下载中 \(Int(progress.fractionCompleted*100))%") }
+            downloadObservers[key] = download.progress.observe(\.fractionCompleted,options:[.new]) { [weak self,weak download] progress,_ in
+                let percent = Int(progress.fractionCompleted*100)
+                DispatchQueue.main.async { guard let self,let download,self.downloads[key] != nil else { return }; self.updateDownloadProgress(download,percent:percent) }
             }
             completionHandler(url)
-        } else { updateDownload(download,state:"已取消"); completionHandler(nil) }
+        }
     }
     func downloadDidFinish(_ download:WKDownload) { updateDownload(download,state:"已完成"); downloads.removeValue(forKey:ObjectIdentifier(download)); downloadObservers.removeValue(forKey:ObjectIdentifier(download)); status.stringValue = "下载完成，可在下载管理中打开" }
     func download(_ download:WKDownload,didFailWithError error:Error,resumeData:Data?) { updateDownload(download,state:(error as NSError).code == NSURLErrorCancelled ? "已取消" : "失败：\(error.localizedDescription)"); downloads.removeValue(forKey:ObjectIdentifier(download)); downloadObservers.removeValue(forKey:ObjectIdentifier(download)); status.stringValue = "下载结束：\(error.localizedDescription)" }

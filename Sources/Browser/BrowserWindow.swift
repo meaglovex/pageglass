@@ -98,6 +98,8 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         if configuration == nil { config.websiteDataStore = websiteDataStore }
         if #available(macOS 15.4,*) { config.webExtensionController = privateBrowsing ? nil : extensions?.controller }
         config.preferences.isElementFullscreenEnabled = true
+        // macOS defaults to true: any script could open foreground tabs. Without it only user gestures open windows.
+        config.preferences.javaScriptCanOpenWindowsAutomatically = false
         DeveloperTools.enable(config.preferences)
         let controller = WKUserContentController(); config.userContentController = controller
         controller.add(WeakCaptureHandler(self),contentWorld:CaptureService.world,name:"pageglass")

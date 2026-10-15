@@ -72,6 +72,7 @@ enum SmokeTest {
             let sourceRect = element.metadata["rect"] as? [String:Double] ?? [:]
             try require(abs((replay?["width"] ?? 0)-(sourceRect["width"] ?? 10000)) < 1 && abs((replay?["height"] ?? 0)-(sourceRect["height"] ?? 10000)) < 1,"exported HTML preserves selected card geometry")
             checks += try await BrowserFeatureSmoke.run(browser)
+            checks += try await PageSafetySmoke.run(browser,output:output)
             checks += try await GraphicsSmoke.run(browser,output:output)
             if let index = CommandLine.arguments.firstIndex(of:"--asset-test-url"),CommandLine.arguments.count > index+1,let base = URL(string:CommandLine.arguments[index+1]) {
                 checks += try await CaptureAssetSmoke.run(browser,base:base,output:output)
