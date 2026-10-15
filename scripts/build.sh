@@ -1,9 +1,12 @@
 #!/bin/zsh
 set -euo pipefail
 cd "${0:A:h:h}"
-# The product folder differs between SwiftPM build systems; ask SwiftPM instead of hard-coding it.
-swift build -c release --arch arm64
-bin=$(swift build -c release --arch arm64 --show-bin-path)
+# Keep the native build system although Swift 6.4 marks it deprecated: the default (swiftbuild) build
+# records the deployment target as the SDK version (sdk 14.0), so AppKit applies old-SDK behavior and
+# smoke fails (a tab-row scroller takes tab clicks). Revisit before native is removed; check
+# `otool -l … | grep -A5 LC_BUILD_VERSION` reports the installed SDK.
+swift build --build-system native -c release --arch arm64
+bin=$(swift build --build-system native -c release --arch arm64 --show-bin-path)
 app="$PWD/dist/Pageglass.app"
 rm -rf "$app/Contents/Resources/Pageglass_Browser.bundle"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
