@@ -92,7 +92,8 @@
       assets.add(url);
       const key = context + ':' + url;
       if (!assetTokens.has(key)) {
-        const token = `pageglass_asset_${nonce}_${assetReferences.length}`;
+        // The trailing separator keeps every token from being a prefix of another (_1_ vs _10_).
+        const token = `pageglass_asset_${nonce}_${assetReferences.length}_`;
         assetTokens.set(key, token); assetReferences.push({url, token, context});
       }
       return assetTokens.get(key);

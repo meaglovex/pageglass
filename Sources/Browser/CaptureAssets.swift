@@ -36,14 +36,25 @@ enum CaptureAssets {
         let missing = urls.filter { replacements[$0] == nil && !$0.hasPrefix("data:") }.count
         return Result(html:output,manifest:manifest,warnings:missing > 0 ? ["\(missing) 个图片或字体资源未能离线保存（跨域限制、超时、格式或预算）；保留原地址，详见 assetManifest。"] : [],paths:replacements)
     }
+    private static let tokenPattern = try! NSRegularExpression(pattern:"pageglass_asset_[0-9a-f]{32}_[0-9]+_")
     static func resolve(_ html:String,references:[[String:String]],paths:[String:String],prefix:String = "")->String {
-        var output = html
+        var replacements:[String:String] = [:]
         for reference in references {
             guard let token = reference["token"],let url = reference["url"] else { continue }
             let replacement = paths[url].map { prefix+$0 } ?? url
-            output = output.replacingOccurrences(of:token,with:reference["context"] == "html" ? escapeHTML(replacement) : escapeCSS(replacement))
+            replacements[token] = reference["context"] == "html" ? escapeHTML(replacement) : escapeCSS(replacement)
         }
-        return output
+        guard !replacements.isEmpty else { return html }
+        // One pass over a document of up to ~6 MB. Whole-token matches cannot rewrite part of a longer token.
+        let source = html as NSString, output = NSMutableString(capacity:source.length)
+        var cursor = 0
+        tokenPattern.enumerateMatches(in:html,range:NSRange(location:0,length:source.length)) { match,_,_ in
+            guard let range = match?.range,let replacement = replacements[source.substring(with:range)] else { return }
+            output.append(source.substring(with:NSRange(location:cursor,length:range.location-cursor))); output.append(replacement)
+            cursor = NSMaxRange(range)
+        }
+        output.append(source.substring(from:cursor))
+        return output as String
     }
     static func escapeHTML(_ string:String)->String {
         string.replacingOccurrences(of:"&",with:"&amp;").replacingOccurrences(of:"\"",with:"&quot;").replacingOccurrences(of:"<",with:"&lt;").replacingOccurrences(of:">",with:"&gt;").replacingOccurrences(of:"'",with:"&#39;")
