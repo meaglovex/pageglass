@@ -129,7 +129,7 @@ final class LibraryController: NSWindowController, NSTableViewDataSource, NSTabl
         if mode == .bookmarks, pages.indices.contains(index) { browser.store.removeBookmark(id:pages[index].id) }
         if mode == .history {
             let alert = NSAlert(); alert.messageText = "清除所有浏览历史？"; alert.informativeText = "此操作不能撤销。书签、下载文件及网站登录不会被删除。"; alert.addButton(withTitle:"取消"); alert.addButton(withTitle:"清除历史")
-            if alert.runModal() == .alertSecondButtonReturn { browser.store.clearHistory() }
+            if alert.runModal() == .alertSecondButtonReturn { browser.store.clearHistory(); browser.favicons.clearDisk() }
         }
         if mode == .downloads,downloads.indices.contains(index),let path = downloads[index].path { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath:path)]) }
     }

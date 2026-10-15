@@ -37,7 +37,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
     let progress = NSProgressIndicator()
     let findBar = NSStackView(), findField = NSSearchField(), findResult = NSTextField(labelWithString:"")
     let captureService = CaptureService()
-    let favicons = FaviconLoader()
+    lazy var favicons = FaviconLoader(disk:FaviconDiskCache(directory:store.directory.appendingPathComponent("Favicons",isDirectory:true),writable:!privateBrowsing))
     var latest: CaptureResult?
     var selecting = false
     var capturing = false
