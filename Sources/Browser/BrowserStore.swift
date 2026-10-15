@@ -42,6 +42,8 @@ final class BrowserStore {
     }
     private(set) var state = State()
     private(set) var error: String?
+    /// An unreadable file is never replaced. A failed save is retried on the next change.
+    private(set) var readFailed = false
     let directory:URL
     let isFreshProfile:Bool
     var extensionRuntime:AnyObject?
@@ -58,7 +60,7 @@ final class BrowserStore {
                 state = try JSONDecoder().decode(State.self,from:Data(contentsOf:file))
                 for i in state.downloads.indices where state.downloads[i].state.hasPrefix("下载中") || state.downloads[i].state == "等待保存" { state.downloads[i].state = "已中断：浏览器已退出" }
             }
-            catch { self.error = "浏览器数据读取失败：\(error.localizedDescription)" }
+            catch { readFailed = true; self.error = "浏览器数据读取失败：\(error.localizedDescription)" }
         }
     }
     func bookmark(for url:String)->PageRecord? { state.bookmarks.first { $0.url == url } }
@@ -121,11 +123,12 @@ final class BrowserStore {
         DispatchQueue.main.asyncAfter(deadline:.now()+0.3,execute:work)
     }
     func flush() {
-        // 读取失败时不覆盖无法解析的原文件。
-        guard error == nil else { return }
+        // 读取失败时不覆盖无法解析的原文件；保存失败只报告，下一次修改仍会重试。
+        guard !readFailed else { return }
         do {
             try FileManager.default.createDirectory(at:file.deletingLastPathComponent(),withIntermediateDirectories:true,attributes:[.posixPermissions:0o700])
             try JSONEncoder().encode(state).write(to:file,options:.atomic)
+            error = nil
         } catch { self.error = "浏览器数据保存失败：\(error.localizedDescription)" }
     }
 }

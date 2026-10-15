@@ -71,7 +71,7 @@ final class LibraryController: NSWindowController, NSTableViewDataSource, NSTabl
         let empty = mode == .downloads ? downloads.isEmpty : pages.isEmpty
         emptyState.isHidden = !empty; listScroll.isHidden = empty
         if empty {
-            if browser.store.error != nil {
+            if browser.store.readFailed {
                 emptyState.show("资料读取失败",message:"原数据已保留。请检查本机资料文件后重新打开 Pageglass。",symbol:"exclamationmark.triangle")
             } else if !q.isEmpty {
                 emptyState.show("没有匹配的\(heading.stringValue)",message:"试试其他关键词，或清除搜索查看全部记录。",symbol:"magnifyingglass",actionTitle:"清除搜索",target:self,selector:#selector(clearSearch))
