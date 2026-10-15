@@ -195,6 +195,10 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
         if url.isFileURL { webView.loadFileURL(url,allowingReadAccessTo:url.deletingLastPathComponent()) }
         else { webView.load(URLRequest(url:url)) }
     }
+    /// Typed addresses: mail, phone and similar links go to their app after confirmation instead of a silent cancel.
+    func open(_ url:URL) {
+        if Navigation.externalSchemes.contains(url.scheme?.lowercased() ?? "") { syncChrome(); confirmExternalOpen(url) } else { load(url) }
+    }
     func loadHome() { load(Resources.bundle.url(forResource:"home",withExtension:"html",subdirectory:"Resources")!) }
     func savedWindow()->SavedWindow {
         SavedWindow(tabs:tabs.map { tab in
@@ -261,7 +265,7 @@ final class BrowserWindow: NSWindowController, NSTextFieldDelegate, NSWindowDele
             openSuggestion(suggestions[selectedSuggestion]); return
         }
         guard !capturing,let url = Navigation.url(for:address.stringValue,searchEngine:store.state.settings.searchEngine) else { status.stringValue = "请输入有效的网址或搜索词"; return }
-        window?.makeFirstResponder(webView); load(url)
+        window?.makeFirstResponder(webView); open(url)
     }
     @objc func focusAddress() {
         tabPopover?.close(); bookmarkPopover?.close(); commandPalette?.dismiss(restoreFocus:false)

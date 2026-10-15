@@ -3,7 +3,7 @@ import WebKit
 
 extension BrowserWindow {
     @objc func goHome() {
-        if let url = Navigation.url(for:store.state.settings.homepage,searchEngine:store.state.settings.searchEngine) { load(url) } else { loadHome() }
+        if let url = Navigation.url(for:store.state.settings.homepage,searchEngine:store.state.settings.searchEngine) { open(url) } else { loadHome() }
     }
     @objc func toggleBookmark() {
         guard let url = webView.url,["http","https","file"].contains(url.scheme ?? "") else { return }
