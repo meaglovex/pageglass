@@ -71,4 +71,41 @@ enum PageSafetySmoke {
         if let index = browser.tabs.firstIndex(where:{$0.webView === original}) { browser.activate(index) }
         return checks
     }
+
+    /// HTTP Basic sign-in against the owned loopback fixture: wrong password, retry, success; cancel shows the server page.
+    static func authentication(_ browser:BrowserWindow,base:URL) async throws->[String] {
+        var checks:[String] = []
+        func require(_ condition:Bool,_ message:String) throws { guard condition else { throw CaptureService.Failure.message(message) }; checks.append(message) }
+        func until(_ condition:()->Bool) async throws { for _ in 0..<100 where !condition() { try await Task.sleep(for:.milliseconds(50)) } }
+        func answer(user:String,password:String,accept:Bool) throws {
+            guard let sheet = browser.window?.attachedSheet,let alert = browser.tabs[browser.activeIndex].dialog,let fields = alert.accessoryView?.subviews.compactMap({ $0 as? NSTextField }),fields.count == 2 else { throw CaptureService.Failure.message("sign-in sheet missing") }
+            fields[0].stringValue = user; fields[1].stringValue = password
+            browser.window?.endSheet(sheet,returnCode:accept ? .alertFirstButtonReturn : .alertSecondButtonReturn)
+        }
+        browser.window?.makeKeyAndOrderFront(nil)
+        browser.openTab(base.appendingPathComponent("basic-auth"))
+        let view = browser.webView, tab = browser.tabs[browser.activeIndex]
+        try await until { tab.dialog != nil }
+        try require(tab.dialog?.messageText == "登录 127.0.0.1" && tab.dialog?.informativeText.contains("Pageglass QA") == true && tab.dialog?.informativeText.contains("未加密") == true,"HTTP sign-in sheet names the host, quotes the realm and warns about plain HTTP")
+        try answer(user:"pageglass",password:"wrong",accept:true)
+        try await until { tab.dialog != nil && tab.dialog?.informativeText.contains("不正确") == true }
+        try require(tab.dialog?.informativeText.contains("不正确") == true,"wrong password asks again with a failure notice")
+        try answer(user:"pageglass",password:"smoke-only",accept:true)
+        try await until { view.title == "Authenticated fixture" }
+        try require(view.title == "Authenticated fixture","correct credentials load the protected page")
+        browser.closeTab()
+
+        // The session now sends the saved credential to 127.0.0.1 without asking; use another origin for cancel.
+        let other = URL(string:base.absoluteString.replacingOccurrences(of:"127.0.0.1",with:"localhost"))!.appendingPathComponent("basic-auth")
+        browser.openTab(other)
+        let cancelled = browser.webView, cancelTab = browser.tabs[browser.activeIndex]
+        try await until { cancelTab.dialog != nil }
+        let prefilled = cancelTab.dialog?.accessoryView?.subviews.compactMap { ($0 as? NSTextField)?.stringValue } ?? []
+        try require(cancelTab.dialog?.messageText == "登录 localhost" && prefilled == ["",""],"another origin gets its own empty sign-in sheet")
+        try answer(user:"",password:"",accept:false)
+        try await until { cancelled.title == "Authentication required" }
+        try require(cancelled.title == "Authentication required" && cancelTab.dialog == nil,"cancel shows the server's 401 page without prompting again")
+        browser.closeTab()
+        return checks
+    }
 }

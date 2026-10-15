@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""仅回环的浏览器实机验收站：跳转、下载、上传和存储；不记录请求内容。"""
+"""仅回环的浏览器实机验收站：跳转、下载、上传、存储和 HTTP 认证；不记录请求内容。"""
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
-import argparse, json, time, struct, zlib, threading
+import argparse, base64, json, time, struct, zlib, threading
 
 ROOT = Path(__file__).resolve().parents[1] / 'Sources/Browser/Resources'
 slow_requests = set()
@@ -62,6 +62,13 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path.startswith('/download'):
             data = b'Pageglass download verification\n' * 128
             self.send_response(200); self.send_header('Content-Type','application/octet-stream'); self.send_header('Content-Disposition','attachment; filename="pageglass-test.txt"'); self.send_header('Content-Length',str(len(data))); self.end_headers(); self.wfile.write(data); return
+        if self.path.startswith('/basic-auth'):
+            # Owned fixture credentials for the HTTP authentication smoke; never a real account.
+            expected = 'Basic ' + base64.b64encode(b'pageglass:smoke-only').decode()
+            if self.headers.get('Authorization') == expected:
+                self.send_fixture(b'<!doctype html><meta charset=utf-8><title>Authenticated fixture</title><h1>Authenticated</h1>','text/html'); return
+            data = b'<!doctype html><title>Authentication required</title><h1>401</h1>'
+            self.send_response(401); self.send_header('WWW-Authenticate','Basic realm="Pageglass QA"'); self.send_header('Content-Type','text/html'); self.send_header('Content-Length',str(len(data))); self.end_headers(); self.wfile.write(data); return
         if self.path.startswith('/redirect'):
             self.send_response(302); self.send_header('Location','/demo.html'); self.end_headers(); return
         if self.path.startswith('/browser-test'):
