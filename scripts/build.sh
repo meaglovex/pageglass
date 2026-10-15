@@ -1,11 +1,14 @@
 #!/bin/zsh
 set -euo pipefail
 cd "${0:A:h:h}"
-swift build --build-system native -c release --arch arm64
+# The product folder differs between SwiftPM build systems; ask SwiftPM instead of hard-coding it.
+swift build -c release --arch arm64
+bin=$(swift build -c release --arch arm64 --show-bin-path)
 app="$PWD/dist/Pageglass.app"
+rm -rf "$app/Contents/Resources/Pageglass_Browser.bundle"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp .build/arm64-apple-macosx/release/Pageglass "$app/Contents/MacOS/Pageglass"
-cp -R .build/arm64-apple-macosx/release/Pageglass_Browser.bundle "$app/Contents/Resources/"
+cp "$bin/Pageglass" "$app/Contents/MacOS/Pageglass"
+cp -R "$bin/Pageglass_Browser.bundle" "$app/Contents/Resources/"
 cp assets/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 cat > "$app/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
