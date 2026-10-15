@@ -44,7 +44,8 @@ final class LibraryController: NSWindowController, NSTableViewDataSource, NSTabl
         let bottom = NSStackView(views:[detail,spacer,cancel,edit,secondary,primary]); bottom.spacing = 10
         for view in [heading,top,list,bottom] { root.addArrangedSubview(view); view.translatesAutoresizingMaskIntoConstraints = false; view.widthAnchor.constraint(equalTo:root.widthAnchor,constant:-40).isActive = true }
         list.heightAnchor.constraint(greaterThanOrEqualToConstant:220).isActive = true
-        observer = NotificationCenter.default.addObserver(forName:BrowserStore.changed,object:browser.store,queue:.main) { [weak self] _ in self?.refresh() }
+        // show() refreshes on open; a closed library must not refilter history for every store change.
+        observer = NotificationCenter.default.addObserver(forName:BrowserStore.changed,object:browser.store,queue:.main) { [weak self] _ in if self?.window?.isVisible == true { self?.refresh() } }
     }
     required init?(coder:NSCoder) { fatalError() }
     deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
