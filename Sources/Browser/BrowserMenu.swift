@@ -18,7 +18,10 @@ extension BrowserWindow {
             item.keyEquivalentModifierMask = modifiers
             item.image = NSImage(systemSymbolName:icon,accessibilityDescription:nil)
             item.image?.size = NSSize(width:18,height:18)
+            // macOS 27 SDK API. #available only checks at run time; older SDKs (CI's macos-15 image) also need the compile-time guard.
+            #if compiler(>=6.4)
             if #available(macOS 27.0,*) { item.preferredImageVisibility = .visible }
+            #endif
             item.isEnabled = enabled
             menu.addItem(item)
             return item
