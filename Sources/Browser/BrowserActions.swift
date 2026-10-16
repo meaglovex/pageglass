@@ -3,7 +3,7 @@ import WebKit
 
 extension BrowserWindow {
     @objc func goHome() {
-        if let url = Navigation.url(for:store.state.settings.homepage,searchEngine:store.state.settings.searchEngine) { load(url) } else { loadHome() }
+        if let url = Navigation.url(for:store.state.settings.homepage,searchEngine:store.state.settings.searchEngine) { open(url) } else { loadHome() }
     }
     @objc func toggleBookmark() {
         guard let url = webView.url,["http","https","file"].contains(url.scheme ?? "") else { return }
@@ -92,6 +92,12 @@ extension BrowserWindow {
             return
         }
         download.cancel { [weak self] _ in self?.updateDownload(download,state:"已取消"); self?.downloads.removeValue(forKey:pair.key); self?.downloadObservers.removeValue(forKey:pair.key) }
+    }
+    /// fractionCompleted changes for every received chunk. Only a new whole percent touches records, the store and windows.
+    func updateDownloadProgress(_ download:WKDownload,percent:Int) {
+        let state = "下载中 \(percent)%"
+        guard downloadRecords[ObjectIdentifier(download)]?.state != state else { return }
+        updateDownload(download,state:state)
     }
     func updateDownload(_ download:WKDownload,state:String,path:String? = nil) {
         let key = ObjectIdentifier(download)

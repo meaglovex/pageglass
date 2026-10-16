@@ -1,6 +1,40 @@
 import AppKit
+import CryptoKit
 import ImageIO
+import UniformTypeIdentifiers
 import WebKit
+
+/// Small on-disk icon store for normal windows, so a launch does not re-request every bookmarked site.
+/// Holds only already-downsampled PNGs named by a hash of the origin. Private windows read it but never write;
+/// any window may clear it, because history is shared and can be cleared from a private window.
+struct FaviconDiskCache {
+    let directory:URL
+    let writable:Bool
+    static let limit = 512, maxBytes = 64*1024
+    private func file(_ origin:URL)->URL {
+        directory.appendingPathComponent(SHA256.hash(data:Data(origin.absoluteString.utf8)).prefix(16).map { String(format:"%02x",$0) }.joined()+".png")
+    }
+    func image(for origin:URL)->CGImage? {
+        let url = file(origin)
+        guard let values = try? url.resourceValues(forKeys:[.isRegularFileKey,.fileSizeKey]),values.isRegularFile == true,(values.fileSize ?? .max) <= Self.maxBytes,
+              let source = CGImageSourceCreateWithURL(url as CFURL,nil),let image = CGImageSourceCreateImageAtIndex(source,0,nil),max(image.width,image.height) <= 64 else { return nil }
+        return image
+    }
+    func store(_ image:CGImage,for origin:URL) {
+        guard writable,max(image.width,image.height) <= 64 else { return }
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data,UTType.png.identifier as CFString,1,nil) else { return }
+        CGImageDestinationAddImage(destination,image,nil)
+        guard CGImageDestinationFinalize(destination),data.length <= Self.maxBytes,
+              (try? FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true,attributes:[.posixPermissions:0o700])) != nil,
+              (try? (data as Data).write(to:file(origin),options:.atomic)) != nil else { return }
+        let keys:[URLResourceKey] = [.contentModificationDateKey]
+        guard let files = try? FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:keys),files.count > Self.limit else { return }
+        let date = { (url:URL) in (try? url.resourceValues(forKeys:Set(keys)).contentModificationDate) ?? .distantPast }
+        for old in files.sorted(by:{ date($0) < date($1) }).prefix(files.count-Self.limit) { try? FileManager.default.removeItem(at:old) }
+    }
+    func clear() { try? FileManager.default.removeItem(at:directory) }
+}
 
 @MainActor
 final class FaviconLoader {
@@ -11,7 +45,8 @@ final class FaviconLoader {
     private let download:(URL) async -> Data?
     private var pending:[URL:Task<NSImage?,Never>] = [:]
     private var failed = Set<URL>()
-    init(download:@escaping (URL) async -> Data? = IconDownload.fetch) { self.download = download }
+    private let disk:FaviconDiskCache?
+    init(download:@escaping (URL) async -> Data? = IconDownload.fetch,disk:FaviconDiskCache? = nil) { self.download = download; self.disk = disk }
     static func origin(_ url:URL)->URL? {
         guard ["http","https"].contains(url.scheme?.lowercased() ?? ""),url.host != nil else { return nil }
         var parts = URLComponents(url:url,resolvingAgainstBaseURL:false)
@@ -19,12 +54,20 @@ final class FaviconLoader {
         return parts?.url
     }
     func cached(for page:URL)->NSImage? {
-        guard let origin = Self.origin(page),let image = cache[origin] else { return nil }
-        touch(origin);return image
+        guard let origin = Self.origin(page) else { return nil }
+        if let image = cache[origin] { touch(origin);return image }
+        guard let stored = disk?.image(for:origin) else { return nil }
+        let image = Self.icon(stored);remember(image,for:origin,persist:false);return image
+    }
+    func clearDisk() { disk?.clear() }
+    private static func icon(_ cg:CGImage)->NSImage {
+        let scale = 16.0/Double(max(cg.width,cg.height))
+        return NSImage(cgImage:cg,size:NSSize(width:Double(cg.width)*scale,height:Double(cg.height)*scale))
     }
     private func touch(_ origin:URL) { recent.removeAll { $0 == origin };recent.append(origin) }
-    private func remember(_ image:NSImage,for origin:URL) {
+    private func remember(_ image:NSImage,for origin:URL,persist:Bool = true) {
         cache[origin] = image;touch(origin)
+        if persist,let cg = image.cgImage(forProposedRect:nil,context:nil,hints:nil) { disk?.store(cg,for:origin) }
         if recent.count > 128 { cache.removeValue(forKey:recent.removeFirst()) }
     }
     func image(for page:URL,candidates:[URL] = []) async -> NSImage? {
@@ -42,8 +85,7 @@ final class FaviconLoader {
                 task = Task { [download] in
                     guard let data = await download(url),let source = CGImageSourceCreateWithData(data as CFData,nil),
                           let cg = CGImageSourceCreateThumbnailAtIndex(source,0,[kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceThumbnailMaxPixelSize:32,kCGImageSourceCreateThumbnailWithTransform:true] as CFDictionary) else { return nil }
-                    let scale = 16.0/Double(max(cg.width,cg.height))
-                    return NSImage(cgImage:cg,size:NSSize(width:Double(cg.width)*scale,height:Double(cg.height)*scale))
+                    return Self.icon(cg)
                 }
                 pending[url] = task
             }

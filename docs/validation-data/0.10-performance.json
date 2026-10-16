@@ -22,14 +22,14 @@
     "failed": 0
   },
   "fullSmoke": {
-    "cleanPage": "/Users/xardas/Documents/pm-browser/qa-output/20261009-122657/1791520018-AF67864B",
-    "element": "/Users/xardas/Documents/pm-browser/qa-output/20261009-122657/1791520018-3812F227",
+    "cleanPage": "qa-output/20261009-122657/1791520018-AF67864B",
+    "element": "qa-output/20261009-122657/1791520018-3812F227",
     "gpu": {
       "available": true,
       "renderer": "Apple GPU",
       "vendor": "Apple Inc."
     },
-    "page": "/Users/xardas/Documents/pm-browser/qa-output/20261009-122657/1791520019-A59B6C44",
+    "page": "qa-output/20261009-122657/1791520019-A59B6C44",
     "passed": [
       "live button interaction",
       "element subtree export",
@@ -219,7 +219,7 @@
       "Return from the quick action table opens the selected tab",
       "Escape from quick action results restores webpage focus",
       "IME composition confirmation does not navigate",
-      "failed navigation exposes persistent recovery controls: failure=无法打开 127.0.0.1：The network connection was lost., hidden=false, loading=false, url=file:///Users/xardas/Documents/pm-browser/dist/Pageglass.app/Contents/Resources/Pageglass_Browser.bundle/Resources/demo.html#15",
+      "failed navigation exposes persistent recovery controls: failure=无法打开 127.0.0.1：The network connection was lost., hidden=false, loading=false, url=dist/Pageglass.app/Contents/Resources/Pageglass_Browser.bundle/Resources/demo.html#15",
       "failure does not affect another tab",
       "returning to failed tab restores its error",
       "successful navigation clears previous failure",

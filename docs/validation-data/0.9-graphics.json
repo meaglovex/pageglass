@@ -263,7 +263,7 @@
       "Return from the quick action table opens the selected tab",
       "Escape from quick action results restores webpage focus",
       "IME composition confirmation does not navigate",
-      "failed navigation exposes persistent recovery controls: failure=无法打开 127.0.0.1：The network connection was lost., hidden=false, loading=false, url=file:///Users/xardas/Documents/pm-browser/dist/Pageglass.app/Contents/Resources/Pageglass_Browser.bundle/Resources/demo.html#8",
+      "failed navigation exposes persistent recovery controls: failure=无法打开 127.0.0.1：The network connection was lost., hidden=false, loading=false, url=dist/Pageglass.app/Contents/Resources/Pageglass_Browser.bundle/Resources/demo.html#8",
       "failure does not affect another tab",
       "returning to failed tab restores its error",
       "successful navigation clears previous failure",

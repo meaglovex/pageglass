@@ -25,7 +25,8 @@ WebKit 支持系统 GPU 路径，但不保证所有网站都比 Chromium 快。�
 - `BrowserStore`：原子写入浏览器数据，延迟合并保存；损坏文件不会被空数据覆盖。地址建议按原有书签/历史顺序和 URL 去重规则收集，得到 8 条即停止，不创建完整匹配列表。
 - `LibraryController` / `SettingsController`：书签、历史、下载资料库与设置窗口。
 - `GraphicsDiagnostics` / `GraphicsSettingsView`：用户主动运行的本地图形检测、结构化结果及复制；使用公开 Metal / VideoToolbox / WebKit API，独立非持久页面与隔离内容世界，完成或取消后释放。不是应用级 GPU 开关。
-- `WebDelegates`：导航、下载、JS 对话框、文件上传和权限提示。
+- `WebDelegates`：导航、下载、JS 对话框、文件上传和权限提示。脚本只有在用户手势中才能打开新窗口；JS 对话框、文件选择、下载位置和外部协议确认都是所在浏览器窗口的表单（sheet），只给当前标签显示，后台标签按“取消”应答，重复弹出的页面可在导航前被静音，关闭标签会结束其对话框。
+- `HTTPAuthentication`：当前标签自身来源或代理的 HTTP Basic / Digest / NTLM 登录表单；跨来源子资源、TLS、客户端证书和 Kerberos 保持 WebKit 默认处理。服务器 realm 作为不可信文字引用显示，明文 HTTP 会提示；凭据只保存在该网站数据会话中，不写入 browser.json。
 - `BrowserTab`：每个标签的 WebView 与 KVO；关闭时拆除代理和脚本桥，防止强引用循环。
 - `CaptureService` / `CapturePNG`：显式捕获事务、系统截图、长截图拼接、本地包及剪贴板。PNG 直接从已有 CGImage 编码，不经 TIFF 中转；压缩在后台任务执行，保留逻辑尺寸对应的 DPI，取消后不提交文件。
 - `CaptureAssets` / `Resources/capture-assets.js`：捕获时在隔离世界按页面权限读取资源、限制预算、验证文件格式、保存本地资源并替换引用。
@@ -70,7 +71,7 @@ Chrome 级验收仍需要相同电脑、相同窗口尺寸/网络/页面集、�
 
 ## 网站图标、捕获清理与检查器
 
-标签和书签按站点显示图标。读取页面声明的 icon，再回退同源 favicon.ico；独立无 Cookie URLSession 限制单图 256 KiB、8 秒，ImageIO 缩至 32 像素，不使用第三方图标服务。每个浏览器窗口明确保留最近使用的 128 个站点图标，超限只移除最久未用的一项。页面图标加载后供同源书签及缺图标的同源标签复用，休眠标签不因此创建 WebView；已有不同图标不覆盖。缓存不落盘，重新启动后需要重新获取图标。
+标签和书签按站点显示图标。读取页面声明的 icon，再回退同源 favicon.ico；独立无 Cookie URLSession 限制单图 256 KiB、8 秒，ImageIO 缩至 32 像素，不使用第三方图标服务。每个浏览器窗口明确保留最近使用的 128 个站点图标，超限只移除最久未用的一项。页面图标加载后供同源书签及缺图标的同源标签复用，休眠标签不因此创建 WebView；已有不同图标不覆盖。普通窗口另把已缩小的 PNG 按来源哈希保存在资料目录的 `Favicons/`，最多 512 个，超出时删除最旧的文件，重启后书签栏不必逐站重新请求；无痕窗口只读不写，清除历史或网站数据时一并删除。
 
 此小型工作集不再使用可自行移除对象的 [NSCache](https://developer.apple.com/documentation/Foundation/NSCache)，其 [countLimit](https://developer.apple.com/documentation/foundation/nscache/countlimit) 也不是严格上限。这明确了近期图标的保留条件，但尚未复现旧 smoke 偶发失败的精确触发过程，不能将缓存策略变更当作旧原因的证明。
 

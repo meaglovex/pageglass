@@ -26,6 +26,8 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
             Task { @MainActor in await BenchmarkMode.run(path:args[index+1],delegate:self) }; return
         }
         starting = true
+        // Extensions usually load first, so the first page already gets their content scripts. Each restore
+        // re-hashes its package; a large or stuck one must not keep the browser without a window.
         Task { @MainActor [self] in
             if #available(macOS 15.4,*) {
                 let dataStore = QAProfile.current.map { WKWebsiteDataStore(forIdentifier:$0.websiteDataID) } ?? .default()
@@ -33,8 +35,10 @@ final class AppDelegate:NSObject,NSApplicationDelegate {
             }
             finishLaunching()
         }
+        Task { @MainActor [self] in try? await Task.sleep(for:.seconds(1.5)); finishLaunching() }
     }
     private func finishLaunching() {
+        guard starting else { return }
         starting = false
         restoring = true
         if BrowserStore.shared.state.settings.restoreSession {

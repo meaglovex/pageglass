@@ -44,7 +44,8 @@ final class LibraryController: NSWindowController, NSTableViewDataSource, NSTabl
         let bottom = NSStackView(views:[detail,spacer,cancel,edit,secondary,primary]); bottom.spacing = 10
         for view in [heading,top,list,bottom] { root.addArrangedSubview(view); view.translatesAutoresizingMaskIntoConstraints = false; view.widthAnchor.constraint(equalTo:root.widthAnchor,constant:-40).isActive = true }
         list.heightAnchor.constraint(greaterThanOrEqualToConstant:220).isActive = true
-        observer = NotificationCenter.default.addObserver(forName:BrowserStore.changed,object:browser.store,queue:.main) { [weak self] _ in self?.refresh() }
+        // show() refreshes on open; a closed library must not refilter history for every store change.
+        observer = NotificationCenter.default.addObserver(forName:BrowserStore.changed,object:browser.store,queue:.main) { [weak self] _ in if self?.window?.isVisible == true { self?.refresh() } }
     }
     required init?(coder:NSCoder) { fatalError() }
     deinit { if let observer { NotificationCenter.default.removeObserver(observer) } }
@@ -71,7 +72,7 @@ final class LibraryController: NSWindowController, NSTableViewDataSource, NSTabl
         let empty = mode == .downloads ? downloads.isEmpty : pages.isEmpty
         emptyState.isHidden = !empty; listScroll.isHidden = empty
         if empty {
-            if browser.store.error != nil {
+            if browser.store.readFailed {
                 emptyState.show("资料读取失败",message:"原数据已保留。请检查本机资料文件后重新打开 Pageglass。",symbol:"exclamationmark.triangle")
             } else if !q.isEmpty {
                 emptyState.show("没有匹配的\(heading.stringValue)",message:"试试其他关键词，或清除搜索查看全部记录。",symbol:"magnifyingglass",actionTitle:"清除搜索",target:self,selector:#selector(clearSearch))
@@ -128,7 +129,7 @@ final class LibraryController: NSWindowController, NSTableViewDataSource, NSTabl
         if mode == .bookmarks, pages.indices.contains(index) { browser.store.removeBookmark(id:pages[index].id) }
         if mode == .history {
             let alert = NSAlert(); alert.messageText = "清除所有浏览历史？"; alert.informativeText = "此操作不能撤销。书签、下载文件及网站登录不会被删除。"; alert.addButton(withTitle:"取消"); alert.addButton(withTitle:"清除历史")
-            if alert.runModal() == .alertSecondButtonReturn { browser.store.clearHistory() }
+            if alert.runModal() == .alertSecondButtonReturn { browser.store.clearHistory(); browser.favicons.clearDisk() }
         }
         if mode == .downloads,downloads.indices.contains(index),let path = downloads[index].path { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath:path)]) }
     }

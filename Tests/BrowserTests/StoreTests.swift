@@ -49,8 +49,23 @@ final class StoreTests:XCTestCase {
         try "unreadable original".write(to:file,atomically:true,encoding:.utf8)
         let store = BrowserStore(directory:directory)
         store.toggleBookmark(title:"new",url:"https://example.test"); store.flush()
-        XCTAssertNotNil(store.error)
+        XCTAssertNotNil(store.error); XCTAssertTrue(store.readFailed)
+        store.toggleBookmark(title:"later",url:"https://later.example.test"); store.flush()
         XCTAssertEqual(try String(contentsOf:file,encoding:.utf8),"unreadable original")
+    }
+    func testSavingResumesAfterTransientWriteFailure() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+        defer { try? FileManager.default.setAttributes([.posixPermissions:0o700],ofItemAtPath:directory.path); try? FileManager.default.removeItem(at:directory) }
+        let store = BrowserStore(directory:directory)
+        store.toggleBookmark(title:"A",url:"https://a.example.test/"); store.flush()
+        try FileManager.default.setAttributes([.posixPermissions:0o500],ofItemAtPath:directory.path)
+        store.toggleBookmark(title:"B",url:"https://b.example.test/"); store.flush()
+        XCTAssertNotNil(store.error); XCTAssertFalse(store.readFailed)
+        try FileManager.default.setAttributes([.posixPermissions:0o700],ofItemAtPath:directory.path)
+        store.toggleBookmark(title:"C",url:"https://c.example.test/"); store.flush()
+        XCTAssertNil(store.error)
+        XCTAssertEqual(BrowserStore(directory:directory).state.bookmarks.map(\.title),["C","B","A"])
     }
     func testCaptureIntroIsPersistedWithoutTreatingLegacyProfileAsFresh() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
