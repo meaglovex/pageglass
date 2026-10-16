@@ -5,7 +5,8 @@ import UniformTypeIdentifiers
 import WebKit
 
 /// Small on-disk icon store for normal windows, so a launch does not re-request every bookmarked site.
-/// Holds only already-downsampled PNGs named by a hash of the origin. Private windows read it but never write.
+/// Holds only already-downsampled PNGs named by a hash of the origin. Private windows read it but never write;
+/// any window may clear it, because history is shared and can be cleared from a private window.
 struct FaviconDiskCache {
     let directory:URL
     let writable:Bool
@@ -32,7 +33,7 @@ struct FaviconDiskCache {
         let date = { (url:URL) in (try? url.resourceValues(forKeys:Set(keys)).contentModificationDate) ?? .distantPast }
         for old in files.sorted(by:{ date($0) < date($1) }).prefix(files.count-Self.limit) { try? FileManager.default.removeItem(at:old) }
     }
-    func clear() { if writable { try? FileManager.default.removeItem(at:directory) } }
+    func clear() { try? FileManager.default.removeItem(at:directory) }
 }
 
 @MainActor

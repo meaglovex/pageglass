@@ -76,6 +76,15 @@ final class FaviconTests:XCTestCase {
         _ = await loader.image(for:URL(string:"https://private.pageglass.test/")!)
         XCTAssertFalse(FileManager.default.fileExists(atPath:directory.path))
     }
+    @MainActor func testPrivateWindowCanClearTheSharedIconStore() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at:directory) }
+        let data = try png(),page = URL(string:"https://pageglass.test/")!
+        _ = await FaviconLoader(download:{ _ in data },disk:FaviconDiskCache(directory:directory,writable:true)).image(for:page)
+        XCTAssertTrue(FileManager.default.fileExists(atPath:directory.path))
+        FaviconLoader(download:{ _ in nil },disk:FaviconDiskCache(directory:directory,writable:false)).clearDisk()
+        XCTAssertFalse(FileManager.default.fileExists(atPath:directory.path),"clearing shared history from a private window removes stored icons")
+    }
     func testDiskCacheKeepsOnlyTheNewestIcons() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at:directory) }

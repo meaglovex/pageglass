@@ -196,7 +196,8 @@ final class SettingsController:NSWindowController,NSWindowDelegate {
         guard let browser else { return }
         let alert = NSAlert(); alert.messageText = "清除网站数据？"; alert.informativeText = "将删除\(browser.privateBrowsing ? "当前无痕窗口" : "普通窗口")的网站 Cookie、缓存和本地存储，并退出网站登录。此操作不能撤销。书签和下载文件不受影响。"; alert.addButton(withTitle:"取消"); alert.addButton(withTitle:"清除网站数据")
         if alert.runModal() == .alertSecondButtonReturn {
-            browser.favicons.clearDisk()
+            // A private window clears only its own website data store; the normal profile's icons stay.
+            if !browser.privateBrowsing { browser.favicons.clearDisk() }
             browser.websiteDataStore.removeData(ofTypes:WKWebsiteDataStore.allWebsiteDataTypes(),modifiedSince:.distantPast) { [weak self] in self?.message.stringValue = "网站数据已清除" }
         }
     }
